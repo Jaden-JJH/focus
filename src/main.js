@@ -24,6 +24,10 @@ async function init() {
       }
       if (user) {
         console.log('Session restored:', user.nickname)
+
+        // Check and reset daily coins if needed
+        await dataService.checkAndResetDailyCoins(currentUser.id)
+
         if (window.location.pathname === '/' || window.location.pathname === '/onboarding') {
           navigateTo('/main')
         }

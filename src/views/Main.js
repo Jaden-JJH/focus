@@ -71,6 +71,19 @@ export default class Main {
 
         <section class="rank-section">
            <h3>Weekly Ranking</h3>
+
+           <!-- My Rank Section -->
+           ${!user.isGuest ? `
+           <div id="my-rank-section" style="background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+             <div style="display: flex; justify-content: space-between; align-items: center;">
+               <span style="font-weight: bold; color: var(--color-accent);">내 랭킹</span>
+               <div id="my-rank-info" style="text-align: right;">
+                 <div style="font-size: 0.9rem; color: #aaa;">Loading...</div>
+               </div>
+             </div>
+           </div>
+           ` : ''}
+
            <div class="rank-list" id="rank-list">Loading...</div>
         </section>
         
@@ -160,18 +173,40 @@ export default class Main {
     const listEl = document.getElementById('rank-list')
     if (!listEl) return
 
+    const state = store.getState()
+    const user = state.user
+
+    // Fetch weekly ranking
     const rankings = await dataService.fetchWeeklyRanking()
     if (!rankings || rankings.length === 0) {
       listEl.innerHTML = '<div style="text-align:center; color:#888;">No records yet</div>'
-      return
+    } else {
+      listEl.innerHTML = rankings.map((r, idx) => `
+              <div class="rank-item" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333;">
+                  <span>${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
+                  <span>${r.max_round}R</span>
+              </div>
+          `).join('')
     }
 
-    listEl.innerHTML = rankings.map((r, idx) => `
-            <div class="rank-item" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333;">
-                <span>${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
-                <span>${r.max_round}R</span>
-            </div>
-        `).join('')
+    // Fetch my rank (if not guest)
+    if (user && !user.isGuest) {
+      const myRankInfo = document.getElementById('my-rank-info')
+      if (myRankInfo) {
+        const { rank, maxRound } = await dataService.getMyRank(user.id)
+
+        if (rank) {
+          myRankInfo.innerHTML = `
+            <div style="font-size: 1.1rem; font-weight: bold; color: var(--color-accent);">#${rank}</div>
+            <div style="font-size: 0.9rem; color: #aaa;">최고 기록: ${maxRound}R</div>
+          `
+        } else {
+          myRankInfo.innerHTML = `
+            <div style="font-size: 0.9rem; color: #aaa;">아직 기록이 없습니다</div>
+          `
+        }
+      }
+    }
   }
 
   destroy() {

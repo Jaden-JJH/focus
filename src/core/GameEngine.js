@@ -46,15 +46,20 @@ export class GameEngine {
         this.state.history = []
         this.state.isPlaying = true
 
-        // Deduct Coin
-        // Deduct Coin
-        const newCoinCount = store.getState().coins - 1
-        store.setState({ coins: newCoinCount })
+        // Deduct Coin (optimistic update)
+        const currentCoins = store.getState().coins
+        store.setState({ coins: currentCoins - 1 })
 
         // Sync with server
         const user = store.getState().user
         if (user && !user.isGuest) {
-            dataService.updateCoins(user.id, newCoinCount)
+            const success = await dataService.deductCoins(user.id, 1)
+            if (!success) {
+                console.error('Failed to deduct coins')
+                // Rollback optimistic update
+                store.setState({ coins: currentCoins })
+                return
+            }
         }
 
         this.nextRound()
