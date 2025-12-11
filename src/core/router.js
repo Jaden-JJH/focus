@@ -9,6 +9,7 @@ const routes = {
 }
 
 let appContainer = null
+let currentView = null // Track current view instance
 
 export function initRouter(container) {
     appContainer = container
@@ -25,9 +26,14 @@ export async function navigateTo(path, state = {}) {
     await handleLocation()
 }
 
-async function handleLocation() {
+export async function handleLocation() {
     const path = window.location.pathname
     const route = routes[path] || routes['/']
+
+    // Cleanup previous view if it exists
+    if (currentView && typeof currentView.destroy === 'function') {
+        currentView.destroy()
+    }
 
     // Clear container
     appContainer.innerHTML = ''
@@ -39,6 +45,8 @@ async function handleLocation() {
 
         // Render view
         const viewInstance = new View(appContainer)
+        currentView = viewInstance // Reference for next cleanup
+
         await viewInstance.render()
 
     } catch (err) {

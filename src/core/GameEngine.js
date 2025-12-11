@@ -1,6 +1,7 @@
 
 import { CONFIG, LEVELS } from '../config/gameConfig.js'
 import { store } from './store.js'
+import { dataService } from '../services/dataService.js'
 
 // Import games (later dynamically or via map)
 import { ShapeMatch } from '../games/ShapeMatch.js'
@@ -46,8 +47,15 @@ export class GameEngine {
         this.state.isPlaying = true
 
         // Deduct Coin
-        store.setState({ coins: store.getState().coins - 1 })
-        // In real app, sync with server here (optimistic UI)
+        // Deduct Coin
+        const newCoinCount = store.getState().coins - 1
+        store.setState({ coins: newCoinCount })
+
+        // Sync with server
+        const user = store.getState().user
+        if (user && !user.isGuest) {
+            dataService.updateCoins(user.id, newCoinCount)
+        }
 
         this.nextRound()
     }

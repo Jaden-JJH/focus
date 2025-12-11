@@ -9,7 +9,8 @@ class Store {
             totalXp: 0,
             level: 0,
             dailyCoins: 0,
-            weeklyMaxRound: 0
+            weeklyMaxRound: 0,
+            isLoading: true // Start loading immediately
         }
         this.listeners = []
     }

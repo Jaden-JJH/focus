@@ -31,19 +31,72 @@ export default class Result {
       </div>
     `
 
-        // Save Record (Fire and forget or await?)
-        // Need user ID
+        document.getElementById('retry-btn').addEventListener('click', () => {
+            const currentCoins = store.getState().coins
+            if (currentCoins > 0) {
+                import('../core/router.js').then(r => r.navigateTo('/game'));
+            } else {
+                alert('코인이 부족합니다.')
+            }
+        });
+
+        document.getElementById('home-btn').addEventListener('click', () => {
+            import('../core/router.js').then(r => r.navigateTo('/main'));
+        });
+
+        // Save Record
         const user = store.getState().user
         if (user && round && !user.isGuest) {
-            dataService.saveGameRecord(user.id, round, xp)
-            // Also update local User XP/Level manually or refetch?
-            // Ideally refetch to get triggers/updates
-            dataService.fetchUserData(user.id)
+            // Optimistic update for UI?
+            const oldLevel = user.level
+
+            // Note: We await here but listeners are already attached.
+            // However, this still blocks the end of the method (confetti logic above seems fine as it is synchronous DOM manipulation)
+            // But if we want confetti to NOT block, we should keep it above.
+
+            // Wait, previous code had confetti logic in showLevelUp which is called AFTER await.
+            // If save fails, no Level Up animation. That's actually OK.
+            // But buttons MUST work.
+
+            try {
+                await dataService.saveGameRecord(user.id, round, xp)
+
+                const newUser = store.getState().user
+                const newLevel = newUser.level
+
+                if (newLevel > oldLevel) {
+                    this.showLevelUp(newLevel)
+                }
+            } catch (e) {
+                console.error("Failed to save record", e)
+            }
         } else if (user && user.isGuest) {
-            // Guest Logic: Coin is consumed on start, so 1 -> 0.
-            // Prevent further play in Main view.
-            // Maybe show alert "Sign in to save progress!"
+            // Guest Logic
         }
+    }
+
+    showLevelUp(level) {
+        // Create Overlay
+        const overlay = document.createElement('div')
+        overlay.style.cssText = `
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 200;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            animation: fadeIn 0.5s;
+        `
+        overlay.innerHTML = `
+            <h1 style="font-size: 3rem; color: var(--color-warning); text-shadow: 0 0 20px var(--color-warning); margin-bottom: 20px;">LEVEL UP!</h1>
+            <div style="font-size: 5rem; font-weight: bold; color: white;">${level}</div>
+            <div style="margin-top: 20px; color: #aaa;">Keep going!</div>
+        `
+        this.container.appendChild(overlay)
+
+        // Confetti effect or simple delay
+        setTimeout(() => {
+            overlay.style.opacity = '0'
+            overlay.style.transition = 'opacity 0.5s'
+            setTimeout(() => overlay.remove(), 500)
+        }, 2000)
 
         document.getElementById('retry-btn').addEventListener('click', () => {
             const currentCoins = store.getState().coins

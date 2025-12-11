@@ -14,19 +14,36 @@ async function init() {
   // Initialize Router
   initRouter(app)
 
-  // Auth State Listener
-  authService.onAuthStateChange(async (event, session) => {
-    console.log('Auth state change:', event, session?.user?.id)
-
-    if (session?.user) {
-      const user = await dataService.fetchUserData(session.user.id)
+  // 1. Deterministic Session Check on Init
+  try {
+    const currentUser = await authService.getUser()
+    if (currentUser) {
+      let user = await dataService.fetchUserData(currentUser.id)
+      if (!user) {
+        user = await dataService.createUser(currentUser.id, currentUser.user_metadata)
+      }
       if (user) {
+        console.log('Session restored:', user.nickname)
         if (window.location.pathname === '/' || window.location.pathname === '/onboarding') {
           navigateTo('/main')
         }
       }
     } else {
-      // navigateTo('/') // Optional: force logout redirect
+      // No active session
+      // If on protected route, redirect?
+      // For now, just finish loading. Main view will handle guest/redirect.
+    }
+  } catch (e) {
+    console.error('Session check failed:', e)
+  } finally {
+    // Always finish loading
+    store.setState({ isLoading: false })
+  }
+
+  // 2. Auth Listener for Logout only (mostly)
+  authService.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_OUT') {
+      navigateTo('/')
     }
   })
 }

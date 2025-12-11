@@ -24,5 +24,25 @@ export const LEVELS = {
     calcTimeLimit: (round) => {
         const time = 5.0 * Math.exp(-0.0245708736 * (round - 1));
         return Math.max(time, CONFIG.MIN_TIME_LIMIT);
+    },
+
+    calcXpProgress: (totalXp, currentLevel) => {
+        // Simple calculation: Get XP required for current level vs next level
+        // Total XP is cumulative.
+        // We need XpForNextLevel (Level+1) and XpForCurrentLevel (Level)
+        // Actually, formulas usually work on "XP required to reach Level L".
+        // calcRequiredXp(L) = Total XP needed for Level L.
+
+        const xpForCurrentLevel = LEVELS.calcRequiredXp(currentLevel)
+        const xpForNextLevel = LEVELS.calcRequiredXp(currentLevel + 1)
+
+        const progressXp = totalXp - xpForCurrentLevel
+        const levelSpan = xpForNextLevel - xpForCurrentLevel
+
+        // Safety for level 0
+        if (levelSpan <= 0) return { current: 0, max: 100, percent: 0 }
+
+        const percent = Math.min(100, Math.floor((progressXp / levelSpan) * 100))
+        return { current: progressXp, max: levelSpan, percent }
     }
 };
