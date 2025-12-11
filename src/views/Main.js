@@ -69,6 +69,31 @@ export default class Main {
            </div>
         </header>
 
+        <!-- Announcement Banner -->
+        <div style="
+          background: linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,152,0,0.15) 100%);
+          border: 2px solid rgba(255,193,7,0.4);
+          border-radius: 12px;
+          padding: 14px 16px;
+          margin: 16px 0 20px 0;
+          text-align: center;
+          box-shadow: 0 4px 12px rgba(255,193,7,0.2);
+          animation: pulse 2s ease-in-out infinite;
+        ">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">🏆</span>
+            <div>
+              <div style="font-weight: bold; color: var(--color-accent); font-size: 1rem; margin-bottom: 2px;">
+                주간 1위 보상
+              </div>
+              <div style="color: #ddd; font-size: 0.85rem;">
+                매주 월요일 초기화 · 스타벅스 아메리카노 쿠폰 증정
+              </div>
+            </div>
+            <span style="font-size: 1.3rem;">☕</span>
+          </div>
+        </div>
+
         <section class="rank-section">
            <h3>Weekly Ranking</h3>
 

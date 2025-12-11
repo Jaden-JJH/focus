@@ -253,7 +253,8 @@ export class GameEngine {
     handleCorrect() {
         clearInterval(this.timerId)
 
-        // FX: Correct
+        // FX: Correct - Show visual feedback
+        this.showCorrectFeedback()
 
         setTimeout(() => {
             this.state.round++
@@ -264,6 +265,78 @@ export class GameEngine {
             }
             this.nextRound()
         }, 500)
+    }
+
+    showCorrectFeedback() {
+        // Create confetti/celebration overlay
+        const feedback = document.createElement('div')
+        feedback.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--color-success);
+            text-shadow: 0 0 20px rgba(105, 240, 174, 0.8);
+            z-index: 1000;
+            animation: correctPulse 0.5s ease-out;
+            pointer-events: none;
+        `
+        feedback.innerText = '✓'
+        document.body.appendChild(feedback)
+
+        // Create confetti particles
+        for (let i = 0; i < 15; i++) {
+            this.createConfetti()
+        }
+
+        // Flash background green
+        const originalBg = document.body.style.backgroundColor
+        document.body.style.backgroundColor = 'rgba(76, 175, 80, 0.2)'
+
+        setTimeout(() => {
+            document.body.style.backgroundColor = originalBg
+            feedback.remove()
+        }, 500)
+    }
+
+    createConfetti() {
+        const confetti = document.createElement('div')
+        const colors = ['#ffd740', '#69f0ae', '#7c4dff', '#ff5252', '#00bcd4']
+        const color = colors[Math.floor(Math.random() * colors.length)]
+        const size = Math.random() * 8 + 4
+        const startX = Math.random() * window.innerWidth
+        const startY = window.innerHeight / 2
+        const endX = startX + (Math.random() - 0.5) * 300
+        const endY = startY + Math.random() * 400
+
+        confetti.style.cssText = `
+            position: fixed;
+            left: ${startX}px;
+            top: ${startY}px;
+            width: ${size}px;
+            height: ${size}px;
+            background-color: ${color};
+            border-radius: 50%;
+            z-index: 999;
+            pointer-events: none;
+            animation: confettiFall 0.8s ease-out forwards;
+            --end-x: ${endX}px;
+            --end-y: ${endY}px;
+        `
+        document.body.appendChild(confetti)
+
+        // Animate using transform
+        confetti.animate([
+            { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+            { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+        ], {
+            duration: 800,
+            easing: 'ease-out'
+        })
+
+        setTimeout(() => confetti.remove(), 800)
     }
 
     handleWrong() {

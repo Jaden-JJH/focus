@@ -1,6 +1,7 @@
 import { GameEngine } from '../core/GameEngine.js'
 import { navigateTo } from '../core/router.js'
 import { dataService } from '../services/dataService.js'
+import { store } from '../core/store.js'
 
 export default class Game {
     constructor(container) {
@@ -18,11 +19,21 @@ export default class Game {
       </div>
     `
 
+        // Get current rank before game starts (for rank movement tracking)
+        const user = store.getState().user
+        let initialRank = null
+        if (user && !user.isGuest) {
+            const rankData = await dataService.getMyRank(user.id)
+            initialRank = rankData.rank
+        }
+
         // Initialize Engine
         const gameContainer = document.getElementById('game-container')
         const engine = new GameEngine(gameContainer, (result) => {
             // Game Over Callback
             console.log('Game Over Result:', result)
+            // Add initial rank to result for rank movement tracking
+            result.initialRank = initialRank
             // Navigate to Result with state
             navigateTo('/result', result)
         })

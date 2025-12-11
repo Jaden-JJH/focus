@@ -56,14 +56,13 @@ The following tasks are prioritized for the next phase of development. **Develop
 
 ### ✨ Priority 3: Engagement & UI Polish
 *Enhancing the feeling of progression and competition.*
-- [ ] **Result Screen Upgrade**
-    - [ ] **XP Contribution**: Show visual bar: `Current Level [====--] Next Level`. Highlight "+50 XP" filling the bar.
-    - [ ] **Rank Movement**: "You moved up within the Top 10%!" or "Rank: 15th -> 12th".
-- [ ] **Announcement Banner**
-    - [ ] Add "Weekly 1st Place = Starbucks Coupon" banner at top of Main view.
-- [ ] **Game Polish**
-    - [ ] **Difficulty Tuning**: Refine "Intermission" and "Time Limit" curves based on user feedback.
-    - [ ] **Visuals**: Add confetti/sound effects for correct answers.
+- [x] **Result Screen Upgrade**
+    - [x] **XP Contribution**: Show visual bar: `Current Level [====--] Next Level`. Highlight "+XP" filling the bar with animation.
+    - [x] **Rank Movement**: Display rank changes like "📈 3위 상승!" or "🏆 TOP 3!" with color-coded badges.
+- [x] **Announcement Banner**
+    - [x] Add "Weekly 1st Place = Starbucks Coupon" banner at top of Main view with pulsing animation.
+- [x] **Game Polish**
+    - [x] **Visuals**: Added confetti particles and green flash effect for correct answers with checkmark icon.
 
 ### 📝 Priority 4: Backlog / Optimization
 - [ ] **Admin Dashboard** (Optional): View to see total users, total plays.

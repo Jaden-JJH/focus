@@ -103,6 +103,32 @@ button {
     }
 }
 
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(255, 193, 7, 0.4);
+        transform: scale(1.02);
+    }
+}
+
+@keyframes correctPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+}
+
 /* Base Utility Classes */
 .btn-primary {
     background-color: var(--color-accent);

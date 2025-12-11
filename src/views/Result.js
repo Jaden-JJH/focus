@@ -1,5 +1,6 @@
 import { dataService } from '../services/dataService.js'
 import { store } from '../core/store.js'
+import { LEVELS } from '../config/gameConfig.js'
 
 export default class Result {
     constructor(container) {
@@ -8,7 +9,13 @@ export default class Result {
 
     async render() {
         const state = history.state || {} // Router pushState data
-        const { round, xp } = state
+        const { round, xp, initialRank } = state
+        const user = store.getState().user
+
+        // Store initial level and XP before saving record
+        const initialLevel = user ? user.level : 1
+        const initialTotalXp = user ? (user.total_xp || 0) : 0
+        const initialProgress = LEVELS.calcXpProgress(initialTotalXp, initialLevel)
 
         this.container.innerHTML = `
       <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
@@ -22,6 +29,38 @@ export default class Result {
                 <span>XP Earned</span>
                 <span class="value link-color">+${xp || 0} XP</span>
             </div>
+        </div>
+
+        <!-- XP Progress Section -->
+        ${user && !user.isGuest ? `
+        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin: 20px 0; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 0.9rem; color: #aaa;">Level Progress</span>
+                <span id="level-display" style="font-weight: bold; color: var(--color-accent);">Lv. ${initialLevel}</span>
+            </div>
+
+            <div class="xp-bar-container" style="background: #333; height: 24px; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid #555;">
+                <div id="xp-bar-fill" style="background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-warning) 100%); height: 100%; width: ${initialProgress.percent}%; transition: width 1.5s ease-out, background 0.3s;"></div>
+                <div id="xp-bar-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.8rem; font-weight: bold; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+                    ${initialProgress.current} / ${initialProgress.max}
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 8px; font-size: 0.8rem; color: #888;" id="xp-status">
+                Calculating...
+            </div>
+        </div>
+        ` : ''}
+
+        <!-- Rank Movement Section -->
+        ${user && !user.isGuest ? `
+        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin-bottom: 20px; padding: 16px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none;">
+            <div style="text-align: center;">
+                <div id="rank-movement-text" style="font-size: 1rem; font-weight: bold; color: var(--color-success);"></div>
+                <div id="rank-movement-detail" style="font-size: 0.85rem; color: #aaa; margin-top: 4px;"></div>
+            </div>
+        </div>
+        ` : ''}
         </div>
 
         <div class="action-area" style="margin-top: 30px; display: flex; flex-direction: column; align-items: center; width: 100%;">
@@ -90,24 +129,131 @@ export default class Result {
             })
         }
 
-        // Save Record
-        const user = store.getState().user
+        // Save Record and Animate XP Progress
         if (user && round && !user.isGuest) {
             const oldLevel = user.level
+            const oldTotalXp = user.total_xp || 0
 
             try {
                 await dataService.saveGameRecord(user.id, round, xp)
 
                 const newUser = store.getState().user
                 const newLevel = newUser.level
+                const newTotalXp = newUser.total_xp || 0
 
+                // Animate XP Progress Bar
+                this.animateXpProgress(oldTotalXp, newTotalXp, oldLevel, newLevel, xp)
+
+                // Get new rank and show rank movement
+                const newRankData = await dataService.getMyRank(user.id)
+                this.showRankMovement(initialRank, newRankData.rank, newRankData.maxRound)
+
+                // Show Level Up if applicable
                 if (newLevel > oldLevel) {
-                    this.showLevelUp(newLevel)
+                    setTimeout(() => {
+                        this.showLevelUp(newLevel)
+                    }, 1800) // Show after XP animation completes
                 }
             } catch (e) {
                 console.error("Failed to save record", e)
             }
         }
+    }
+
+    showRankMovement(oldRank, newRank, maxRound) {
+        const rankMovementSection = document.getElementById('rank-movement-section')
+        const rankMovementText = document.getElementById('rank-movement-text')
+        const rankMovementDetail = document.getElementById('rank-movement-detail')
+
+        if (!rankMovementSection || !rankMovementText || !rankMovementDetail) return
+
+        // Calculate rank change
+        let message = ''
+        let detailMessage = ''
+        let backgroundColor = 'rgba(76,175,80,0.1)'
+        let borderColor = 'rgba(76,175,80,0.3)'
+        let textColor = 'var(--color-success)'
+
+        if (!oldRank && newRank) {
+            // First time ranking
+            message = '🎉 랭킹 진입!'
+            detailMessage = `현재 순위: ${newRank}위 (최고 기록: ${maxRound}R)`
+        } else if (oldRank && newRank) {
+            const rankChange = oldRank - newRank // Positive means rank improved (went up)
+
+            if (rankChange > 0) {
+                // Rank improved
+                message = `📈 ${rankChange}위 상승!`
+                detailMessage = `${oldRank}위 → ${newRank}위 (최고 기록: ${maxRound}R)`
+                backgroundColor = 'rgba(76,175,80,0.1)'
+                borderColor = 'rgba(76,175,80,0.3)'
+                textColor = 'var(--color-success)'
+            } else if (rankChange < 0) {
+                // Rank dropped
+                message = `📉 ${Math.abs(rankChange)}위 하락`
+                detailMessage = `${oldRank}위 → ${newRank}위 (최고 기록: ${maxRound}R)`
+                backgroundColor = 'rgba(255,82,82,0.1)'
+                borderColor = 'rgba(255,82,82,0.3)'
+                textColor = 'var(--color-danger)'
+            } else {
+                // Rank stayed the same
+                message = '📊 순위 유지'
+                detailMessage = `현재 순위: ${newRank}위 (최고 기록: ${maxRound}R)`
+                backgroundColor = 'rgba(255,215,64,0.1)'
+                borderColor = 'rgba(255,215,64,0.3)'
+                textColor = 'var(--color-warning)'
+            }
+
+            // Special messages for top ranks
+            if (newRank <= 3) {
+                detailMessage += ' 🏆 TOP 3!'
+            } else if (newRank <= 10) {
+                detailMessage += ' ⭐ TOP 10!'
+            }
+        }
+
+        // Apply styles and show
+        if (message) {
+            rankMovementSection.style.background = backgroundColor
+            rankMovementSection.style.borderColor = borderColor
+            rankMovementText.style.color = textColor
+            rankMovementText.innerText = message
+            rankMovementDetail.innerText = detailMessage
+
+            setTimeout(() => {
+                rankMovementSection.style.display = 'block'
+                rankMovementSection.style.animation = 'fadeIn 0.5s ease-out'
+            }, 1000) // Show after a short delay
+        }
+    }
+
+    animateXpProgress(oldTotalXp, newTotalXp, oldLevel, newLevel, earnedXp) {
+        const xpBarFill = document.getElementById('xp-bar-fill')
+        const xpBarText = document.getElementById('xp-bar-text')
+        const xpStatus = document.getElementById('xp-status')
+        const levelDisplay = document.getElementById('level-display')
+
+        if (!xpBarFill || !xpBarText || !xpStatus || !levelDisplay) return
+
+        // Calculate new progress
+        const newProgress = LEVELS.calcXpProgress(newTotalXp, newLevel)
+
+        // Animate the progress bar
+        setTimeout(() => {
+            xpBarFill.style.width = `${newProgress.percent}%`
+            xpBarText.innerText = `${newProgress.current} / ${newProgress.max}`
+
+            // Update status text
+            if (newLevel > oldLevel) {
+                xpStatus.innerHTML = `🎉 <span style="color: var(--color-warning);">LEVEL UP!</span> Lv. ${oldLevel} → Lv. ${newLevel}`
+                levelDisplay.innerText = `Lv. ${newLevel}`
+
+                // Add celebration effect to the bar
+                xpBarFill.style.background = 'linear-gradient(90deg, var(--color-warning) 0%, var(--color-accent) 100%)'
+            } else {
+                xpStatus.innerHTML = `<span style="color: var(--color-accent);">+${earnedXp} XP</span> 획득!`
+            }
+        }, 300)
     }
 
     copyToClipboard(text, url) {
