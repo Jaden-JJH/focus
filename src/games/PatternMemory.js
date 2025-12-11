@@ -5,9 +5,16 @@ export class PatternMemory {
     }
 
     render() {
-        const gridSize = 3
+        // Upgrade to 4x4 as requested
+        const gridSize = 4
         const totalCells = gridSize * gridSize
-        const targetCount = 3 // 2~3 based on difficulty
+
+        // Scale targets with difficulty (Min 3, Max 8)
+        // Difficulty 1~10: 3~4 targets
+        // Difficulty 20+: 5~6 targets
+        let targetCount = 3 + Math.floor(this.config.difficulty / 10)
+        if (targetCount > 8) targetCount = 8
+        if (targetCount < 4) targetCount = 4 // Minimum 4 for 4x4 feel
 
         const indices = Array(totalCells).fill(0).map((_, i) => i)
         indices.sort(() => Math.random() - 0.5)

@@ -5,25 +5,25 @@ export class NumberOrder {
     }
 
     render() {
-        const count = 4 // Always 1 to 4 for speed? Or scale?
-        // Plan says: 3x3 board, 1~4 numbers.
         const gridSize = 3
         const numbers = [1, 2, 3, 4]
 
-        // Create 9 positions, pick 4
+        // Randomize Board Positions
         const positions = Array(gridSize * gridSize).fill(null).map((_, i) => i)
         positions.sort(() => Math.random() - 0.5)
 
         const gridItems = Array(gridSize * gridSize).fill(null)
-
         numbers.forEach((num, i) => {
             const pos = positions[i]
             gridItems[pos] = num
         })
 
+        // Randomize Target Sequence (e.g., 2, 4, 1, 3)
+        const targetSequence = [...numbers].sort(() => Math.random() - 0.5)
+
         this.container.innerHTML = `
       <div class="game-instruction">
-         Touch 1 → 4
+         Touch: <span style="color:var(--color-accent-light)">${targetSequence.join(' → ')}</span>
       </div>
       <div class="game-grid" style="grid-template-columns: repeat(${gridSize}, 1fr)">
          ${gridItems.map((val, idx) => `
@@ -34,18 +34,20 @@ export class NumberOrder {
       </div>
     `
 
-        let currentTarget = 1
+        let currentStep = 0
 
         this.container.querySelectorAll('.number-item').forEach(el => {
             if (el.classList.contains('empty')) return
 
             el.addEventListener('click', () => {
                 const val = parseInt(el.dataset.val)
+                const currentTarget = targetSequence[currentStep]
+
                 if (val === currentTarget) {
                     el.classList.add('found')
                     el.style.opacity = '0.3'
-                    currentTarget++
-                    if (currentTarget > 4) {
+                    currentStep++
+                    if (currentStep >= targetSequence.length) {
                         this.config.onCorrect()
                     }
                 } else {

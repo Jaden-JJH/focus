@@ -49,7 +49,8 @@ body {
     margin: 0;
     padding: 0;
     font-family: var(--font-family);
-    background-color: var(--color-bg-primary);
+    background-color: #000;
+    /* Dark background for desktop outer area */
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
@@ -61,12 +62,20 @@ body {
 }
 
 #app {
-    width: 100vw;
+    width: 100%;
+    max-width: 480px;
+    /* Mobile max width */
     height: 100vh;
+    margin: 0 auto;
+    /* Center */
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
+    background-color: var(--color-bg-primary);
+    /* App background */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    /* Pop out effect */
 }
 
 button {
