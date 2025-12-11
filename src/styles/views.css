@@ -1,0 +1,71 @@
+/* Main View */
+.main-container {
+    padding: var(--spacing-md);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.level-badge {
+    background: var(--color-accent);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: bold;
+}
+
+.currency {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-warning);
+    font-weight: bold;
+}
+
+.action-area {
+    margin-top: auto;
+    display: flex;
+    justify-content: center;
+    padding-bottom: var(--spacing-xl);
+}
+
+/* Result View */
+.result-card {
+    background: var(--color-bg-card);
+    padding: 20px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 300px;
+    margin-top: 20px;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.result-row .value {
+    font-weight: bold;
+}
+
+.link-color {
+    color: var(--color-success);
+}
