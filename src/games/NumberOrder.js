@@ -5,7 +5,7 @@ export class NumberOrder {
     }
 
     render() {
-        const gridSize = 3
+        const gridSize = 4 // 4x4 Grid
         const numbers = [1, 2, 3, 4]
 
         // Randomize Board Positions
@@ -25,7 +25,7 @@ export class NumberOrder {
       <div class="game-instruction">
          Touch: <span style="color:var(--color-accent-light)">${targetSequence.join(' → ')}</span>
       </div>
-      <div class="game-grid" style="grid-template-columns: repeat(${gridSize}, 1fr)">
+      <div class="game-grid" style="grid-template-columns: repeat(${gridSize}, 1fr); grid-template-rows: repeat(${gridSize}, 1fr);">
          ${gridItems.map((val, idx) => `
             <div class="grid-item number-item ${val === null ? 'empty' : ''}" data-val="${val}">
                ${val !== null ? val : ''}

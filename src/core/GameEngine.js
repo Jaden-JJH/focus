@@ -56,9 +56,55 @@ export class GameEngine {
         if (!this.state.isPlaying) return
 
         // 1. Calculate Difficulty
+        const prevTimeLimit = this.state.timeLimit
         this.state.timeLimit = LEVELS.calcTimeLimit(this.state.round)
         this.state.timeLeft = this.state.timeLimit
 
+        // Check for Difficulty Tier Change (Specific User Logic)
+        // 5s~4s range: Round 1 (No intermission for 5->4)
+        // < 4s: Round 2
+        // < 3s: Round 3
+        // 2s: Final Round
+
+        let showIntermission = false
+        let label = ''
+        let subLabel = ''
+
+        if (this.state.round === 1) {
+            showIntermission = true
+            label = 'Round 1'
+            subLabel = 'Start!'
+        } else if (prevTimeLimit >= 4 && this.state.timeLimit < 4) {
+            showIntermission = true
+            label = 'Round 2'
+            subLabel = 'Speed Up!'
+        } else if (prevTimeLimit >= 3 && this.state.timeLimit < 3) {
+            showIntermission = true
+            label = 'Round 3'
+            subLabel = 'Hurry Up!'
+        } else if (prevTimeLimit > 2 && this.state.timeLimit <= 2) {
+            showIntermission = true
+            label = 'Final Round'
+            subLabel = 'Maximum Speed'
+        }
+
+        if (showIntermission) {
+            this.showIntermission(label, subLabel, () => {
+                this.proceedToRound()
+            })
+            // Update header while waiting
+            if (this.onRoundUpdate) {
+                this.onRoundUpdate({
+                    round: this.state.round,
+                    maxTime: this.state.timeLimit
+                })
+            }
+        } else {
+            this.proceedToRound()
+        }
+    }
+
+    proceedToRound() {
         // 2. Select Game
         const GameClass = this.selectGame()
         if (!GameClass) {
@@ -78,13 +124,33 @@ export class GameEngine {
         this.state.currentGameInstance.render()
         this.startTimer()
 
-        // Update View (Call callback if provided to update header)
+        // Update View
         if (this.onRoundUpdate) {
             this.onRoundUpdate({
                 round: this.state.round,
                 maxTime: this.state.timeLimit
             })
         }
+    }
+
+    showIntermission(label, subLabel, callback) {
+        this.container.innerHTML = `
+            <div style="
+                flex:1; 
+                display:flex; 
+                flex-direction:column; 
+                justify-content:center; 
+                align-items:center; 
+                background:rgba(0,0,0,0.8);
+                color:#fff;
+                animation: fadeIn 0.2s;
+            ">
+                <h2 style="font-size:3rem; margin-bottom:1rem; color:var(--color-accent);">${label}</h2>
+                <div style="font-size:1.5rem; color:#fff;">${subLabel}</div>
+                <div style="margin-top:20px; font-size:1rem; color:#888;">Current Score: ${this.state.score}</div>
+            </div>
+        `
+        setTimeout(callback, 1500) // 1.5s delay (User asked for ~1s, giving a bit more)
     }
 
     selectGame() {
