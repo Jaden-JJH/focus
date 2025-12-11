@@ -1,12 +1,27 @@
 export class NumberOrder {
-    constructor(container, { difficulty, onCorrect, onWrong }) {
+    constructor(container, { difficulty, roundTier, onCorrect, onWrong }) {
         this.container = container
-        this.config = { difficulty, onCorrect, onWrong }
+        this.config = { difficulty, roundTier, onCorrect, onWrong }
     }
 
     render() {
-        const gridSize = 4 // 4x4 Grid
-        const numbers = [1, 2, 3, 4]
+        const tier = this.config.roundTier || 1
+        const gridSize = 4 // Fixed 4x4 grid
+
+        // Select number count based on Round Tier
+        let numberCount
+        if (tier === 3) {
+            // Round 3: 6 numbers
+            numberCount = 6
+        } else if (tier === 2) {
+            // Round 2: 5 numbers
+            numberCount = 5
+        } else {
+            // Round 1: 4 numbers
+            numberCount = 4
+        }
+
+        const numbers = Array.from({ length: numberCount }, (_, i) => i + 1)
 
         // Randomize Board Positions
         const positions = Array(gridSize * gridSize).fill(null).map((_, i) => i)

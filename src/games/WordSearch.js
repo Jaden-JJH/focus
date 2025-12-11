@@ -1,15 +1,42 @@
 export class WordSearch {
-    constructor(container, { difficulty, onCorrect, onWrong }) {
+    constructor(container, { difficulty, roundTier, onCorrect, onWrong }) {
         this.container = container
-        this.config = { difficulty, onCorrect, onWrong }
+        this.config = { difficulty, roundTier, onCorrect, onWrong }
 
-        // Words DB (Simple for now)
-        this.words = ['집중', '기억', '순간', '도전', '성장', '발전', '몰입', '성공', '희망', '열정', '용기', '지혜']
+        // Words DB by Round Tier
+        // Round 1: 3글자 한글 단어 (쉬움)
+        this.words3Korean = ['집중력', '기억력', '순발력', '도전자', '성장기', '발전소', '몰입감', '성공자', '희망찬', '열정적', '용기있', '지혜롭']
+
+        // Round 2: 2글자 한글 단어 (중간)
+        this.words2Korean = ['집중', '기억', '순간', '도전', '성장', '발전', '몰입', '성공', '희망', '열정', '용기', '지혜']
+
+        // Round 3: 3글자 영어 단어 (어려움)
+        this.words3English = ['add', 'run', 'set', 'get', 'put', 'pop', 'top', 'win', 'fix', 'try', 'new', 'old', 'hot', 'big']
     }
 
     render() {
-        const gridSize = 5
-        const targetWord = this.getRandomItem(this.words)
+        const tier = this.config.roundTier || 1
+
+        // Select word list and grid size based on Round Tier
+        let wordList, fillChars, gridSize
+        if (tier === 3) {
+            // Round 3: 3글자 영어 단어, 5x5
+            wordList = this.words3English
+            fillChars = 'abcdefghijklmnopqrstuvwxyz'
+            gridSize = 5
+        } else if (tier === 2) {
+            // Round 2: 3글자 한글 단어, 5x5
+            wordList = this.words3Korean
+            fillChars = '가나다라마바사아자차카타파하강남동북민물불산들의지희망사랑우정행복'
+            gridSize = 5
+        } else {
+            // Round 1: 2글자 한글 단어, 4x4
+            wordList = this.words2Korean
+            fillChars = '가나다라마바사아자차카타파하강남동북민물불산들의지희망사랑우정행복'
+            gridSize = 4
+        }
+
+        const targetWord = this.getRandomItem(wordList)
 
         // Create Grid
         const grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(''))
@@ -24,12 +51,11 @@ export class WordSearch {
             else grid[row][col + i] = targetWord[i]
         }
 
-        // Fill Randoms with random syllables
-        const syllables = '가나다라마바사아자차카타파하강남동북민물불산들의지희망사랑우정행복'
+        // Fill Randoms with appropriate characters
         for (let r = 0; r < gridSize; r++) {
             for (let c = 0; c < gridSize; c++) {
                 if (!grid[r][c]) {
-                    grid[r][c] = syllables[Math.floor(Math.random() * syllables.length)]
+                    grid[r][c] = fillChars[Math.floor(Math.random() * fillChars.length)]
                 }
             }
         }
