@@ -80,14 +80,14 @@ export default class Main {
           box-shadow: 0 4px 12px rgba(255,193,7,0.2);
           animation: pulse 2s ease-in-out infinite;
         ">
-          <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
             <span style="font-size: 1.3rem;">🏆</span>
             <div>
-              <div style="font-weight: bold; color: var(--color-accent); font-size: 1rem; margin-bottom: 2px;">
+              <div style="font-weight: bold; color: white(--color-accent); font-size: 1rem; margin-bottom: 2px;">
                 주간 1위 보상
               </div>
               <div style="color: #ddd; font-size: 0.85rem;">
-                매주 월요일 초기화 · 스타벅스 아메리카노 쿠폰 증정
+                스타벅스 아메리카노 쿠폰 증정
               </div>
             </div>
             <span style="font-size: 1.3rem;">☕</span>
@@ -99,7 +99,7 @@ export default class Main {
 
            <!-- My Rank Section -->
            ${!user.isGuest ? `
-           <div id="my-rank-section" style="background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+           <div id="my-rank-section" style="background: rgba(0, 0, 0, 0.32); border: 0.5px solid rgba(255, 255, 255, 1); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
              <div style="display: flex; justify-content: space-between; align-items: center;">
                <span style="font-weight: bold; color: var(--color-accent);">내 랭킹</span>
                <div id="my-rank-info" style="text-align: right;">
