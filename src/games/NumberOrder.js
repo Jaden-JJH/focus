@@ -11,8 +11,8 @@ export class NumberOrder {
         // Select number count based on Round Tier
         let numberCount
         if (tier === 3) {
-            // Round 3: 6 numbers
-            numberCount = 6
+            // Round 3: 5 numbers
+            numberCount = 5
         } else if (tier === 2) {
             // Round 2: 5 numbers
             numberCount = 5
