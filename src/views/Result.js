@@ -20,22 +20,24 @@ export default class Result {
         this.container.innerHTML = `
       <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
         <h2>Game Over</h2>
-        <div class="result-card">
+
+        <!-- Result Card with unified width -->
+        <div class="result-card" style="width: 100%; max-width: 400px; margin: 20px 0;">
             <div class="result-row">
-                <span>Round Reached</span>
+                <span>라운드</span>
                 <span class="value">${round || 0}</span>
             </div>
             <div class="result-row">
-                <span>XP Earned</span>
+                <span>경험치</span>
                 <span class="value link-color">+${xp || 0} XP</span>
             </div>
         </div>
 
         <!-- XP Progress Section -->
         ${user && !user.isGuest ? `
-        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin: 20px 0; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin-bottom: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 0.9rem; color: #aaa;">Level Progress</span>
+                <span style="font-size: 0.9rem; color: #aaa;">레벨 진행도</span>
                 <span id="level-display" style="font-weight: bold; color: var(--color-accent);">Lv. ${initialLevel}</span>
             </div>
 
@@ -54,16 +56,16 @@ export default class Result {
 
         <!-- Rank Movement Section -->
         ${user && !user.isGuest ? `
-        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin-bottom: 20px; padding: 16px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none;">
+        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin-bottom: 20px; padding: 20px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none;">
             <div style="text-align: center;">
                 <div id="rank-movement-text" style="font-size: 1rem; font-weight: bold; color: var(--color-success);"></div>
                 <div id="rank-movement-detail" style="font-size: 0.85rem; color: #aaa; margin-top: 4px;"></div>
             </div>
         </div>
         ` : ''}
-        </div>
 
-        <div class="action-area" style="margin-top: 30px; display: flex; flex-direction: column; align-items: center; width: 100%;">
+        <!-- Action Buttons with unified width -->
+        <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px;">
            <div style="display: flex; gap: 10px; width: 100%;">
              <button id="retry-btn" class="btn-primary" style="flex: 4; min-height: 48px;">다시 시도</button>
              <button id="share-btn" style="flex: 1; min-height: 48px; background: #2a2a2a; border: 1px solid #ffc107; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
@@ -197,7 +199,7 @@ export default class Result {
                 textColor = 'var(--color-danger)'
             } else {
                 // Rank stayed the same
-                message = '📊 순위 유지'
+                message = '순위 유지'
                 detailMessage = `현재 순위: ${newRank}위 (최고 기록: ${maxRound}R)`
                 backgroundColor = 'rgba(255,215,64,0.1)'
                 borderColor = 'rgba(255,215,64,0.3)'

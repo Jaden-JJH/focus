@@ -259,7 +259,8 @@ export const dataService = {
                 user_id,
                 max_round,
                 users (
-                    nickname
+                    nickname,
+                    level
                 )
             `)
             .order('max_round', { ascending: false })

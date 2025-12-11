@@ -294,8 +294,11 @@ export default class Main {
       listEl.innerHTML = '<div style="text-align:center; color:#888;">No records yet</div>'
     } else {
       listEl.innerHTML = rankings.map((r, idx) => `
-              <div class="rank-item" style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333;">
-                  <span>${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
+              <div class="rank-item" style="display:flex; justify-content:space-between; align-items: center; padding:8px 0; border-bottom:1px solid #333;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span>${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
+                      <span class="level-badge" style="font-size: 0.7rem; padding: 2px 6px;">Lv. ${r.users?.level || 1}</span>
+                  </div>
                   <span>${r.max_round}R</span>
               </div>
           `).join('')
