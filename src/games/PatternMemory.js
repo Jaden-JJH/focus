@@ -1,20 +1,31 @@
 export class PatternMemory {
-    constructor(container, { difficulty, onCorrect, onWrong }) {
+    constructor(container, { difficulty, roundTier, onCorrect, onWrong }) {
         this.container = container
-        this.config = { difficulty, onCorrect, onWrong }
+        this.config = { difficulty, roundTier, onCorrect, onWrong }
     }
 
     render() {
-        // Upgrade to 4x4 as requested
-        const gridSize = 4
+        // Calculate grid size based on Round Tier
+        // Round 1 (timeLimit >= 4s): 4x4
+        // Round 2 (timeLimit < 4s): 5x5
+        // Round 3 (timeLimit < 3s): 6x6
+        let gridSize = 4
+        const tier = this.config.roundTier || 1
+
+        if (tier === 3) {
+            gridSize = 6
+        } else if (tier === 2) {
+            gridSize = 5
+        }
+
         const totalCells = gridSize * gridSize
 
-        // Scale targets with difficulty (Min 3, Max 8)
-        // Difficulty 1~10: 3~4 targets
-        // Difficulty 20+: 5~6 targets
-        let targetCount = 3 + Math.floor(this.config.difficulty / 10)
+        // Scale targets with grid size
+        // For 4x4 (16 cells): 4 targets
+        // For 5x5 (25 cells): 5 targets
+        // For 6x6 (36 cells): 6 targets
+        let targetCount = gridSize
         if (targetCount > 8) targetCount = 8
-        if (targetCount < 4) targetCount = 4 // Minimum 4 for 4x4 feel
 
         const indices = Array(totalCells).fill(0).map((_, i) => i)
         indices.sort(() => Math.random() - 0.5)

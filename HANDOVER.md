@@ -45,14 +45,14 @@ The following tasks are prioritized for the next phase of development. **Develop
 
 ### 🚀 Priority 2: Viral Growth Engines
 *These features are essential for the "1 Coin per Share" loop.*
-- [ ] **Sharing Functionality**
-    - [ ] Implement `Web Share API` (Native Mobile Share) on Result/Main screens.
-    - [ ] Generate Referral Links (e.g., `?ref=USER_ID`).
-    - [ ] **Reward Logic**: When a new user joins via `?ref=USER_ID`, grant +1 `viral_coin` to the referrer.
-- [ ] **SEO & Metadata (OG Tags)**
-    - [ ] Add `og:image`, `og:title`, `og:description` in `index.html`.
-    - [ ] Design and add a compelling `og-image.png` (Game screenshot + "Can you beat level 5?").
-    - [ ] Add custom Favicon.
+- [x] **Sharing Functionality**
+    - [x] Implement `Web Share API` (Native Mobile Share) on Result/Main screens.
+    - [x] Generate Referral Links (e.g., `?ref=USER_ID`).
+    - [x] **Reward Logic**: When a new user joins via `?ref=USER_ID`, grant +1 `viral_coin` to the referrer.
+- [x] **SEO & Metadata (OG Tags)**
+    - [x] Add `og:image`, `og:title`, `og:description` in `index.html`.
+    - [x] Design and add a compelling `og-image.png` (Game screenshot + "Can you beat level 5?").
+    - [x] Add custom Favicon.
 
 ### ✨ Priority 3: Engagement & UI Polish
 *Enhancing the feeling of progression and competition.*

@@ -34,7 +34,9 @@ export class GameEngine {
             timeLeft: CONFIG.INITIAL_TIME_LIMIT,
             isPlaying: false,
             currentGameInstance: null,
-            history: [] // Last N games to check constraints
+            history: [], // Last N games to check constraints
+            startTime: null, // Track game start time for focus duration
+            totalFocusTime: 0 // Total time spent focusing
         }
 
         this.timerId = null
@@ -45,6 +47,8 @@ export class GameEngine {
         this.state.score = 0
         this.state.history = []
         this.state.isPlaying = true
+        this.state.startTime = Date.now()
+        this.state.totalFocusTime = 0
 
         // Deduct Coin (optimistic update)
         const currentCoins = store.getState().coins
@@ -125,10 +129,19 @@ export class GameEngine {
             return
         }
 
+        // Calculate current Round Tier based on time limit
+        let roundTier = 1
+        if (this.state.timeLimit < 3) {
+            roundTier = 3
+        } else if (this.state.timeLimit < 4) {
+            roundTier = 2
+        }
+
         // 3. Setup Game UI
         this.container.innerHTML = ''
         this.state.currentGameInstance = new GameClass(this.container, {
             difficulty: this.state.round,
+            roundTier: roundTier, // Pass round tier to game
             onCorrect: () => this.handleCorrect(),
             onWrong: () => this.handleWrong()
         })
@@ -147,20 +160,37 @@ export class GameEngine {
     }
 
     showIntermission(label, subLabel, callback) {
+        // Calculate focus time and percentage
+        const elapsedTime = this.state.startTime ? Math.floor((Date.now() - this.state.startTime) / 1000) : 0
+        const focusMinutes = Math.floor(elapsedTime / 60)
+        const focusSeconds = elapsedTime % 60
+        const focusTimeStr = focusMinutes > 0
+            ? `${focusMinutes}분 ${focusSeconds}초`
+            : `${focusSeconds}초`
+
+        // Calculate focus percentage based on round progress
+        // Assuming MAX_ROUND is the target, calculate percentage
+        const focusPercent = Math.min(100, Math.floor((this.state.round / CONFIG.MAX_ROUND) * 100))
+
         this.container.innerHTML = `
             <div style="
-                flex:1; 
-                display:flex; 
-                flex-direction:column; 
-                justify-content:center; 
-                align-items:center; 
+                flex:1;
+                display:flex;
+                flex-direction:column;
+                justify-content:center;
+                align-items:center;
                 background:rgba(0,0,0,0.8);
                 color:#fff;
                 animation: fadeIn 0.2s;
             ">
                 <h2 style="font-size:3rem; margin-bottom:1rem; color:var(--color-accent);">${label}</h2>
                 <div style="font-size:1.5rem; color:#fff;">${subLabel}</div>
-                <div style="margin-top:20px; font-size:1rem; color:#888;">Current Score: ${this.state.score}</div>
+                <div style="margin-top:20px; font-size:1rem; color:#ffc107;">
+                    💪 집중한 시간: ${focusTimeStr}
+                </div>
+                <div style="margin-top:8px; font-size:1rem; color:#69F0AE;">
+                    🎯 현재 집중도: ${focusPercent}%
+                </div>
             </div>
         `
         setTimeout(callback, 1500) // 1.5s delay (User asked for ~1s, giving a bit more)

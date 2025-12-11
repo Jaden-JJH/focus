@@ -87,11 +87,25 @@ export default class Main {
            <div class="rank-list" id="rank-list">Loading...</div>
         </section>
         
-        <div class="action-area">
-            <button id="play-btn" class="btn-primary" ${state.coins <= 0 ? 'disabled' : ''}>
-               ${user.isGuest ? '무제한 체험 중' : (state.coins > 0 ? '게임 시작 (-1©)' : '코인 부족 (00:00 초기화)')}
-            </button>
-            ${user.isGuest && state.coins <= 0 ? `<button id="login-redirect-btn" style="margin-top:10px; text-decoration:underline;">로그인하고 계속하기</button>` : ''}
+        <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+            <div style="display: flex; gap: 10px; width: 100%;">
+              <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px;" ${state.coins <= 0 ? 'disabled' : ''}>
+                 ${user.isGuest ? '무제한 체험 중' : (state.coins > 0 ? '게임 시작' : '코인 부족')}
+              </button>
+              ${!user.isGuest ? `
+                <button id="share-btn" style="flex: 1; min-height: 48px; background: #2a2a2a; border: 1px solid #ffc107; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                  <img src="/share.svg" alt="공유" style="width: 20px; height: 20px; filter: brightness(0) saturate(100%) invert(82%) sepia(58%) saturate(497%) hue-rotate(359deg) brightness(103%) contrast(101%);">
+                </button>
+              ` : ''}
+            </div>
+
+            ${!user.isGuest ? `
+              <div style="width: 100%; text-align: center; font-size: 0.8rem; color: #ffc107; margin-top: 10px; padding: 8px 0;">
+                💡 친구 초대 시 +1 코인
+              </div>
+            ` : ''}
+
+            ${user.isGuest && state.coins <= 0 ? `<button id="login-redirect-btn" style="margin-top:16px; text-decoration:underline;">로그인하고 계속하기</button>` : ''}
         </div>
       </div>
 
@@ -166,6 +180,79 @@ export default class Main {
       loginBtn.addEventListener('click', () => {
         import('../core/router.js').then(r => r.navigateTo('/'));
       })
+    }
+
+    // Share Button
+    const shareBtn = document.getElementById('share-btn')
+    if (shareBtn) {
+      shareBtn.addEventListener('click', async () => {
+        const _state = store.getState()
+        const user = _state.user
+
+        if (!user || user.isGuest) {
+          alert('로그인 후 공유할 수 있습니다!')
+          return
+        }
+
+        const referralCode = user.referral_code
+        const shareUrl = `${window.location.origin}/?ref=${referralCode}`
+        const shareText = `집중력 게임 Focus에 도전해보세요! 나의 추천 코드로 시작하면 보너스 코인을 드려요!`
+
+        // Check if Web Share API is supported (mainly mobile)
+        if (navigator.share && navigator.canShare) {
+          try {
+            await navigator.share({
+              title: 'Focus - 집중력 게임',
+              text: shareText,
+              url: shareUrl
+            })
+            console.log('Successfully shared via native share')
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              console.error('Error sharing:', err)
+              // Fallback to clipboard
+              copyToClipboard(shareText, shareUrl)
+            }
+          }
+        } else {
+          // Desktop: Copy to clipboard
+          copyToClipboard(shareText, shareUrl)
+        }
+      })
+    }
+
+    function copyToClipboard(text, url) {
+      const fullText = `${text}\n${url}`
+
+      // Modern clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(fullText).then(() => {
+          alert('공유 링크가 클립보드에 복사되었습니다!\n\n친구가 이 링크로 가입하면 +1 코인을 받아요!')
+        }).catch(err => {
+          console.error('Clipboard write failed:', err)
+          fallbackCopyToClipboard(fullText)
+        })
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        fallbackCopyToClipboard(fullText)
+      }
+    }
+
+    function fallbackCopyToClipboard(text) {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+        alert('공유 링크가 복사되었습니다!')
+      } catch (err) {
+        console.error('Fallback copy failed:', err)
+        prompt('공유 링크를 복사하세요:', text)
+      }
+      document.body.removeChild(textArea)
     }
   }
 

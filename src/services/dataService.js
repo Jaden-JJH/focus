@@ -2,6 +2,16 @@ import { supabase } from '../lib/supabase.js'
 import { store } from '../core/store.js'
 import { LEVELS } from '../config/gameConfig.js'
 
+// Helper function to generate unique referral code
+function generateReferralCode(length = 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Removed ambiguous chars (0, O, I, 1)
+    let code = ''
+    for (let i = 0; i < length; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return code
+}
+
 export const dataService = {
     async fetchUserData(userId) {
         const { data, error } = await supabase
@@ -28,7 +38,39 @@ export const dataService = {
         return data
     },
 
-    async createUser(userId, userMetaData) {
+    async createUser(userId, userMetaData, referrerCode = null) {
+        // Generate unique referral code
+        let referralCode = generateReferralCode()
+        let attempts = 0
+        const maxAttempts = 10
+
+        // Check for uniqueness (retry if collision)
+        while (attempts < maxAttempts) {
+            const { data: existing } = await supabase
+                .from('users')
+                .select('id')
+                .eq('referral_code', referralCode)
+                .single()
+
+            if (!existing) break // Code is unique
+            referralCode = generateReferralCode()
+            attempts++
+        }
+
+        // Find referrer's user_id if referrerCode is provided
+        let referredBy = null
+        if (referrerCode) {
+            const { data: referrer } = await supabase
+                .from('users')
+                .select('id')
+                .eq('referral_code', referrerCode)
+                .single()
+
+            if (referrer) {
+                referredBy = referrer.id
+            }
+        }
+
         // Try manual insert in case Trigger failed
         const { data, error } = await supabase
             .from('users')
@@ -38,7 +80,9 @@ export const dataService = {
                 daily_coins: 3, // Default
                 viral_coins: 0, // Default
                 total_xp: 0,
-                level: 1
+                level: 1,
+                referral_code: referralCode,
+                referred_by: referredBy
             })
             .select()
             .single()
@@ -47,6 +91,11 @@ export const dataService = {
             console.warn('Manual user creation failed or already exists:', error)
             // Retry fetch, maybe it exists now
             return this.fetchUserData(userId)
+        }
+
+        // If user was referred, reward the referrer with +1 viral_coin
+        if (referredBy) {
+            await this.rewardReferrer(referredBy)
         }
 
         return data
@@ -280,6 +329,31 @@ export const dataService = {
         return {
             rank: userIndex + 1,
             maxRound: sortedUsers[userIndex][1]
+        }
+    },
+
+    async rewardReferrer(referrerId) {
+        // Give +1 viral_coin to the referrer
+        const { data: referrer, error: fetchError } = await supabase
+            .from('users')
+            .select('viral_coins')
+            .eq('id', referrerId)
+            .single()
+
+        if (fetchError || !referrer) {
+            console.error('Error fetching referrer:', fetchError)
+            return
+        }
+
+        const newViralCoins = (referrer.viral_coins || 0) + 1
+
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ viral_coins: newViralCoins })
+            .eq('id', referrerId)
+
+        if (!updateError) {
+            console.log(`Referrer ${referrerId} rewarded with +1 viral_coin (total: ${newViralCoins})`)
         }
     }
 }

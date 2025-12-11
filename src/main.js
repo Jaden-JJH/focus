@@ -14,13 +14,25 @@ async function init() {
   // Initialize Router
   initRouter(app)
 
+  // Check for referral code in URL and store it
+  const urlParams = new URLSearchParams(window.location.search)
+  const refCode = urlParams.get('ref')
+  if (refCode) {
+    localStorage.setItem('referral_code', refCode)
+    console.log('Referral code detected:', refCode)
+  }
+
   // 1. Deterministic Session Check on Init
   try {
     const currentUser = await authService.getUser()
     if (currentUser) {
       let user = await dataService.fetchUserData(currentUser.id)
       if (!user) {
-        user = await dataService.createUser(currentUser.id, currentUser.user_metadata)
+        // Get stored referral code for new user
+        const storedRefCode = localStorage.getItem('referral_code')
+        user = await dataService.createUser(currentUser.id, currentUser.user_metadata, storedRefCode)
+        // Clear referral code after use
+        localStorage.removeItem('referral_code')
       }
       if (user) {
         console.log('Session restored:', user.nickname)

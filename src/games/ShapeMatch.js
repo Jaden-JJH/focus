@@ -8,9 +8,8 @@ export class ShapeMatch {
     }
 
     render() {
-        // Difficulty scales grid size?
-        // Lv 1-10: 3x3, Lv 11+: 4x4
-        const gridSize = this.config.difficulty > 10 ? 4 : 3
+        // Use 4x4 grid for better difficulty
+        const gridSize = 4
 
         // Generate Items
         const totalItems = gridSize * gridSize
@@ -20,13 +19,37 @@ export class ShapeMatch {
         // Create correct item
         const correctItem = { shape: targetShape, color: targetColor, isTarget: true }
 
-        // Create distractors
+        // Calculate distractor ratio based on difficulty (1-10)
+        // Easy (1-3): 10-30%, Medium (4-7): 35-60%, Hard (8-10): 65-85%
+        const distractorRatio = Math.min(0.85, 0.1 + (this.config.difficulty - 1) * 0.075)
+        const numDistractors = Math.floor((totalItems - 1) * distractorRatio)
+
+        // Create distractors with same shape or same color
         const items = [correctItem]
+        let distractorsAdded = 0
+
+        while (distractorsAdded < numDistractors && items.length < totalItems) {
+            // 50% chance: same shape, different color
+            // 50% chance: same color, different shape
+            const useSameShape = Math.random() < 0.5
+
+            let s, c
+            if (useSameShape) {
+                s = targetShape
+                c = this.getRandomItem(this.colors.filter(color => color !== targetColor))
+            } else {
+                s = this.getRandomItem(this.shapes.filter(shape => shape !== targetShape))
+                c = targetColor
+            }
+
+            items.push({ shape: s, color: c, isTarget: false })
+            distractorsAdded++
+        }
+
+        // Fill remaining slots with completely different items
         while (items.length < totalItems) {
-            const s = this.getRandomItem(this.shapes)
-            const c = this.getRandomItem(this.colors)
-            // Ensure unique if possible or at least not identical to target
-            if (s === targetShape && c === targetColor) continue;
+            const s = this.getRandomItem(this.shapes.filter(shape => shape !== targetShape))
+            const c = this.getRandomItem(this.colors.filter(color => color !== targetColor))
 
             items.push({ shape: s, color: c, isTarget: false })
         }
