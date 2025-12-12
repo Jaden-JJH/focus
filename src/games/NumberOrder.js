@@ -37,8 +37,8 @@ export class NumberOrder {
         const targetSequence = [...numbers].sort(() => Math.random() - 0.5)
 
         this.container.innerHTML = `
-      <div class="game-instruction">
-         Touch: <span style="color:var(--color-accent-light)">${targetSequence.join(' → ')}</span>
+      <div class="game-instruction" style="font-size: 1.6rem;">
+         순서: <span style="color:#ffd740;">${targetSequence.join(' → ')}</span>
       </div>
       <div class="game-grid" style="grid-template-columns: repeat(${gridSize}, 1fr); grid-template-rows: repeat(${gridSize}, 1fr);">
          ${gridItems.map((val, idx) => `
