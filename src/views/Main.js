@@ -63,10 +63,12 @@ export default class Main {
              <span class="level-badge">Lv. ${state.level}</span>
              <span class="nickname">${user.nickname || 'Unknown'}</span>
            </div>
+           ${!user.isGuest ? `
            <div class="currency">
              <span class="coin-icon">©</span>
              <span class="coin-count">${state.coins}</span>
            </div>
+           ` : ''}
         </header>
 
         <!-- Announcement Banner -->
@@ -114,14 +116,19 @@ export default class Main {
         
         <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
             <div style="display: flex; gap: 10px; width: 100%;">
-              <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px;" ${state.coins <= 0 ? 'disabled' : ''}>
-                 ${user.isGuest ? '무제한 체험 중' : (state.coins > 0 ? '게임 시작' : '코인 부족')}
+              <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px;" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
+                 ${user.isGuest
+                    ? ((() => {
+                        const sessionData = localStorage.getItem('guest_session_used')
+                        const sessionUsed = sessionData ? JSON.parse(sessionData).used : false
+                        return sessionUsed ? '로그인하고 시작하기' : '체험 플레이'
+                      })())
+                    : (state.coins > 0 ? '게임 시작' : '코인 부족')
+                  }
               </button>
-              ${!user.isGuest ? `
-                <button id="share-btn" style="flex: 1; min-height: 48px; background: #2a2a2a; border: 1px solid #ffc107; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
-                  <img src="/share.svg" alt="공유" style="width: 20px; height: 20px; filter: brightness(0) saturate(100%) invert(82%) sepia(58%) saturate(497%) hue-rotate(359deg) brightness(103%) contrast(101%);">
-                </button>
-              ` : ''}
+              <button id="share-btn" style="flex: 1; min-height: 48px; background: #2a2a2a; border: 1px solid #ffc107; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                <img src="/share.svg" alt="공유" style="width: 20px; height: 20px; filter: brightness(0) saturate(100%) invert(82%) sepia(58%) saturate(497%) hue-rotate(359deg) brightness(103%) contrast(101%);">
+              </button>
             </div>
 
             ${!user.isGuest ? `
@@ -192,10 +199,31 @@ export default class Main {
 
     const playBtn = document.getElementById('play-btn')
     if (playBtn) {
-      playBtn.addEventListener('click', () => {
+      playBtn.addEventListener('click', async () => {
         const _state = store.getState()
-        if (_state.coins > 0) {
-          import('../core/router.js').then(r => r.navigateTo('/game'));
+        const user = _state.user
+
+        if (user?.isGuest) {
+          const sessionData = localStorage.getItem('guest_session_used')
+          const sessionUsed = sessionData ? JSON.parse(sessionData).used : false
+
+          if (sessionUsed) {
+            // 세션 사용 완료 - 로그인 실행
+            await authService.signInWithGoogle()
+            return
+          }
+
+          // 세션 사용 표시 및 게임 시작
+          localStorage.setItem('guest_session_used', JSON.stringify({
+            used: true,
+            timestamp: Date.now()
+          }))
+          import('../core/router.js').then(r => r.navigateTo('/game'))
+        } else {
+          // 로그인 사용자 플로우
+          if (_state.coins > 0) {
+            import('../core/router.js').then(r => r.navigateTo('/game'))
+          }
         }
       });
     }
@@ -214,7 +242,15 @@ export default class Main {
         const _state = store.getState()
         const user = _state.user
 
-        if (!user || user.isGuest) {
+        if (user?.isGuest) {
+          // 비회원 공유 - 추천 코드 없음
+          const shareUrl = window.location.origin
+          const shareText = '집중력 게임 Focus에 도전해보세요!'
+          copyToClipboard(shareText, shareUrl, true)
+          return
+        }
+
+        if (!user) {
           alert('로그인 후 공유할 수 있습니다!')
           return
         }
@@ -236,34 +272,38 @@ export default class Main {
             if (err.name !== 'AbortError') {
               console.error('Error sharing:', err)
               // Fallback to clipboard
-              copyToClipboard(shareText, shareUrl)
+              copyToClipboard(shareText, shareUrl, false)
             }
           }
         } else {
           // Desktop: Copy to clipboard
-          copyToClipboard(shareText, shareUrl)
+          copyToClipboard(shareText, shareUrl, false)
         }
       })
     }
 
-    function copyToClipboard(text, url) {
+    function copyToClipboard(text, url, isGuest = false) {
       const fullText = `${text}\n${url}`
 
       // Modern clipboard API
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(fullText).then(() => {
-          alert('공유 링크가 클립보드에 복사되었습니다!\n\n친구가 이 링크로 가입하면 +1 코인을 받아요!')
+          if (isGuest) {
+            alert('클립보드에 복사되었습니다. 공유해보세요!')
+          } else {
+            alert('공유 링크가 클립보드에 복사되었습니다!\n\n친구가 이 링크로 가입하면 +1 코인을 받아요!')
+          }
         }).catch(err => {
           console.error('Clipboard write failed:', err)
-          fallbackCopyToClipboard(fullText)
+          fallbackCopyToClipboard(fullText, isGuest)
         })
       } else {
         // Fallback for older browsers or non-secure contexts
-        fallbackCopyToClipboard(fullText)
+        fallbackCopyToClipboard(fullText, isGuest)
       }
     }
 
-    function fallbackCopyToClipboard(text) {
+    function fallbackCopyToClipboard(text, isGuest = false) {
       const textArea = document.createElement('textarea')
       textArea.value = text
       textArea.style.position = 'fixed'
@@ -272,7 +312,11 @@ export default class Main {
       textArea.select()
       try {
         document.execCommand('copy')
-        alert('공유 링크가 복사되었습니다!')
+        if (isGuest) {
+          alert('클립보드에 복사되었습니다. 공유해보세요!')
+        } else {
+          alert('공유 링크가 복사되었습니다!')
+        }
       } catch (err) {
         console.error('Fallback copy failed:', err)
         prompt('공유 링크를 복사하세요:', text)

@@ -66,6 +66,13 @@ export default class Result {
 
         <!-- Action Buttons with unified width -->
         <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px;">
+           ${user && user.isGuest ? `
+           <div style="width: 100%; padding: 16px; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; margin-bottom: 16px; text-align: center;">
+             <div style="font-size: 0.95rem; color: #ffc107; margin-bottom: 8px;">🎮 체험 플레이 완료!</div>
+             <div style="font-size: 0.85rem; color: #aaa;">로그인하고 무제한으로 플레이하세요</div>
+           </div>
+           ` : ''}
+
            <div style="display: flex; gap: 10px; width: 100%;">
              <button id="retry-btn" class="btn-primary" style="flex: 4; min-height: 48px;">다시 시도</button>
              <button id="share-btn" style="flex: 1; min-height: 48px; background: #2a2a2a; border: 1px solid #ffc107; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
@@ -73,19 +80,30 @@ export default class Result {
              </button>
            </div>
 
+           ${!user?.isGuest ? `
            <div style="width: 100%; text-align: center; font-size: 0.8rem; color: #ffc107; margin-top: 10px; padding: 8px 0;">
              💡 친구 초대 시 +1 코인
            </div>
+           ` : ''}
 
            <button id="home-btn" style="margin-top: 8px; color: #888; background: transparent; border: none; cursor: pointer; padding: 8px;">메인으로</button>
         </div>
       </div>
     `
 
-        document.getElementById('retry-btn').addEventListener('click', () => {
-            const currentCoins = store.getState().coins
+        document.getElementById('retry-btn').addEventListener('click', async () => {
+            const _state = store.getState()
+            const user = _state.user
+
+            if (user?.isGuest) {
+                alert('로그인하고 계속 플레이하세요!')
+                import('../core/router.js').then(r => r.navigateTo('/'))
+                return
+            }
+
+            const currentCoins = _state.coins
             if (currentCoins > 0) {
-                import('../core/router.js').then(r => r.navigateTo('/game'));
+                import('../core/router.js').then(r => r.navigateTo('/game'))
             } else {
                 alert('코인이 부족합니다.')
             }
@@ -100,14 +118,22 @@ export default class Result {
         if (shareBtn) {
             shareBtn.addEventListener('click', async () => {
                 const user = store.getState().user
-                if (!user || user.isGuest) {
+
+                if (user?.isGuest) {
+                    const shareUrl = window.location.origin
+                    const shareText = '집중력 게임 Focus에 도전해보세요!'
+                    this.copyToClipboard(shareText, shareUrl, true)
+                    return
+                }
+
+                if (!user) {
                     alert('로그인 후 공유할 수 있습니다!')
                     return
                 }
 
                 const referralCode = user.referral_code
                 const shareUrl = `${window.location.origin}/?ref=${referralCode}`
-                const shareText = `나는 ${round}라운드까지 갔어! 당신은 몇 라운드까지 갈 수 있나요?`
+                const shareText = `나는 ${round}라운드까지 도달했어! 당신은 몇 라운드까지 갈 수 있나요?`
 
                 // Check if Web Share API is supported (mainly mobile)
                 if (navigator.share && navigator.canShare) {
@@ -121,12 +147,12 @@ export default class Result {
                     } catch (err) {
                         if (err.name !== 'AbortError') {
                             console.error('Error sharing:', err)
-                            this.copyToClipboard(shareText, shareUrl)
+                            this.copyToClipboard(shareText, shareUrl, false)
                         }
                     }
                 } else {
                     // Desktop: Copy to clipboard
-                    this.copyToClipboard(shareText, shareUrl)
+                    this.copyToClipboard(shareText, shareUrl, false)
                 }
             })
         }
@@ -258,23 +284,27 @@ export default class Result {
         }, 300)
     }
 
-    copyToClipboard(text, url) {
+    copyToClipboard(text, url, isGuest = false) {
         const fullText = `${text}\n${url}`
 
         // Modern clipboard API
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(fullText).then(() => {
-                alert('공유 링크가 클립보드에 복사되었습니다!\n\n친구가 이 링크로 가입하면 +1 코인을 받아요!')
+                if (isGuest) {
+                    alert('클립보드에 복사되었습니다. 공유해보세요!')
+                } else {
+                    alert('공유 링크가 클립보드에 복사되었습니다!\n\n친구가 이 링크로 가입하면 +1 코인을 받아요!')
+                }
             }).catch(err => {
                 console.error('Clipboard write failed:', err)
-                this.fallbackCopyToClipboard(fullText)
+                this.fallbackCopyToClipboard(fullText, isGuest)
             })
         } else {
-            this.fallbackCopyToClipboard(fullText)
+            this.fallbackCopyToClipboard(fullText, isGuest)
         }
     }
 
-    fallbackCopyToClipboard(text) {
+    fallbackCopyToClipboard(text, isGuest = false) {
         const textArea = document.createElement('textarea')
         textArea.value = text
         textArea.style.position = 'fixed'
@@ -283,7 +313,11 @@ export default class Result {
         textArea.select()
         try {
             document.execCommand('copy')
-            alert('공유 링크가 복사되었습니다!')
+            if (isGuest) {
+                alert('클립보드에 복사되었습니다. 공유해보세요!')
+            } else {
+                alert('공유 링크가 복사되었습니다!')
+            }
         } catch (err) {
             console.error('Fallback copy failed:', err)
             prompt('공유 링크를 복사하세요:', text)

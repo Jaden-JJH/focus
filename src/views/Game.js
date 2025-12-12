@@ -12,8 +12,10 @@ export default class Game {
         this.container.innerHTML = `
       <div class="game-area">
         <div class="game-header">
-           <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
-           <div class="round-info">Round: <span id="round-disp">1</span></div>
+           <div class="timer-container">
+             <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+             <div class="round-label" id="round-disp">ROUND 1</div>
+           </div>
         </div>
         <div id="game-container" style="flex: 1; display:flex; flex-direction:column; justify-content:center;"></div>
       </div>
@@ -54,7 +56,7 @@ export default class Game {
 
         engine.onRoundUpdate = ({ round }) => {
             const el = document.getElementById('round-disp')
-            if (el) el.innerText = round
+            if (el) el.innerText = `ROUND ${round}`
             document.body.style.backgroundColor = ''; // Reset tint
         }
 

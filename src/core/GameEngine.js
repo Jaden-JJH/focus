@@ -89,19 +89,19 @@ export class GameEngine {
 
         if (this.state.round === 1) {
             showIntermission = true
-            label = 'Round 1'
+            label = 'Phase 1'
             subLabel = 'Start!'
         } else if (prevTimeLimit >= 4 && this.state.timeLimit < 4) {
             showIntermission = true
-            label = 'Round 2'
+            label = 'Phase 2'
             subLabel = 'Speed Up!'
         } else if (prevTimeLimit >= 3 && this.state.timeLimit < 3) {
             showIntermission = true
-            label = 'Round 3'
+            label = 'Phase 3'
             subLabel = 'Hurry Up!'
         } else if (prevTimeLimit > 2 && this.state.timeLimit <= 2) {
             showIntermission = true
-            label = 'Final Round'
+            label = 'Final Phase'
             subLabel = 'Maximum Speed'
         }
 
