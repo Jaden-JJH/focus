@@ -51,6 +51,31 @@ export async function handleLocation() {
 
     } catch (err) {
         console.error('Failed to load view:', err)
-        appContainer.innerHTML = '<h1>Error loading page</h1>'
+        appContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; text-align: center;">
+                <div style="font-size: 64px; margin-bottom: 20px;">🔄</div>
+                <h2 style="color: #FFD700; margin-bottom: 10px;">잠시 문제가 발생했어요</h2>
+                <p style="color: #888; margin-bottom: 30px;">페이지를 다시 불러와주세요</p>
+                <button
+                    onclick="window.location.reload()"
+                    style="
+                        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+                        color: #000;
+                        border: none;
+                        padding: 16px 32px;
+                        font-size: 18px;
+                        font-weight: 700;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+                        transition: all 0.2s;
+                    "
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(255, 215, 0, 0.4)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255, 215, 0, 0.3)'"
+                >
+                    새로고침
+                </button>
+            </div>
+        `
     }
 }

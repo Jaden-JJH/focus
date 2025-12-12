@@ -62,6 +62,34 @@ async function init() {
       navigateTo('/')
     }
   })
+
+  // 3. Page Visibility API - Auto recovery when page becomes visible
+  document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden) {
+      // Page became visible again (user returned to app)
+      console.log('Page visible - checking session...')
+      try {
+        const currentUser = await authService.getUser()
+        if (currentUser) {
+          const user = await dataService.fetchUserData(currentUser.id)
+          if (user) {
+            console.log('Session still valid:', user.nickname)
+            // Check and reset daily coins if needed
+            await dataService.checkAndResetDailyCoins(currentUser.id)
+
+            // If we're on an error page or splash, recover to main
+            if (window.location.pathname === '/' ||
+                app.innerHTML.includes('Error loading page') ||
+                app.innerHTML.includes('새로고침')) {
+              navigateTo('/main')
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Session recovery failed:', e)
+      }
+    }
+  })
 }
 
 init().catch(console.error)
