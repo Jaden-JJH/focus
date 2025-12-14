@@ -17,6 +17,22 @@ export const authService = {
         return data
     },
 
+    async signInWithKakao() {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'kakao',
+            options: {
+                redirectTo: window.location.origin
+            }
+        })
+
+        if (error) {
+            console.error('Error logging in with Kakao:', error)
+            throw error
+        }
+
+        return data
+    },
+
     async signOut() {
         const { error } = await supabase.auth.signOut()
         if (error) throw error
