@@ -1,7 +1,7 @@
 export const CONFIG = {
     MIN_TIME_LIMIT: 2.0,    // seconds (Configurable: 1.5 ~ 3.0)
     INITIAL_TIME_LIMIT: 5.0, // seconds
-    DAILY_COINS: 3,
+    DAILY_COINS: 10,
     INVITE_COIN: 1,
     INVITE_MILESTONE: 5,
     INVITE_BONUS: 3,

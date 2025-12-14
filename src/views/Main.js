@@ -57,8 +57,8 @@ export default class Main {
 
     // 3. Render Main View
     this.container.innerHTML = `
-      <div class="main-container">
-        <header class="main-header">
+      <div class="main-container" style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+        <header class="main-header" style="flex-shrink: 0; margin-bottom: 20px;">
            <div class="user-info" id="user-info-area" style="cursor: pointer;">
              <span class="level-badge">Lv. ${state.level}</span>
              <span class="nickname">${user.nickname || 'Unknown'}</span>
@@ -77,10 +77,11 @@ export default class Main {
           border: 2px solid rgba(255,193,7,0.4);
           border-radius: 12px;
           padding: 14px 16px;
-          margin: 16px 0 20px 0;
+          margin-bottom: 2px;
           text-align: center;
           box-shadow: 0 4px 12px rgba(255,193,7,0.2);
           animation: pulse 2s ease-in-out infinite;
+          flex-shrink: 0;
         ">
           <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
             <span style="font-size: 1.3rem;">🏆</span>
@@ -96,12 +97,13 @@ export default class Main {
           </div>
         </div>
 
-        <section class="rank-section">
-           <h3>Weekly Ranking</h3>
+        <!-- Ranking Section -->
+        <section class="rank-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: 4px; min-height: 0; overflow: hidden;">
+           <h3 style="flex-shrink: 0; padding: 2px 0;">Weekly Ranking</h3>
 
-           <!-- My Rank Section -->
+           <!-- My Rank Section (Fixed) -->
            ${!user.isGuest ? `
-           <div id="my-rank-section" style="background: rgba(0, 0, 0, 0.32); border: 0.5px solid rgba(255, 255, 255, 1); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+           <div id="my-rank-section" style="flex-shrink: 0; background: rgba(0, 0, 0, 0.32); border: 0.5px solid rgba(255, 255, 255, 1); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
              <div style="display: flex; justify-content: space-between; align-items: center;">
                <span style="font-weight: bold; color: var(--color-accent);">내 랭킹</span>
                <div id="my-rank-info" style="text-align: right;">
@@ -111,10 +113,12 @@ export default class Main {
            </div>
            ` : ''}
 
-           <div class="rank-list" id="rank-list">Loading...</div>
+           <!-- Scrollable Rank List -->
+           <div class="rank-list" id="rank-list" style="flex: 1; overflow-y: auto; overflow-x: hidden;">잠시만 기다려주세요...</div>
         </section>
-        
-        <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+
+        <!-- Fixed Action Area -->
+        <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%; flex-shrink: 0; padding-top: 6px; background: var(--color-bg);">
             <div style="display: flex; gap: 10px; width: 100%;">
               <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px;" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
                  ${user.isGuest
@@ -132,7 +136,7 @@ export default class Main {
             </div>
 
             ${!user.isGuest ? `
-              <div style="width: 100%; text-align: center; font-size: 0.8rem; color: #ffc107; margin-top: 10px; padding: 8px 0;">
+              <div style="width: 100%; text-align: center; font-size: 0.8rem; color: #ffc107; margin-top: 6px; padding-bottom: 1px;">
                 💡 친구 초대 시 +1 코인
               </div>
             ` : ''}
@@ -343,7 +347,7 @@ export default class Main {
                       <span>${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
                       <span class="level-badge" style="font-size: 0.7rem; padding: 2px 6px;">Lv. ${r.users?.level || 1}</span>
                   </div>
-                  <span>${r.max_round}R</span>
+                  <span style="margin-right: 16px;">${r.max_round}R</span>
               </div>
           `).join('')
     }

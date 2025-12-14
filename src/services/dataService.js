@@ -77,7 +77,7 @@ export const dataService = {
             .insert({
                 id: userId,
                 nickname: userMetaData?.full_name || userMetaData?.name || 'Player',
-                daily_coins: 3, // Default
+                daily_coins: 10, // Default
                 viral_coins: 0, // Default
                 total_xp: 0,
                 level: 1,
@@ -122,7 +122,7 @@ export const dataService = {
             const { data: updated, error: updateError } = await supabase
                 .from('users')
                 .update({
-                    daily_coins: 3,
+                    daily_coins: 10,
                     last_login_date: today
                 })
                 .eq('id', userId)
@@ -130,12 +130,12 @@ export const dataService = {
 
             if (!updateError && updated) {
                 // Update store with new total coins
-                const totalCoins = 3 + (updated[0].viral_coins || 0)
+                const totalCoins = 10 + (updated[0].viral_coins || 0)
                 store.setState({
                     coins: totalCoins,
                     user: { ...store.getState().user, ...updated[0] }
                 })
-                console.log('Daily coins reset to 3')
+                console.log('Daily coins reset to 10')
             }
         }
     },
