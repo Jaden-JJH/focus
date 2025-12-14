@@ -356,5 +356,101 @@ export const dataService = {
         if (!updateError) {
             console.log(`Referrer ${referrerId} rewarded with +1 viral_coin (total: ${newViralCoins})`)
         }
+    },
+
+    async fetchWeeklyActivity(userId) {
+        // Fetch last 7 days of game records
+        const sevenDaysAgo = new Date()
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6) // Include today
+        sevenDaysAgo.setHours(0, 0, 0, 0)
+
+        const { data, error } = await supabase
+            .from('game_records')
+            .select('created_at')
+            .eq('user_id', userId)
+            .gte('created_at', sevenDaysAgo.toISOString())
+
+        if (error) {
+            console.error('Error fetching weekly activity:', error)
+            return []
+        }
+
+        return data || []
+    },
+
+    calculateStreak(weeklyActivity) {
+        if (!weeklyActivity || weeklyActivity.length === 0) {
+            return 0
+        }
+
+        // Get unique play dates (YYYY-MM-DD)
+        const playDates = new Set(
+            weeklyActivity.map(record => {
+                const date = new Date(record.created_at)
+                return date.toISOString().split('T')[0]
+            })
+        )
+
+        const sortedDates = Array.from(playDates).sort().reverse() // Most recent first
+
+        let streak = 0
+        const today = new Date().toISOString().split('T')[0]
+        let currentDate = new Date()
+
+        // Check if user played today or yesterday
+        if (sortedDates[0] !== today) {
+            const yesterday = new Date()
+            yesterday.setDate(yesterday.getDate() - 1)
+            const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+            if (sortedDates[0] !== yesterdayStr) {
+                return 0 // Streak broken
+            }
+            currentDate = yesterday
+        }
+
+        // Count consecutive days
+        for (let i = 0; i < sortedDates.length; i++) {
+            const expectedDate = new Date(currentDate)
+            expectedDate.setDate(expectedDate.getDate() - i)
+            const expectedDateStr = expectedDate.toISOString().split('T')[0]
+
+            if (sortedDates[i] === expectedDateStr) {
+                streak++
+            } else {
+                break
+            }
+        }
+
+        return streak
+    },
+
+    getWeeklyActivityChart(weeklyActivity) {
+        // Create array for last 7 days [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+        const chart = []
+        const today = new Date()
+
+        // Get unique play dates
+        const playDates = new Set(
+            (weeklyActivity || []).map(record => {
+                const date = new Date(record.created_at)
+                return date.toISOString().split('T')[0]
+            })
+        )
+
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(today)
+            date.setDate(date.getDate() - i)
+            const dateStr = date.toISOString().split('T')[0]
+            const dayName = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]
+
+            chart.push({
+                day: dayName,
+                played: playDates.has(dateStr),
+                isToday: i === 0
+            })
+        }
+
+        return chart
     }
 }

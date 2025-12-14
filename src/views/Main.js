@@ -64,50 +64,85 @@ export default class Main {
              <span class="nickname">${user.nickname || 'Unknown'}</span>
            </div>
            ${!user.isGuest ? `
-           <div class="currency">
-             <span class="coin-icon">©</span>
-             <span class="coin-count">${state.coins}</span>
+           <div class="currency" style="display: flex; align-items: center; gap: var(--space-1);">
+             <img src="/icons/coin.svg" alt="coin" class="icon icon-sm" />
+             <span style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--warning);">${state.coins}</span>
            </div>
            ` : ''}
         </header>
 
-        <!-- Announcement Banner -->
+        <!-- XP Progress Card -->
+        ${!user.isGuest ? `
         <div style="
-          background: linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,152,0,0.15) 100%);
-          border: 2px solid rgba(255,193,7,0.4);
-          border-radius: 12px;
-          padding: 14px 16px;
-          margin-bottom: 2px;
-          text-align: center;
-          box-shadow: 0 4px 12px rgba(255,193,7,0.2);
-          animation: pulse 2s ease-in-out infinite;
+          background: var(--gray-800);
+          border: 1px solid var(--primary-500);
+          border-radius: var(--radius-md);
+          padding: var(--space-3);
+          margin-bottom: var(--space-4);
           flex-shrink: 0;
         ">
-          <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
-            <span style="font-size: 1.3rem;">🏆</span>
-            <div>
-              <div style="font-weight: bold; color: white(--color-accent); font-size: 1rem; margin-bottom: 2px;">
-                주간 1위 보상
-              </div>
-              <div style="color: #ddd; font-size: 0.85rem;">
-                스타벅스 아메리카노 쿠폰 증정
-              </div>
-            </div>
-            <span style="font-size: 1.3rem;">☕</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+            <div style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">레벨 진행도</div>
+            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--primary-500);">Lv. ${state.level}</div>
+          </div>
+          <div class="xp-bar-container" style="background: var(--gray-700); height: 8px; border-radius: var(--radius-full); margin-bottom: var(--space-2); overflow: hidden;">
+            <div class="xp-bar-fill" style="background: var(--primary-500); height: 100%; width: ${(() => {
+              const { percent } = LEVELS.calcXpProgress(state.totalXp, state.level)
+              return percent
+            })()}%; transition: var(--transition-base);"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: var(--text-xs); color: var(--gray-300);">${(() => {
+              const { current, max } = LEVELS.calcXpProgress(state.totalXp, state.level)
+              const remaining = max - current
+              return `Lv.${state.level + 1}까지 ${remaining} XP`
+            })()}</span>
+            <span style="font-size: var(--text-xs); color: var(--warning); font-weight: var(--font-bold);">${(() => {
+              const { percent } = LEVELS.calcXpProgress(state.totalXp, state.level)
+              return `${percent}%`
+            })()}</span>
           </div>
         </div>
+        ` : ''}
+
+        <!-- Weekly Activity Card -->
+        ${!user.isGuest ? `
+        <div id="weekly-activity-card" style="
+          background: var(--gray-800);
+          border: 1px solid var(--gray-600);
+          border-radius: var(--radius-md);
+          padding: var(--space-3);
+          margin-bottom: var(--space-4);
+          flex-shrink: 0;
+        ">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+            <div style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">주간 활동</div>
+            <div id="streak-badge" style="display: flex; align-items: center; gap: var(--space-1);">
+              <div class="skeleton" style="width: 60px; height: 16px;"></div>
+            </div>
+          </div>
+          <div id="activity-chart" style="display: flex; justify-content: space-between; gap: var(--space-1);">
+            ${Array(7).fill(0).map((_, i) => `
+              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-1);">
+                <div class="skeleton" style="width: 100%; height: 32px;"></div>
+                <div class="skeleton" style="width: 12px; height: 12px;"></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
 
         <!-- Ranking Section -->
-        <section class="rank-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: 4px; min-height: 0; overflow: hidden;">
-           <h3 style="flex-shrink: 0; padding: 2px 0;">Weekly Ranking</h3>
+        <section class="rank-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: var(--space-1); min-height: 0; overflow: hidden;">
+           <h3 style="flex-shrink: 0; padding: var(--space-1) 0; font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--gray-100);">Weekly Ranking</h3>
 
            <!-- My Rank Section (Fixed) -->
            ${!user.isGuest ? `
-           <div id="my-rank-section" style="flex-shrink: 0; background: rgba(0, 0, 0, 0.32); border: 0.5px solid rgba(255, 255, 255, 1); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+           <div id="my-rank-section" style="flex-shrink: 0; background: var(--gray-800); border: 1px solid var(--primary-500); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-2);">
              <div style="display: flex; justify-content: space-between; align-items: center;">
-               <span style="font-weight: bold; color: var(--color-accent);">내 랭킹</span>
+               <span style="font-weight: var(--font-bold); font-size: var(--text-base); color: var(--gray-100);">내 랭킹</span>
                <div id="my-rank-info" style="text-align: right;">
-                 <div style="font-size: 0.9rem; color: #aaa;">Loading...</div>
+                 <div style="font-size: var(--text-sm); color: var(--gray-400);">Loading...</div>
                </div>
              </div>
            </div>
@@ -118,9 +153,9 @@ export default class Main {
         </section>
 
         <!-- Fixed Action Area -->
-        <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%; flex-shrink: 0; padding-top: 10px; background: var(--color-bg);">
-            <div style="display: flex; gap: 10px; width: 100%;">
-              <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px;" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
+        <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%; flex-shrink: 0; padding-top: var(--space-2); background: var(--gray-900);">
+            <div style="display: flex; gap: var(--space-2); width: 100%;">
+              <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px; font-size: var(--text-lg);" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
                  ${user.isGuest
                     ? ((() => {
                         const sessionData = localStorage.getItem('guest_session_used')
@@ -130,14 +165,15 @@ export default class Main {
                     : (state.coins > 0 ? '게임 시작' : '코인 부족')
                   }
               </button>
-              <button id="share-btn" style="flex: 1; min-height: 48px; background: #2a2a2a; border: 1px solid #ffc107; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
-                <img src="/share.svg" alt="공유" style="width: 20px; height: 20px; filter: brightness(0) saturate(100%) invert(82%) sepia(58%) saturate(497%) hue-rotate(359deg) brightness(103%) contrast(101%);">
+              <button id="share-btn" style="flex: 1; min-height: 48px; background: var(--gray-700); border: 1px solid var(--gray-600); border-radius: var(--radius-lg); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: var(--transition-fast);">
+                <img src="/share.svg" alt="공유" class="icon icon-md" />
               </button>
             </div>
 
             ${!user.isGuest ? `
-              <div style="width: 100%; text-align: center; font-size: 0.8rem; color: #ffc107; margin-top: 10px; padding-bottom: 4px;">
-                💡 친구 초대 시 +1 코인
+              <div style="width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--space-1); font-size: var(--text-sm); color: var(--warning); margin-top: var(--space-2); padding-bottom: var(--space-1);">
+                <img src="/icons/lightbulb.svg" alt="tip" class="icon icon-sm" />
+                <span>친구 초대 시 +1 코인</span>
               </div>
             ` : ''}
 
@@ -147,27 +183,32 @@ export default class Main {
 
       <!-- XP Modal -->
       <div id="xp-modal" class="hidden" style="
-          position:absolute; top:0; left:0; width:100%; height:100%; 
-          background:rgba(0,0,0,0.8); z-index:100;
+          position:absolute; top:0; left:0; width:100%; height:100%;
+          background:rgba(0,0,0,0.85); z-index:100;
           display:flex; justify-content:center; align-items:center;">
-          <div class="card" style="width:80%; max-width:300px; text-align:center; position:relative;">
-              <button id="close-modal" style="position:absolute; top:10px; right:10px; color:#fff;">X</button>
-              <h3 style="margin-bottom:20px;">Level Progress</h3>
-              <div style="font-size:3rem; font-weight:bold; color:var(--color-accent); margin-bottom:10px;">
-                  ${state.level}
+          <div class="card" style="width:80%; max-width:300px; text-align:center; position:relative; background: var(--gray-800); padding: var(--space-6);">
+              <button id="close-modal" style="position:absolute; top: var(--space-3); right: var(--space-3); color: var(--gray-100); font-size: var(--text-lg); background: none; border: none; cursor: pointer;">✕</button>
+              <h3 style="margin-bottom: var(--space-4); font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--gray-100);">레벨 진행도</h3>
+              <div style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--primary-500); margin-bottom: var(--space-3);">
+                  Lv. ${state.level}
               </div>
-              <div class="xp-bar-container" style="background:#444; height:10px; border-radius:5px; margin-bottom:10px; overflow:hidden;">
-                 <div id="xp-bar-fill" style="background:var(--color-accent); height:100%; width:0%;"></div>
+              <div class="xp-bar-container" style="background: var(--gray-700); height: 10px; border-radius: var(--radius-full); margin-bottom: var(--space-3); overflow: hidden;">
+                 <div id="xp-bar-fill" style="background: var(--primary-500); height:100%; width:0%; transition: var(--transition-base);"></div>
               </div>
-              <div id="xp-text" style="color:#aaa; font-size:0.9rem; margin-bottom:20px;">0 / 0 (0%)</div>
-              
-              <button id="logout-btn" style="border:1px solid #555; padding:5px 10px; border-radius:4px; font-size:0.8rem; color:#aaa;">Logout</button>
+              <div id="xp-text" style="color: var(--gray-400); font-size: var(--text-sm); margin-bottom: var(--space-6);">0 / 0 XP (0%)</div>
+
+              <button id="logout-btn" style="border: 1px solid var(--gray-600); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--gray-300); background: none; cursor: pointer;">로그아웃</button>
           </div>
       </div>
     `
 
     // Fetch Ranking
     this.loadRanking()
+
+    // Fetch Weekly Activity (if not guest)
+    if (!user.isGuest) {
+      this.loadWeeklyActivity()
+    }
 
     // Level Click Handler
     const userInfoArea = document.getElementById('user-info-area')
@@ -339,15 +380,15 @@ export default class Main {
     // Fetch weekly ranking
     const rankings = await dataService.fetchWeeklyRanking()
     if (!rankings || rankings.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center; color:#888;">No records yet</div>'
+      listEl.innerHTML = `<div style="text-align:center; color: var(--gray-500); font-size: var(--text-sm);">아직 기록이 없습니다</div>`
     } else {
       listEl.innerHTML = rankings.map((r, idx) => `
-              <div class="rank-item" style="display:flex; justify-content:space-between; align-items: center; padding:8px 0; border-bottom:1px solid #333;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                      <span>${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
-                      <span class="level-badge" style="font-size: 0.7rem; padding: 2px 6px;">Lv. ${r.users?.level || 1}</span>
+              <div class="rank-item" style="display:flex; justify-content:space-between; align-items: center; padding: var(--space-2) 0; border-bottom:1px solid var(--gray-700);">
+                  <div style="display: flex; align-items: center; gap: var(--space-2);">
+                      <span style="font-size: var(--text-base); color: var(--gray-100);">${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
+                      <span class="level-badge" style="font-size: var(--text-xs); padding: var(--space-1) var(--space-2);">Lv. ${r.users?.level || 1}</span>
                   </div>
-                  <span style="margin-right: 16px;">${r.max_round}R</span>
+                  <span style="margin-right: var(--space-4); font-size: var(--text-base); font-weight: var(--font-medium); color: var(--gray-300);">${r.max_round}R</span>
               </div>
           `).join('')
     }
@@ -360,15 +401,68 @@ export default class Main {
 
         if (rank) {
           myRankInfo.innerHTML = `
-            <div style="font-size: 1.1rem; font-weight: bold; color: var(--color-accent);">#${rank}</div>
-            <div style="font-size: 0.9rem; color: #aaa;">최고 기록: ${maxRound}R</div>
+            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--primary-500);">#${rank}</div>
+            <div style="font-size: var(--text-sm); color: var(--gray-400);">최고 기록: ${maxRound}R</div>
           `
         } else {
           myRankInfo.innerHTML = `
-            <div style="font-size: 0.9rem; color: #aaa;">아직 기록이 없습니다</div>
+            <div style="font-size: var(--text-sm); color: var(--gray-400);">아직 기록이 없습니다</div>
           `
         }
       }
+    }
+  }
+
+  async loadWeeklyActivity() {
+    const state = store.getState()
+    const user = state.user
+
+    if (!user || user.isGuest) return
+
+    console.log('📊 Loading weekly activity for user:', user.id)
+
+    // Fetch weekly activity data
+    const weeklyActivity = await dataService.fetchWeeklyActivity(user.id)
+    console.log('📊 Fetched records:', weeklyActivity.length)
+    console.log('📊 Records:', weeklyActivity)
+
+    // Calculate streak
+    const streak = dataService.calculateStreak(weeklyActivity)
+    console.log('🔥 Calculated streak:', streak)
+
+    // Get chart data
+    const chartData = dataService.getWeeklyActivityChart(weeklyActivity)
+    console.log('📈 Chart data:', chartData)
+
+    // Update streak badge
+    const streakBadge = document.getElementById('streak-badge')
+    if (streakBadge && streak > 0) {
+      streakBadge.innerHTML = `
+        <img src="/icons/flame.svg" alt="streak" class="icon icon-sm" />
+        <span style="font-size: var(--text-sm); font-weight: var(--font-bold); color: var(--warning);">${streak}일 연속</span>
+      `
+    } else if (streakBadge) {
+      streakBadge.innerHTML = `
+        <span style="font-size: var(--text-xs); color: var(--gray-500);">연속 플레이 없음</span>
+      `
+    }
+
+    // Render activity chart
+    const chartContainer = document.getElementById('activity-chart')
+    if (chartContainer) {
+      chartContainer.innerHTML = chartData.map(day => `
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-1);">
+          <div style="
+            width: 100%;
+            height: 32px;
+            background: ${day.played ? 'var(--primary-500)' : 'var(--gray-700)'};
+            border-radius: var(--radius-sm);
+            transition: var(--transition-fast);
+            ${day.isToday ? 'border: 1px solid var(--primary-500);' : ''}
+          "></div>
+          <span style="font-size: var(--text-xs); color: ${day.isToday ? 'var(--primary-500)' : 'var(--gray-500)'}; font-weight: ${day.isToday ? 'var(--font-bold)' : 'var(--font-normal)'};">${day.day}</span>
+        </div>
+      `).join('')
     }
   }
 

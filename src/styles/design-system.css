@@ -1,0 +1,228 @@
+/* ================================
+   FOCUS Design System
+   ================================ */
+
+/* ================================
+   0. FONT LOADING
+   ================================ */
+
+@font-face {
+    font-family: 'Pretendard';
+    src: url('/font/variable/PretendardVariable.ttf') format('truetype');
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+/* ================================
+   1. COLOR SYSTEM
+   ================================ */
+
+:root {
+    /* PRIMARY: Purple (Brand Color) */
+    --primary-50: #f3e5ff;
+    --primary-100: #e1bee7;
+    --primary-500: #7c4dff;
+    --primary-600: #6a3de8;
+    --primary-900: #4527a0;
+
+    /* NEUTRALS: Grayscale */
+    --gray-950: #0a0a0a;
+    --gray-900: #121212;
+    --gray-800: #1e1e1e;
+    --gray-700: #2a2a2a;
+    --gray-600: #666666;
+    --gray-500: #888888;
+    --gray-400: #999999;
+    --gray-300: #aaaaaa;
+    --gray-200: #dddddd;
+    --gray-100: #f5f5f5;
+
+    /* FUNCTIONAL: Minimal Usage */
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+
+    /* LEGACY ALIASES (for backward compatibility) */
+    --color-bg-primary: var(--gray-900);
+    --color-bg-secondary: var(--gray-800);
+    --color-bg-card: var(--gray-800);
+    --color-text-primary: var(--gray-100);
+    --color-text-secondary: var(--gray-400);
+    --color-accent: var(--primary-500);
+    --color-accent-light: var(--primary-100);
+    --color-accent-dark: var(--primary-900);
+    --color-danger: var(--error);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+}
+
+/* ================================
+   2. TYPOGRAPHY
+   ================================ */
+
+:root {
+    /* Font Family */
+    --font-primary: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+    /* Font Sizes (6 levels only) */
+    --text-xs: 0.75rem;      /* 12px - Small labels */
+    --text-sm: 0.875rem;     /* 14px - Secondary info */
+    --text-base: 1rem;       /* 16px - Default */
+    --text-lg: 1.125rem;     /* 18px - Subheadings */
+    --text-xl: 1.5rem;       /* 24px - Headings */
+    --text-2xl: 2rem;        /* 32px - Large numbers */
+
+    /* Font Weights (3 levels only) */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-bold: 700;
+
+    /* LEGACY ALIASES */
+    --font-family: var(--font-primary);
+    --font-size-sm: var(--text-sm);
+    --font-size-md: var(--text-base);
+    --font-size-lg: var(--text-lg);
+    --font-size-xl: var(--text-xl);
+    --font-size-xxl: var(--text-2xl);
+}
+
+/* ================================
+   3. SPACING (8px based)
+   ================================ */
+
+:root {
+    --space-1: 4px;      /* 0.5 unit */
+    --space-2: 8px;      /* 1 unit */
+    --space-3: 12px;     /* 1.5 unit */
+    --space-4: 16px;     /* 2 unit */
+    --space-6: 24px;     /* 3 unit */
+    --space-8: 32px;     /* 4 unit */
+    --space-12: 48px;    /* 6 unit */
+
+    /* LEGACY ALIASES */
+    --spacing-xs: var(--space-1);
+    --spacing-sm: var(--space-2);
+    --spacing-md: var(--space-4);
+    --spacing-lg: var(--space-6);
+    --spacing-xl: var(--space-8);
+}
+
+/* ================================
+   4. BORDER RADIUS
+   ================================ */
+
+:root {
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+}
+
+/* ================================
+   5. SHADOWS (3 levels)
+   ================================ */
+
+:root {
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* ================================
+   6. TRANSITIONS
+   ================================ */
+
+:root {
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --transition-slow: 350ms ease;
+
+    /* LEGACY ALIASES */
+    --transition-normal: var(--transition-base);
+}
+
+/* ================================
+   7. ICON STYLES
+   ================================ */
+
+.icon {
+    width: 20px;
+    height: 20px;
+    color: var(--gray-100);
+    flex-shrink: 0;
+}
+
+.icon-sm {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-md {
+    width: 20px;
+    height: 20px;
+}
+
+.icon-lg {
+    width: 24px;
+    height: 24px;
+}
+
+.icon-primary {
+    color: var(--primary-500);
+}
+
+.icon-success {
+    color: var(--success);
+}
+
+.icon-warning {
+    color: var(--warning);
+}
+
+.icon-error {
+    color: var(--error);
+}
+
+/* ================================
+   8. COMPONENT UTILITIES
+   ================================ */
+
+/* Apply font to body */
+body {
+    font-family: var(--font-primary);
+}
+
+/* Skeleton Loading Animation */
+@keyframes skeleton-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.skeleton {
+    background: var(--gray-700);
+    border-radius: var(--radius-sm);
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Standard button reset */
+.btn {
+    font-family: var(--font-primary);
+    font-size: var(--text-base);
+    font-weight: var(--font-medium);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}

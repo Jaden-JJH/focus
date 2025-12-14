@@ -1,49 +1,7 @@
+/* Import Design System First */
+@import './design-system.css';
 @import './views.css';
 @import './game.css';
-
-:root {
-    /* Colors */
-    --color-bg-primary: #121212;
-    --color-bg-secondary: #1e1e1e;
-    --color-bg-card: #2c2c2c;
-
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #a0a0a0;
-
-    --color-accent: #7c4dff;
-    /* Deep Purple */
-    --color-accent-light: #b47cff;
-    --color-accent-dark: #3f1dcb;
-
-    --color-danger: #ff5252;
-    --color-success: #69f0ae;
-    --color-warning: #ffd740;
-
-    /* Typography */
-    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-size-sm: 0.875rem;
-    --font-size-md: 1rem;
-    --font-size-lg: 1.25rem;
-    --font-size-xl: 1.5rem;
-    --font-size-xxl: 2rem;
-
-    /* Spacing */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
-
-    /* Border Radius */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 16px;
-    --radius-full: 9999px;
-
-    /* Transitions */
-    --transition-fast: 0.2s ease;
-    --transition-normal: 0.3s ease;
-}
 
 body {
     margin: 0;
