@@ -120,7 +120,7 @@ export default class Main {
         <!-- Fixed Action Area -->
         <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%; flex-shrink: 0; padding-top: 6px; background: var(--color-bg);">
             <div style="display: flex; gap: 10px; width: 100%;">
-              <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px;" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
+              <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 24px;" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
                  ${user.isGuest
                     ? ((() => {
                         const sessionData = localStorage.getItem('guest_session_used')
