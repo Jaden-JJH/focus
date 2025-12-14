@@ -9,6 +9,9 @@ export default class Splash {
     }
 
     async render() {
+        // Get last login provider
+        const lastProvider = localStorage.getItem('last_login_provider')
+
         this.container.innerHTML = `
       <style>
         @keyframes slideUp {
@@ -97,6 +100,18 @@ export default class Splash {
           left: 20px;
         }
 
+        .last-login-badge {
+          position: absolute;
+          right: 16px;
+          font-size: 11px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.95);
+          background: rgba(255, 255, 255, 0.18);
+          padding: 3px 8px;
+          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.35);
+        }
+
         .guest-btn {
           width: 100%;
           padding: 16px 20px;
@@ -126,11 +141,13 @@ export default class Splash {
           <button id="google-login-btn" class="social-login-btn">
             <img src="/google-logo.png" alt="Google">
             <span>Google로 시작하기</span>
+            ${lastProvider === 'google' ? '<span class="last-login-badge">마지막 로그인</span>' : ''}
           </button>
 
           <button id="kakao-login-btn" class="social-login-btn">
             <img src="/kakao-logo.png" alt="Kakao">
             <span>Kakao로 시작하기</span>
+            ${lastProvider === 'kakao' ? '<span class="last-login-badge">마지막 로그인</span>' : ''}
           </button>
 
           <button id="guest-btn" class="guest-btn">로그인 없이 체험하기</button>

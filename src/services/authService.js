@@ -2,6 +2,9 @@ import { supabase } from '../lib/supabase.js'
 
 export const authService = {
     async signInWithGoogle() {
+        // Save last login provider before OAuth redirect
+        localStorage.setItem('last_login_provider', 'google')
+
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -18,6 +21,9 @@ export const authService = {
     },
 
     async signInWithKakao() {
+        // Save last login provider before OAuth redirect
+        localStorage.setItem('last_login_provider', 'kakao')
+
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'kakao',
             options: {
