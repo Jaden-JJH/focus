@@ -89,14 +89,14 @@ button {
 
 /* Base Utility Classes */
 .btn-primary {
-    background-color: var(--color-accent);
+    background-color: var(--theme-accent);
     color: white;
     padding: var(--spacing-md) var(--spacing-xl);
     border-radius: var(--radius-lg);
     font-weight: 600;
     font-size: var(--font-size-lg);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    transition: transform var(--transition-fast), background-color var(--transition-fast);
+    transition: transform var(--transition-fast), background-color var(--theme-transition);
 }
 
 .btn-primary:active:not(:disabled) {

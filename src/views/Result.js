@@ -9,7 +9,7 @@ export default class Result {
 
     async render() {
         const state = history.state || {} // Router pushState data
-        const { round, xp, initialRank } = state
+        const { round, xp, initialRank, isHardMode } = state
         const user = store.getState().user
 
         // Store initial level and XP before saving record
@@ -31,6 +31,11 @@ export default class Result {
                 <span>경험치</span>
                 <span class="value link-color">+${xp || 0} XP</span>
             </div>
+            ${isHardMode ? `
+            <div style="margin-top: var(--space-2); text-align: center; font-size: var(--text-sm); color: var(--error); font-weight: var(--font-bold);">
+                🔥 하드모드 보너스 (x3)
+            </div>
+            ` : ''}
         </div>
 
         <!-- XP Progress Section -->
@@ -103,7 +108,9 @@ export default class Result {
 
             const currentCoins = _state.coins
             if (currentCoins > 0) {
-                import('../core/router.js').then(r => r.navigateTo('/game'))
+                // 하드모드 여부에 따라 라우팅
+                const targetPath = isHardMode ? '/game/hard' : '/game'
+                import('../core/router.js').then(r => r.navigateTo(targetPath))
             } else {
                 alert('코인이 부족합니다.')
             }
@@ -161,9 +168,10 @@ export default class Result {
         if (user && round && !user.isGuest) {
             const oldLevel = user.level
             const oldTotalXp = user.total_xp || 0
+            const mode = isHardMode ? 'hard' : 'normal'
 
             try {
-                await dataService.saveGameRecord(user.id, round, xp)
+                await dataService.saveGameRecord(user.id, round, xp, mode)
 
                 const newUser = store.getState().user
                 const newLevel = newUser.level
@@ -173,7 +181,7 @@ export default class Result {
                 this.animateXpProgress(oldTotalXp, newTotalXp, oldLevel, newLevel, xp)
 
                 // Get new rank and show rank movement
-                const newRankData = await dataService.getMyRank(user.id)
+                const newRankData = await dataService.getMyRank(user.id, mode)
                 this.showRankMovement(initialRank, newRankData.rank, newRankData.maxRound)
 
                 // Show Level Up if applicable

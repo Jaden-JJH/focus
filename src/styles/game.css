@@ -26,8 +26,8 @@
 
 .timer-fill {
     height: 100%;
-    background: var(--color-accent);
-    transition: width 0.1s linear;
+    background: var(--theme-accent);
+    transition: width 0.1s linear, background-color var(--theme-transition);
 }
 
 .round-label {
@@ -69,6 +69,15 @@
 
 .grid-item:active {
     transform: scale(0.95);
+}
+
+/* Color Sequence Tiles */
+.color-tile {
+    aspect-ratio: 1;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    font-size: 0;
+    user-select: none;
 }
 
 .shake {

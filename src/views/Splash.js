@@ -148,7 +148,7 @@ export default class Splash {
         </video>
 
         <h1 class="fade-in" style="font-size: 3rem; margin-bottom: 0.25rem;">Focus</h1>
-        <p class="fade-in" style="font-size: 1rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 3rem; animation-delay: 0.2s; font-weight: 500;">집중력을 키우는 5분 두뇌 게임</p>
+        <p class="fade-in" style="font-size: 1rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 3rem; animation-delay: 0.2s; font-weight: 500;">집중력을 키우는 하루 5분 두뇌 게임</p>
 
         <div class="login-buttons-wrapper">
           <button id="google-login-btn" class="social-login-btn">

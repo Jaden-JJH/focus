@@ -10,7 +10,8 @@ class Store {
             level: 0,
             dailyCoins: 0,
             weeklyMaxRound: 0,
-            isLoading: true // Start loading immediately
+            isLoading: true, // Start loading immediately
+            isHardMode: false // 하드모드 토글 상태
         }
         this.listeners = []
     }
@@ -21,6 +22,16 @@ class Store {
 
     setState(newState) {
         this.state = { ...this.state, ...newState }
+
+        // 하드모드 토글 시 body 클래스 관리
+        if ('isHardMode' in newState) {
+            if (newState.isHardMode) {
+                document.body.classList.add('hard-mode')
+            } else {
+                document.body.classList.remove('hard-mode')
+            }
+        }
+
         this.notify()
     }
 

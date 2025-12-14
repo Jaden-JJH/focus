@@ -1,0 +1,77 @@
+import { GameEngineHard } from '../core/GameEngineHard.js'
+import { navigateTo } from '../core/router.js'
+import { dataService } from '../services/dataService.js'
+import { store } from '../core/store.js'
+
+export default class GameHard {
+    constructor(container) {
+        this.container = container
+    }
+
+    async render() {
+        this.container.innerHTML = `
+      <div class="game-area">
+        <div class="game-header">
+           <div class="timer-container">
+             <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="background: linear-gradient(90deg, #ef4444, #dc2626);"></div></div>
+             <div class="round-label" id="round-disp">ROUND 1</div>
+           </div>
+        </div>
+        <div id="game-container" style="flex: 1; display:flex; flex-direction:column; justify-content:center;"></div>
+      </div>
+    `
+
+        // Get current rank before game starts (for rank movement tracking)
+        const user = store.getState().user
+        let initialRank = null
+        if (user && !user.isGuest) {
+            const rankData = await dataService.getMyRank(user.id)
+            initialRank = rankData.rank
+        }
+
+        // Initialize Engine
+        const gameContainer = document.getElementById('game-container')
+        const engine = new GameEngineHard(gameContainer, (result) => {
+            // Game Over Callback
+            console.log('Hard Mode Game Over Result:', result)
+            // Add initial rank to result for rank movement tracking
+            result.initialRank = initialRank
+            // Navigate to Result with state
+            navigateTo('/result', result)
+        })
+
+        // Bind UI updates
+        engine.onTimerTick = (timeLeft, timeLimit) => {
+            const fill = document.getElementById('timer-fill')
+            if (fill) {
+                const pct = (timeLeft / timeLimit) * 100
+                fill.style.width = `${pct}%`
+                if (pct < 30) {
+                    document.body.style.backgroundColor = '#3e1a1a'; // Red tint
+                } else {
+                    document.body.style.backgroundColor = '';
+                }
+            }
+        }
+
+        engine.onRoundUpdate = ({ round }) => {
+            const el = document.getElementById('round-disp')
+            if (el) {
+                el.innerText = `ROUND ${round}`
+            }
+            document.body.style.backgroundColor = ''; // Reset tint
+        }
+
+        // Start
+        engine.startGame()
+
+        // Cleanup on view destroy
+        this.engine = engine
+    }
+
+    destroy() {
+        if (this.engine) {
+            this.engine.cleanup()
+        }
+    }
+}

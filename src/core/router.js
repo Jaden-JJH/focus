@@ -5,6 +5,7 @@ const routes = {
     '/onboarding': () => import('../views/Onboarding.js'),
     '/main': () => import('../views/Main.js'),
     '/game': () => import('../views/Game.js'),
+    '/game/hard': () => import('../views/GameHard.js'),
     '/result': () => import('../views/Result.js'),
 }
 

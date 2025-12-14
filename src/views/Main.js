@@ -57,8 +57,9 @@ export default class Main {
 
     // 3. Render Main View
     this.container.innerHTML = `
-      <div class="main-container" style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
-        <header class="main-header" style="flex-shrink: 0; margin-bottom: 20px;">
+      <div class="main-container">
+        <!-- Fixed Header -->
+        <header class="main-header main-header-fixed">
            <div class="user-info" id="user-info-area" style="cursor: pointer;">
              <span class="level-badge">Lv. ${state.level}</span>
              <span class="nickname">${user.nickname || 'Unknown'}</span>
@@ -71,25 +72,29 @@ export default class Main {
            ` : ''}
         </header>
 
+        <!-- Scrollable Content Area -->
+        <div class="main-content-scroll">
+
         <!-- XP Progress Card -->
         ${!user.isGuest ? `
         <div style="
           background: var(--gray-800);
-          border: 1px solid var(--primary-500);
+          border: 1px solid var(--theme-primary);
           border-radius: var(--radius-md);
           padding: var(--space-3);
           margin-bottom: var(--space-4);
           flex-shrink: 0;
+          transition: border-color var(--theme-transition);
         ">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
             <div style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">레벨 진행도</div>
-            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--primary-500);">Lv. ${state.level}</div>
+            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--theme-primary); transition: color var(--theme-transition);">Lv. ${state.level}</div>
           </div>
           <div class="xp-bar-container" style="background: var(--gray-700); height: 8px; border-radius: var(--radius-full); margin-bottom: var(--space-2); overflow: hidden;">
-            <div class="xp-bar-fill" style="background: var(--primary-500); height: 100%; width: ${(() => {
+            <div class="xp-bar-fill" style="background: var(--theme-xp-bar); height: 100%; width: ${(() => {
               const { percent } = LEVELS.calcXpProgress(state.totalXp, state.level)
               return percent
-            })()}%; transition: var(--transition-base);"></div>
+            })()}%; transition: width var(--transition-base), background-color var(--theme-transition);"></div>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: var(--text-xs); color: var(--gray-300);">${(() => {
@@ -134,11 +139,16 @@ export default class Main {
 
         <!-- Ranking Section -->
         <section class="rank-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: var(--space-1); min-height: 0; overflow: hidden;">
-           <h3 style="flex-shrink: 0; padding: var(--space-1) 0; font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--gray-100);">Weekly Ranking</h3>
+           <div style="flex-shrink: 0; padding: var(--space-1) 0; display: flex; justify-content: space-between; align-items: center;">
+             <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--gray-100);">Weekly Ranking</h3>
+             ${state.isHardMode ? `
+             <span style="background: var(--error); color: white; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: var(--font-bold);">하드모드</span>
+             ` : ''}
+           </div>
 
            <!-- My Rank Section (Fixed) -->
            ${!user.isGuest ? `
-           <div id="my-rank-section" style="flex-shrink: 0; background: var(--gray-800); border: 1px solid var(--primary-500); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-2);">
+           <div id="my-rank-section" style="flex-shrink: 0; background: var(--gray-800); border: 1px solid var(--theme-primary); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-2); transition: border-color var(--theme-transition);">
              <div style="display: flex; justify-content: space-between; align-items: center;">
                <span style="font-weight: var(--font-bold); font-size: var(--text-base); color: var(--gray-100);">내 랭킹</span>
                <div id="my-rank-info" style="text-align: right;">
@@ -149,11 +159,76 @@ export default class Main {
            ` : ''}
 
            <!-- Scrollable Rank List -->
-           <div class="rank-list" id="rank-list" style="flex: 1; overflow-y: auto; overflow-x: hidden;">잠시만 기다려주세요...</div>
+           <div class="rank-list" id="rank-list" style="flex: 1;">잠시만 기다려주세요...</div>
         </section>
+        </div>
+        <!-- End of Scrollable Content Area -->
 
         <!-- Fixed Action Area -->
-        <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%; flex-shrink: 0; padding-top: var(--space-2); background: var(--gray-900);">
+        <div class="action-area action-area-fixed">
+            <!-- Hard Mode Toggle -->
+            ${!user.isGuest ? `
+            <div class="hard-mode-toggle-container" style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: var(--space-2);
+              padding: var(--space-3) 0;
+              margin-bottom: var(--space-2);
+              width: 100%;
+            ">
+              <button id="hard-mode-tooltip-icon" style="
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                opacity: 0.5;
+                transition: opacity var(--transition-fast);
+              " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
+                <img src="/lucide_info.svg" alt="info" style="width: 18px; height: 18px; filter: brightness(0.7);" />
+              </button>
+              <span style="font-size: var(--text-base); color: var(--gray-100); font-weight: var(--font-medium);">하드모드</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="hard-mode-toggle" ${state.isHardMode ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+              </label>
+              <span style="font-size: var(--text-sm); color: ${state.isHardMode ? 'var(--error)' : 'var(--gray-400)'}; font-weight: var(--font-bold); min-width: 32px;">${state.isHardMode ? 'ON' : 'OFF'}</span>
+            </div>
+            ` : ''}
+
+            <!-- Hard Mode Tooltip Modal -->
+            <div id="hard-mode-tooltip" class="hidden" style="
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.7);
+              z-index: 200;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              padding: var(--space-4);
+            ">
+              <div style="
+                background: var(--gray-800);
+                border: 1px solid var(--error);
+                border-radius: var(--radius-md);
+                padding: var(--space-6);
+                max-width: 320px;
+                text-align: center;
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+              ">
+                <div style="font-size: 2rem; margin-bottom: var(--space-3);">⚠️</div>
+                <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-3);">하드모드란?</h3>
+                <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6;">
+                  하드모드는 <strong style="color: var(--error);">오답을 체크하면 바로 게임오버</strong>가 되는 모드입니다. 고난이도 게임이 추가됩니다.
+                </p>
+              </div>
+            </div>
+
             <div style="display: flex; gap: var(--space-2); width: 100%;">
               <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px; font-size: var(--text-lg);" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
                  ${user.isGuest
@@ -267,10 +342,36 @@ export default class Main {
         } else {
           // 로그인 사용자 플로우
           if (_state.coins > 0) {
-            import('../core/router.js').then(r => r.navigateTo('/game'))
+            // 하드모드 여부에 따라 라우팅
+            const targetPath = _state.isHardMode ? '/game/hard' : '/game'
+            import('../core/router.js').then(r => r.navigateTo(targetPath))
           }
         }
       });
+    }
+
+    // Hard Mode Toggle Event Handler
+    const hardModeToggle = document.getElementById('hard-mode-toggle')
+    if (hardModeToggle) {
+      hardModeToggle.addEventListener('change', (e) => {
+        store.setState({ isHardMode: e.target.checked })
+        this.loadRanking()
+      })
+    }
+
+    // Hard Mode Tooltip Handler
+    const tooltipIcon = document.getElementById('hard-mode-tooltip-icon')
+    const tooltipModal = document.getElementById('hard-mode-tooltip')
+    if (tooltipIcon && tooltipModal) {
+      tooltipIcon.addEventListener('click', (e) => {
+        e.stopPropagation()
+        tooltipModal.classList.remove('hidden')
+      })
+
+      // Close on clicking anywhere
+      tooltipModal.addEventListener('click', () => {
+        tooltipModal.classList.add('hidden')
+      })
     }
 
     const loginBtn = document.getElementById('login-redirect-btn')
@@ -376,9 +477,10 @@ export default class Main {
 
     const state = store.getState()
     const user = state.user
+    const currentMode = state.isHardMode ? 'hard' : 'normal'
 
-    // Fetch weekly ranking
-    const rankings = await dataService.fetchWeeklyRanking()
+    // Fetch weekly ranking (모드별)
+    const rankings = await dataService.fetchWeeklyRanking(currentMode)
     if (!rankings || rankings.length === 0) {
       listEl.innerHTML = `<div style="text-align:center; color: var(--gray-500); font-size: var(--text-sm);">아직 기록이 없습니다</div>`
     } else {
@@ -393,15 +495,15 @@ export default class Main {
           `).join('')
     }
 
-    // Fetch my rank (if not guest)
+    // Fetch my rank (if not guest) (모드별)
     if (user && !user.isGuest) {
       const myRankInfo = document.getElementById('my-rank-info')
       if (myRankInfo) {
-        const { rank, maxRound } = await dataService.getMyRank(user.id)
+        const { rank, maxRound } = await dataService.getMyRank(user.id, currentMode)
 
         if (rank) {
           myRankInfo.innerHTML = `
-            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--primary-500);">#${rank}</div>
+            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--theme-primary); transition: color var(--theme-transition);">#${rank}</div>
             <div style="font-size: var(--text-sm); color: var(--gray-400);">최고 기록: ${maxRound}R</div>
           `
         } else {
@@ -455,10 +557,10 @@ export default class Main {
           <div style="
             width: 100%;
             height: 32px;
-            background: ${day.played ? 'var(--primary-500)' : 'var(--gray-700)'};
+            background: ${day.played ? 'var(--theme-primary)' : 'var(--gray-700)'};
             border-radius: var(--radius-sm);
-            transition: var(--transition-fast);
-            ${day.isToday ? 'border: 1px solid var(--primary-500);' : ''}
+            transition: background-color var(--theme-transition), border-color var(--theme-transition);
+            ${day.isToday ? 'border: 1px solid var(--theme-primary);' : ''}
           "></div>
           <span style="font-size: var(--text-xs); color: ${day.isToday ? 'var(--gray-100)' : 'var(--gray-500)'}; font-weight: ${day.isToday ? 'var(--font-bold)' : 'var(--font-normal)'};">${day.day}</span>
         </div>

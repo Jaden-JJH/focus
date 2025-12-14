@@ -189,14 +189,15 @@ export const dataService = {
         return false
     },
 
-    async saveGameRecord(userId, round, xp) {
+    async saveGameRecord(userId, round, xp, mode = 'normal') {
         // 1. Insert Record
         const { error } = await supabase
             .from('game_records')
             .insert({
                 user_id: userId,
                 max_round: round,
-                xp_earned: xp
+                xp_earned: xp,
+                mode: mode
             })
 
         if (error) {
@@ -251,18 +252,20 @@ export const dataService = {
         }
     },
 
-    async fetchWeeklyRanking() {
+    async fetchWeeklyRanking(mode = 'normal') {
         // Fetch all records, then filter for max round per user
         const { data, error } = await supabase
             .from('game_records')
             .select(`
                 user_id,
                 max_round,
+                mode,
                 users (
                     nickname,
                     level
                 )
             `)
+            .eq('mode', mode)
             .order('max_round', { ascending: false })
 
         if (error) {
@@ -292,11 +295,12 @@ export const dataService = {
         return uniqueRankings
     },
 
-    async getMyRank(userId) {
+    async getMyRank(userId, mode = 'normal') {
         // Fetch all records to calculate user's rank
         const { data, error } = await supabase
             .from('game_records')
             .select('user_id, max_round')
+            .eq('mode', mode)
             .order('max_round', { ascending: false })
 
         if (error || !data) {

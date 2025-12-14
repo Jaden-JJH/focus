@@ -54,6 +54,23 @@
     --color-danger: var(--error);
     --color-success: var(--success);
     --color-warning: var(--warning);
+
+    /* THEME SYSTEM: 일반모드 (보라색) */
+    --theme-primary: var(--primary-500);
+    --theme-timer: var(--primary-500);
+    --theme-badge: var(--primary-500);
+    --theme-xp-bar: var(--primary-500);
+    --theme-accent: var(--primary-500);
+    --theme-transition: 0.3s ease;
+}
+
+/* HARD MODE THEME: 하드모드 (붉은색) */
+body.hard-mode {
+    --theme-primary: #ef4444;
+    --theme-timer: #ef4444;
+    --theme-badge: #ef4444;
+    --theme-xp-bar: #ef4444;
+    --theme-accent: #ef4444;
 }
 
 /* ================================
