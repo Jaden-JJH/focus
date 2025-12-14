@@ -366,9 +366,9 @@ export const dataService = {
 
         const { data, error } = await supabase
             .from('game_records')
-            .select('created_at')
+            .select('played_at')
             .eq('user_id', userId)
-            .gte('created_at', sevenDaysAgo.toISOString())
+            .gte('played_at', sevenDaysAgo.toISOString())
 
         if (error) {
             console.error('Error fetching weekly activity:', error)
@@ -386,7 +386,7 @@ export const dataService = {
         // Get unique play dates (YYYY-MM-DD)
         const playDates = new Set(
             weeklyActivity.map(record => {
-                const date = new Date(record.created_at)
+                const date = new Date(record.played_at)
                 return date.toISOString().split('T')[0]
             })
         )
@@ -433,7 +433,7 @@ export const dataService = {
         // Get unique play dates
         const playDates = new Set(
             (weeklyActivity || []).map(record => {
-                const date = new Date(record.created_at)
+                const date = new Date(record.played_at)
                 return date.toISOString().split('T')[0]
             })
         )

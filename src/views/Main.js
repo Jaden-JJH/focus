@@ -65,7 +65,7 @@ export default class Main {
            </div>
            ${!user.isGuest ? `
            <div class="currency" style="display: flex; align-items: center; gap: var(--space-1);">
-             <img src="/icons/coin.svg" alt="coin" class="icon icon-sm" />
+             <span style="font-size: 20px;">🪙</span>
              <span style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--warning);">${state.coins}</span>
            </div>
            ` : ''}
@@ -116,7 +116,7 @@ export default class Main {
           flex-shrink: 0;
         ">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
-            <div style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">주간 활동</div>
+            <div style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-bold);">주간 활동</div>
             <div id="streak-badge" style="display: flex; align-items: center; gap: var(--space-1);">
               <div class="skeleton" style="width: 60px; height: 16px;"></div>
             </div>
@@ -172,7 +172,7 @@ export default class Main {
 
             ${!user.isGuest ? `
               <div style="width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--space-1); font-size: var(--text-sm); color: var(--warning); margin-top: var(--space-2); padding-bottom: var(--space-1);">
-                <img src="/icons/lightbulb.svg" alt="tip" class="icon icon-sm" />
+                <span style="font-size: 16px;">💡</span>
                 <span>친구 초대 시 +1 코인</span>
               </div>
             ` : ''}
@@ -438,7 +438,7 @@ export default class Main {
     const streakBadge = document.getElementById('streak-badge')
     if (streakBadge && streak > 0) {
       streakBadge.innerHTML = `
-        <img src="/icons/flame.svg" alt="streak" class="icon icon-sm" />
+        <span style="font-size: 16px;">🔥</span>
         <span style="font-size: var(--text-sm); font-weight: var(--font-bold); color: var(--warning);">${streak}일 연속</span>
       `
     } else if (streakBadge) {
@@ -460,7 +460,7 @@ export default class Main {
             transition: var(--transition-fast);
             ${day.isToday ? 'border: 1px solid var(--primary-500);' : ''}
           "></div>
-          <span style="font-size: var(--text-xs); color: ${day.isToday ? 'var(--primary-500)' : 'var(--gray-500)'}; font-weight: ${day.isToday ? 'var(--font-bold)' : 'var(--font-normal)'};">${day.day}</span>
+          <span style="font-size: var(--text-xs); color: ${day.isToday ? 'var(--gray-100)' : 'var(--gray-500)'}; font-weight: ${day.isToday ? 'var(--font-bold)' : 'var(--font-normal)'};">${day.day}</span>
         </div>
       `).join('')
     }
