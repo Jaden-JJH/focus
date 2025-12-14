@@ -4,8 +4,9 @@ import { store } from '../core/store.js'
 export default class Splash {
     constructor(container) {
         this.container = container
-        // Randomly select one of 3 GIFs
-        this.randomGif = `/gif/${Math.floor(Math.random() * 3) + 1}..gif`
+        // Randomly select start time: 0s, 2s, 6s, 9s, 12s, 15s
+        const startTimes = [0, 2, 6, 9, 12, 15]
+        this.randomStartTime = startTimes[Math.floor(Math.random() * startTimes.length)]
     }
 
     async render() {
@@ -33,24 +34,24 @@ export default class Splash {
           align-items: center;
           padding: 0 20px;
           position: relative;
-          background-image: url('${this.randomGif}');
-          background-size: cover;
-          background-position: center;
-          background-repeat: no-repeat;
+          overflow: hidden;
         }
 
-        .login-container::before {
-          content: '';
+        .background-video {
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
+          top: 50%;
+          left: 50%;
+          width: 175%;
+          height: 175%;
+          max-width: 175%;
+          max-height: 175%;
+          transform: translate(-50%, -50%);
+          object-fit: contain;
           z-index: 0;
+          filter: brightness(0.3);
         }
 
-        .login-container > * {
+        .login-container > *:not(.background-video) {
           position: relative;
           z-index: 1;
         }
@@ -134,6 +135,18 @@ export default class Splash {
       </style>
 
       <div class="login-container">
+        <video
+          id="background-video"
+          class="background-video"
+          autoplay
+          loop
+          muted
+          playsinline
+          preload="auto"
+        >
+          <source src="/gif/splash_video.mp4" type="video/mp4">
+        </video>
+
         <h1 class="fade-in" style="font-size: 3rem; margin-bottom: 0.25rem;">Focus</h1>
         <p class="fade-in" style="font-size: 1rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 3rem; animation-delay: 0.2s; font-weight: 500;">집중력을 키우는 5분 두뇌 게임</p>
 
@@ -182,5 +195,18 @@ export default class Splash {
             })
             import('../core/router.js').then(r => r.navigateTo('/onboarding'));
         });
+
+        // Set random start time for background video
+        const videoElement = document.getElementById('background-video')
+        if (videoElement) {
+            videoElement.addEventListener('loadedmetadata', () => {
+                videoElement.currentTime = this.randomStartTime
+            })
+
+            // Fallback: Set start time even if loadedmetadata already fired
+            if (videoElement.readyState >= 1) {
+                videoElement.currentTime = this.randomStartTime
+            }
+        }
     }
 }
