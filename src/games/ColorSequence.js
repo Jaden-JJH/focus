@@ -26,8 +26,8 @@ export class ColorSequence {
         // Phase 3: 3x3 (9개 타일), 6가지 순서 (중복 허용)
         // 안내 속도 1.25배 빠르게 (시간 / 1.25)
         this.phaseConfig = {
-            1: { gridSize: 2, sequenceLength: 4, showDelay: 560, allowDuplicate: false },
-            2: { gridSize: 2, sequenceLength: 6, showDelay: 400, allowDuplicate: true },
+            1: { gridSize: 2, sequenceLength: 4, showDelay: 450, allowDuplicate: false },
+            2: { gridSize: 2, sequenceLength: 6, showDelay: 385, allowDuplicate: true },
             3: { gridSize: 3, sequenceLength: 6, showDelay: 320, allowDuplicate: true }
         }
 
