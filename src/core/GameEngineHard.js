@@ -449,12 +449,27 @@ export class GameEngineHard {
     handleCorrect() {
         clearInterval(this.timerId)
 
-        // 콤보 체크: 시간의 70% 이상 남았으면 콤보 증가
+        // 콤보 체크: 단계별 기준 (쉬운 난이도로 조정)
         const timePercent = (this.state.timeLeft / this.state.timeLimit) * 100
-        if (timePercent >= 70) {
-            this.state.combo++
+
+        // 현재 콤보에 따른 필요 시간 계산
+        let requiredPercent = 15  // 1-4 콤보: 15%
+        if (this.state.combo >= 10) {
+            requiredPercent = 35  // 10+ 콤보: 35%
+        } else if (this.state.combo >= 5) {
+            requiredPercent = 25  // 5-10 콤보: 25%
+        }
+
+        if (timePercent >= requiredPercent) {
+            this.state.combo++  // 기준 달성: 콤보 증가
         } else {
-            this.state.combo = 0 // 느리면 콤보 리셋
+            this.state.combo = 0  // 기준 미달: 콤보 리셋
+            this.removeFocusGlow()  // 콤보 리셋 시 focus glow 제거
+        }
+
+        // 콤보가 10 미만으로 떨어지면 focus glow 제거
+        if (this.state.combo < 10) {
+            this.removeFocusGlow()
         }
 
         // FX: Correct - Show visual feedback
@@ -619,74 +634,168 @@ export class GameEngineHard {
     }
 
     showComboFeedback() {
-        // 콤보 표시 생성 (체크마크와 다른 위치: 상단 중앙)
-        const comboText = document.createElement('div')
+        // 기존 콤보 텍스트가 있으면 즉시 제거 (새로운 콤보로 덮어씌우기)
+        const existingCombo = document.getElementById('combo-text')
+        if (existingCombo) {
+            existingCombo.remove()
+        }
 
-        // 콤보 레벨에 따른 메시지와 색상
-        let message = ''
+        const comboText = document.createElement('div')
+        comboText.id = 'combo-text'
+
+        // 콤보 수치에 따른 색상, Scale, Glow
         let color = ''
         let glow = ''
+        let baseScale = 1.0
+        let rotation = 0
 
-        if (this.state.combo >= 5) {
-            message = `🔥 ${this.state.combo} COMBO! 🔥`
-            color = '#ff6b35' // 오렌지-레드 (불꽃)
-            glow = 'rgba(255, 107, 53, 0.8)'
-        } else if (this.state.combo >= 3) {
-            message = `⚡ ${this.state.combo} COMBO! ⚡`
-            color = '#ffd700' // 골드
-            glow = 'rgba(255, 215, 0, 0.8)'
+        if (this.state.combo >= 11) {
+            // 11+ 콤보: 형광색 + Glow + 큰 크기 + 랜덤 각도
+            color = '#00ff88' // 네온 그린
+            glow = '0 0 20px rgba(0, 255, 136, 0.8), 0 0 40px rgba(0, 255, 136, 0.4)'
+            baseScale = 1.4
+            rotation = (Math.random() - 0.5) * 20 // -10도 ~ 10도
+        } else if (this.state.combo >= 5) {
+            // 5~10 콤보: 노란색 + 중간 크기
+            color = '#ffeb3b' // 밝은 노란색
+            glow = '0 0 10px rgba(255, 235, 59, 0.3)'
+            baseScale = 1.2
         } else {
-            message = `✨ ${this.state.combo} COMBO ✨`
-            color = '#69f0ae' // 라이트 그린
-            glow = 'rgba(105, 240, 174, 0.8)'
+            // 1~4 콤보: 흰색 + 기본 크기
+            color = '#ffffff'
+            glow = 'none'
+            baseScale = 1.0
         }
 
         comboText.style.cssText = `
             position: fixed;
             top: 15%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2.5rem;
+            transform: translate(-50%, -50%) scale(${baseScale}) rotate(${rotation}deg);
+            font-family: 'Electrical Safety', sans-serif;
+            font-size: 1.6rem;
             font-weight: bold;
             color: ${color};
-            text-shadow: 0 0 20px ${glow}, 0 0 40px ${glow};
+            text-shadow: ${glow};
             z-index: 1001;
-            animation: comboSlideDown 0.6s ease-out;
             pointer-events: none;
+            letter-spacing: 1px;
+            opacity: 0;
         `
-        comboText.innerText = message
+        comboText.innerText = `${this.state.combo} combo`
         document.body.appendChild(comboText)
+
+        // 등장 애니메이션 (타격감)
+        const entranceScale = baseScale * 1.3 // 오버슈트
+        comboText.animate([
+            {
+                opacity: 0,
+                transform: `translate(-50%, -50%) scale(${baseScale * 0.5}) rotate(${rotation}deg)`
+            },
+            {
+                opacity: 1,
+                transform: `translate(-50%, -50%) scale(${entranceScale}) rotate(${rotation}deg)`
+            },
+            {
+                opacity: 1,
+                transform: `translate(-50%, -50%) scale(${baseScale}) rotate(${rotation}deg)`
+            }
+        ], {
+            duration: 150, // 0.15초
+            easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)' // Back Out
+        })
+
+        // 퇴장 애니메이션 (잔상 + Float)
+        setTimeout(() => {
+            comboText.animate([
+                {
+                    opacity: 1,
+                    transform: `translate(-50%, -50%) scale(${baseScale}) rotate(${rotation}deg)`
+                },
+                {
+                    opacity: 0,
+                    transform: `translate(-50%, -80%) scale(${baseScale * 1.1}) rotate(${rotation}deg)`
+                }
+            ], {
+                duration: 600, // 0.6초
+                easing: 'ease-out',
+                fill: 'forwards'
+            })
+
+            setTimeout(() => comboText.remove(), 600)
+        }, 150) // 등장 애니메이션 후 바로 퇴장 시작
 
         // CSS 애니메이션 추가 (한 번만)
         if (!document.getElementById('combo-style')) {
             const style = document.createElement('style')
             style.id = 'combo-style'
             style.textContent = `
-                @keyframes comboSlideDown {
-                    0% {
-                        opacity: 0;
-                        transform: translate(-50%, -100%) scale(0.5);
+                @font-face {
+                    font-family: 'Electrical Safety';
+                    src: url('/font/전기안전체_ttf/Electrical Safety Bold.ttf') format('truetype');
+                    font-weight: bold;
+                    font-style: normal;
+                }
+
+                @font-face {
+                    font-family: 'Electrical Safety';
+                    src: url('/font/전기안전체_ttf/Electrical Safety Regular.ttf') format('truetype');
+                    font-weight: normal;
+                    font-style: normal;
+                }
+
+                @keyframes focusGlow {
+                    0%, 100% {
+                        box-shadow: inset 0 0 20px rgba(0, 217, 255, 0.2),
+                                    inset 0 0 40px rgba(0, 217, 255, 0.1);
                     }
                     50% {
-                        transform: translate(-50%, -50%) scale(1.2);
+                        box-shadow: inset 0 0 30px rgba(0, 217, 255, 0.3),
+                                    inset 0 0 60px rgba(0, 217, 255, 0.15);
                     }
-                    100% {
-                        opacity: 1;
-                        transform: translate(-50%, -50%) scale(1);
-                    }
+                }
+
+                .focus-glow-border {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    z-index: 999;
+                    animation: focusGlow 3s ease-in-out infinite;
                 }
             `
             document.head.appendChild(style)
         }
 
-        // 콤보 이펙트: 파티클 효과 (적게, 게임에 방해되지 않게)
-        if (this.state.combo >= 3) {
-            for (let i = 0; i < 5; i++) {
-                this.createComboParticle(color)
-            }
+        // 10콤보 이상: 집중력의 경지 효과 (은은한 푸른 테두리)
+        if (this.state.combo >= 10) {
+            this.showFocusGlow()
         }
 
-        setTimeout(() => comboText.remove(), 600)
+        setTimeout(() => comboText.remove(), 500)
+    }
+
+    showFocusGlow() {
+        // 이미 있으면 제거하고 새로 생성
+        const existingGlow = document.getElementById('focus-glow')
+        if (existingGlow) existingGlow.remove()
+
+        const glowBorder = document.createElement('div')
+        glowBorder.id = 'focus-glow'
+        glowBorder.className = 'focus-glow-border'
+        document.body.appendChild(glowBorder)
+
+        // 10콤보 미만으로 떨어지면 제거하기 위해 참조 저장
+        this.focusGlowElement = glowBorder
+    }
+
+    removeFocusGlow() {
+        if (this.focusGlowElement) {
+            this.focusGlowElement.remove()
+            this.focusGlowElement = null
+        }
     }
 
     createComboParticle(color) {
