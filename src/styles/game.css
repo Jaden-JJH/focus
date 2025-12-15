@@ -30,6 +30,21 @@
     transition: width 0.1s linear, background-color var(--theme-transition);
 }
 
+.timer-fill.critical {
+    animation: timerPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+    }
+    50% {
+        opacity: 0.7;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+    }
+}
+
 .round-label {
     font-size: 1rem;
     font-weight: 600;

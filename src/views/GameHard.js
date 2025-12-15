@@ -41,6 +41,7 @@ export default class GameHard {
         })
 
         // Bind UI updates
+        let hasVibrated = false
         engine.onTimerTick = (timeLeft, timeLimit) => {
             const fill = document.getElementById('timer-fill')
             if (fill) {
@@ -48,8 +49,16 @@ export default class GameHard {
                 fill.style.width = `${pct}%`
                 if (pct < 30) {
                     document.body.style.backgroundColor = '#3e1a1a'; // Red tint
+                    fill.classList.add('critical')
+
+                    // 진동 효과 (모바일, 한 번만)
+                    if (!hasVibrated && navigator.vibrate) {
+                        navigator.vibrate([50, 100, 50])
+                        hasVibrated = true
+                    }
                 } else {
                     document.body.style.backgroundColor = '';
+                    fill.classList.remove('critical')
                 }
             }
         }
@@ -60,6 +69,7 @@ export default class GameHard {
                 el.innerText = `ROUND ${round}`
             }
             document.body.style.backgroundColor = ''; // Reset tint
+            hasVibrated = false // Reset vibration flag for next round
         }
 
         // Start
