@@ -26,6 +26,17 @@ export default class Splash {
           }
         }
 
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.05);
+          }
+        }
+
         .login-container {
           flex: 1;
           display: flex;
@@ -49,6 +60,7 @@ export default class Splash {
           object-fit: contain;
           z-index: 0;
           filter: brightness(0.3);
+          animation: fadeInScale 2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
         }
 
         .login-container > *:not(.background-video) {

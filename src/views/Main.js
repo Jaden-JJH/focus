@@ -143,7 +143,7 @@ export default class Main {
               </div>
             </div>
             <div style="font-size: var(--text-lg); color: white; font-weight: var(--font-bold); margin-top: var(--space-1);">
-              ${LEVELS.getLevelInfo(state.level).name}
+              ${state.level === 0 ? '주의력 결핍' : LEVELS.getLevelInfo(state.level).name}
             </div>
           </div>
 
@@ -276,12 +276,48 @@ export default class Main {
             ">
               <div style="font-size: 2rem; margin-bottom: var(--space-3);">⚠️</div>
               <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-3);">하드모드란?</h3>
-              <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6;">
+              <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6; margin-bottom: var(--space-2);">
                 하드모드는 <strong style="color: var(--error);">오답을 체크하면 바로 게임오버</strong>가 되는 모드입니다. 고난이도 게임이 추가됩니다.
+              </p>
+              <p style="font-size: var(--text-xs); color: var(--gray-500); margin-top: var(--space-3);">
+                Lv 5부터 플레이 가능
               </p>
             </div>
             <!-- Backdrop for tooltip -->
             <div id="hard-mode-tooltip-backdrop" class="hidden" style="
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.7);
+              z-index: 200;
+            "></div>
+
+            <!-- Hard Mode Level Restriction Modal -->
+            <div id="hard-mode-level-lock" class="hidden" style="
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 90%;
+              max-width: 300px;
+              background: var(--gray-800);
+              border: 1px solid var(--error);
+              border-radius: var(--radius-md);
+              padding: var(--space-6);
+              text-align: center;
+              box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+              z-index: 201;
+            ">
+              <div style="font-size: 2rem; margin-bottom: var(--space-3);">🔒</div>
+              <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-2);">하드모드 잠김</h3>
+              <p style="font-size: var(--text-base); color: var(--gray-100);">
+                Lv 5부터 플레이 가능합니다.
+              </p>
+            </div>
+            <!-- Backdrop for level lock -->
+            <div id="hard-mode-level-lock-backdrop" class="hidden" style="
               position: fixed;
               top: 0;
               left: 0;
@@ -513,6 +549,23 @@ export default class Main {
     const hardModeToggle = document.getElementById('hard-mode-toggle')
     if (hardModeToggle) {
       hardModeToggle.addEventListener('change', (e) => {
+        const _state = store.getState()
+
+        // 레벨 5 미만이면 토글을 원래 상태로 되돌리고 경고 모달 표시
+        if (_state.level < 5) {
+          e.preventDefault()
+          hardModeToggle.checked = false
+
+          // 레벨 제한 모달 표시
+          const levelLockModal = document.getElementById('hard-mode-level-lock')
+          const levelLockBackdrop = document.getElementById('hard-mode-level-lock-backdrop')
+          if (levelLockModal && levelLockBackdrop) {
+            levelLockModal.classList.remove('hidden')
+            levelLockBackdrop.classList.remove('hidden')
+          }
+          return
+        }
+
         store.setState({ isHardMode: e.target.checked })
         this.loadRanking()
       })
@@ -537,6 +590,19 @@ export default class Main {
 
       tooltipModal.addEventListener('click', closeTooltip)
       tooltipBackdrop.addEventListener('click', closeTooltip)
+    }
+
+    // Hard Mode Level Lock Handler
+    const levelLockModal = document.getElementById('hard-mode-level-lock')
+    const levelLockBackdrop = document.getElementById('hard-mode-level-lock-backdrop')
+    if (levelLockModal && levelLockBackdrop) {
+      const closeLevelLock = () => {
+        levelLockModal.classList.add('hidden')
+        levelLockBackdrop.classList.add('hidden')
+      }
+
+      levelLockModal.addEventListener('click', closeLevelLock)
+      levelLockBackdrop.addEventListener('click', closeLevelLock)
     }
 
     // Coin Info Tooltip Handler

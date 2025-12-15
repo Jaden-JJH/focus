@@ -136,6 +136,7 @@ export const LEVELS = {
 
     // Get level image path
     getLevelImage: (level) => {
-        return `/Lv/${level}.jpeg`;
+        // 레벨 0은 .jpg, 나머지는 .jpeg
+        return level === 0 ? `/Lv/0.jpg` : `/Lv/${level}.jpeg`;
     }
 };
