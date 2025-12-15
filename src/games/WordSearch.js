@@ -100,7 +100,7 @@ export class WordSearch {
                     // Check if it's the correct order? Or just any part?
                     // Let's require finding all parts.
                     el.classList.add('found')
-                    el.style.backgroundColor = 'var(--color-accent)'
+                    el.style.backgroundColor = 'var(--theme-accent)'
                     foundCount++
 
                     if (foundCount === targetWord.length) {

@@ -13,11 +13,11 @@ export class ReactionTime {
         this.isGreen = false
 
         // Phase별 클릭 허용 시간 (초록색으로 바뀐 후)
-        // 더 짧게 조정: 0.6초 → 0.4초 → 0.3초
+        // 더 짧게 조정: 0.6초 → 0.5초 → 0.5초
         this.clickWindowByPhase = {
             1: 600,  // Phase 1: 600ms
-            2: 400,  // Phase 2: 400ms
-            3: 300   // Phase 3: 300ms
+            2: 500,  // Phase 2: 500ms
+            3: 500   // Phase 3: 500ms
         }
     }
 
