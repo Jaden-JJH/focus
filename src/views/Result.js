@@ -1,6 +1,6 @@
 import { dataService } from '../services/dataService.js'
 import { store } from '../core/store.js'
-import { LEVELS } from '../config/gameConfig.js'
+import { LEVELS, LEVEL_DATA } from '../config/gameConfig.js'
 
 export default class Result {
     constructor(container) {
@@ -334,6 +334,7 @@ export default class Result {
     }
 
     showLevelUp(level) {
+        const levelInfo = LEVELS.getLevelInfo(level)
         const overlay = document.createElement('div')
         overlay.style.cssText = `
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -344,7 +345,8 @@ export default class Result {
         overlay.innerHTML = `
             <h1 style="font-size: 3rem; color: var(--color-warning); text-shadow: 0 0 20px var(--color-warning); margin-bottom: 20px;">LEVEL UP!</h1>
             <div style="font-size: 5rem; font-weight: bold; color: white;">${level}</div>
-            <div style="margin-top: 20px; color: #aaa;">Keep going!</div>
+            <div style="margin-top: 20px; font-size: 1.5rem; color: var(--color-warning); font-weight: bold;">${levelInfo.name}</div>
+            <div style="margin-top: 10px; color: #aaa;">${levelInfo.category}</div>
         `
         this.container.appendChild(overlay)
 

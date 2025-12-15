@@ -1,7 +1,7 @@
 import { authService } from '../services/authService.js'
 import { store } from '../core/store.js'
 import { dataService } from '../services/dataService.js'
-import { LEVELS } from '../config/gameConfig.js'
+import { LEVELS, LEVEL_DATA } from '../config/gameConfig.js'
 
 export default class Main {
   constructor(container) {
@@ -60,14 +60,26 @@ export default class Main {
       <div class="main-container">
         <!-- Fixed Header -->
         <header class="main-header main-header-fixed">
-           <div class="user-info" id="user-info-area" style="cursor: pointer;">
-             <span class="level-badge">Lv. ${state.level}</span>
-             <span class="nickname">${user.nickname || 'Unknown'}</span>
+           <div style="display: flex; align-items: center; gap: var(--space-2);">
+             <div id="focus-logo" style="
+               font-size: var(--text-lg);
+               font-weight: var(--font-bold);
+               background: ${state.isHardMode
+                 ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                 : 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)'};
+               -webkit-background-clip: text;
+               -webkit-text-fill-color: transparent;
+               background-clip: text;
+               transition: all 0.3s ease;
+             ">Focus</div>
+             <div class="user-info" id="user-info-area" style="cursor: pointer; display: flex; align-items: center;">
+               <span class="nickname" style="line-height: 1;">${user.nickname || 'Unknown'}</span>
+             </div>
            </div>
            ${!user.isGuest ? `
            <div id="coin-info" class="currency" style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
-             <span style="font-size: 20px;">🪙</span>
-             <span style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--warning);">${state.coins}</span>
+             <span style="font-size: 20px; line-height: 1;">🪙</span>
+             <span style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--warning); line-height: 1;">${state.coins}</span>
            </div>
            ` : ''}
         </header>
@@ -79,23 +91,71 @@ export default class Main {
         ${!user.isGuest ? `
         <div style="
           background: var(--gray-800);
-          border: 1px solid var(--theme-primary);
           border-radius: var(--radius-md);
-          padding: var(--space-3);
+          padding: var(--space-4);
           margin-bottom: var(--space-4);
           flex-shrink: 0;
-          transition: border-color var(--theme-transition);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         ">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
-            <div style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">레벨 진행도</div>
-            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--theme-primary); transition: color var(--theme-transition);">Lv. ${state.level}</div>
+          <!-- Header: Title & View All Button -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+            <div style="font-size: var(--text-base); font-weight: var(--font-bold); color: white;">
+              내 집중력 레벨
+            </div>
+            <button id="view-all-levels-btn" style="
+              background: none;
+              border: none;
+              color: var(--gray-300);
+              font-size: var(--text-sm);
+              cursor: pointer;
+              padding: var(--space-1);
+              transition: color 0.2s;
+            " onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--gray-300)'">
+              전체 레벨 &gt;
+            </button>
           </div>
+
+          <!-- Level Image & Badge -->
+          <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: var(--space-3);">
+            <div style="position: relative; margin-bottom: var(--space-3);">
+              <img src="${LEVELS.getLevelImage(state.level)}" alt="Level ${state.level}" style="
+                width: 160px;
+                height: 160px;
+                border-radius: var(--radius-md);
+                object-fit: cover;
+              " />
+              <div style="
+                position: absolute;
+                bottom: -12px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${state.isHardMode
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                  : 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)'};
+                color: white;
+                padding: var(--space-1) var(--space-3);
+                border-radius: var(--radius-full);
+                font-size: var(--text-sm);
+                font-weight: var(--font-bold);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+              ">
+                Lv ${state.level}
+              </div>
+            </div>
+            <div style="font-size: var(--text-lg); color: white; font-weight: var(--font-bold); margin-top: var(--space-1);">
+              ${LEVELS.getLevelInfo(state.level).name}
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
           <div class="xp-bar-container" style="background: var(--gray-700); height: 8px; border-radius: var(--radius-full); margin-bottom: var(--space-2); overflow: hidden;">
             <div class="xp-bar-fill" style="background: var(--theme-xp-bar); height: 100%; width: ${(() => {
               const { percent } = LEVELS.calcXpProgress(state.totalXp, state.level)
               return percent
             })()}%; transition: width var(--transition-base), background-color var(--theme-transition);"></div>
           </div>
+
+          <!-- Progress Text (Symmetrical Layout) -->
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: var(--text-xs); color: var(--gray-300);">${(() => {
               const { current, max } = LEVELS.calcXpProgress(state.totalXp, state.level)
@@ -114,14 +174,14 @@ export default class Main {
         ${!user.isGuest ? `
         <div id="weekly-activity-card" style="
           background: var(--gray-800);
-          border: 1px solid var(--gray-600);
           border-radius: var(--radius-md);
           padding: var(--space-3);
           margin-bottom: var(--space-4);
           flex-shrink: 0;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         ">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
-            <div style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-bold);">주간 활동</div>
+            <div style="font-size: var(--text-base); color: var(--gray-100); font-weight: var(--font-bold);">주간 활동</div>
             <div id="streak-badge" style="display: flex; align-items: center; gap: var(--space-1);">
               <div class="skeleton" style="width: 60px; height: 16px;"></div>
             </div>
@@ -317,6 +377,58 @@ export default class Main {
               <button id="logout-btn" style="border: 1px solid var(--gray-600); padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--gray-300); background: none; cursor: pointer;">로그아웃</button>
           </div>
       </div>
+
+      <!-- All Levels Modal -->
+      <div id="all-levels-modal" class="hidden" style="
+          position:absolute; top:0; left:0; width:100%; height:100%;
+          background:rgba(0,0,0,0.9); z-index:100;
+          display:flex; justify-content:center; align-items:center; overflow: hidden;">
+          <div style="width:90%; max-width:500px; max-height:90%; background: var(--gray-800); border-radius: var(--radius-lg); position:relative; display: flex; flex-direction: column; overflow: hidden;">
+              <button id="close-all-levels-modal" style="position:absolute; top: var(--space-3); right: var(--space-3); color: var(--gray-100); font-size: var(--text-xl); background: none; border: none; cursor: pointer; z-index: 10;">✕</button>
+
+              <!-- Header -->
+              <div style="padding: var(--space-4); border-bottom: 1px solid var(--gray-700);">
+                <h3 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: white; text-align: center;">전체 레벨</h3>
+                <div style="text-align: center; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--gray-400);">
+                  현재 레벨: <span style="color: var(--warning); font-weight: var(--font-bold);">Lv ${state.level}</span>
+                </div>
+              </div>
+
+              <!-- Level Grid Container -->
+              <div id="level-grid-container" style="flex: 1; padding: var(--space-4); overflow-y: auto;">
+                <!-- Content will be injected by JS -->
+              </div>
+
+              <!-- Navigation -->
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-4); border-top: 1px solid var(--gray-700);">
+                <button id="prev-page-btn" style="
+                  background: var(--gray-700);
+                  border: 1px solid var(--gray-600);
+                  color: white;
+                  padding: var(--space-2) var(--space-4);
+                  border-radius: var(--radius-md);
+                  cursor: pointer;
+                  font-size: var(--text-sm);
+                  transition: 0.2s;
+                " onmouseover="this.style.background='var(--gray-600)'" onmouseout="this.style.background='var(--gray-700)'">
+                  &lt; 이전
+                </button>
+                <div id="page-indicator" style="font-size: var(--text-sm); color: var(--gray-300);"></div>
+                <button id="next-page-btn" style="
+                  background: var(--gray-700);
+                  border: 1px solid var(--gray-600);
+                  color: white;
+                  padding: var(--space-2) var(--space-4);
+                  border-radius: var(--radius-md);
+                  cursor: pointer;
+                  font-size: var(--text-sm);
+                  transition: 0.2s;
+                " onmouseover="this.style.background='var(--gray-600)'" onmouseout="this.style.background='var(--gray-700)'">
+                  다음 &gt;
+                </button>
+              </div>
+          </div>
+      </div>
     `
 
     // Fetch Ranking
@@ -325,6 +437,11 @@ export default class Main {
     // Fetch Weekly Activity (if not guest)
     if (!user.isGuest) {
       this.loadWeeklyActivity()
+    }
+
+    // Setup All Levels Modal
+    if (!user.isGuest) {
+      this.setupAllLevelsModal()
     }
 
     // Level Click Handler
@@ -678,6 +795,165 @@ export default class Main {
         </div>
       `).join('')
     }
+  }
+
+  setupAllLevelsModal() {
+    const viewAllBtn = document.getElementById('view-all-levels-btn')
+    const allLevelsModal = document.getElementById('all-levels-modal')
+    const closeAllLevelsModal = document.getElementById('close-all-levels-modal')
+
+    if (!viewAllBtn || !allLevelsModal || !closeAllLevelsModal) return
+
+    let currentPage = 1
+    const totalPages = 6
+
+    // Open modal
+    viewAllBtn.addEventListener('click', () => {
+      const state = store.getState()
+      const userLevel = state.level
+
+      // Calculate which page the user's level is on
+      if (userLevel <= 12) currentPage = 1
+      else if (userLevel <= 24) currentPage = 2
+      else if (userLevel <= 36) currentPage = 3
+      else if (userLevel <= 48) currentPage = 4
+      else if (userLevel <= 60) currentPage = 5
+      else currentPage = 6
+
+      this.renderLevelPage(currentPage, userLevel)
+      allLevelsModal.classList.remove('hidden')
+    })
+
+    // Close modal
+    closeAllLevelsModal.addEventListener('click', () => {
+      allLevelsModal.classList.add('hidden')
+    })
+
+    // Pagination
+    const prevBtn = document.getElementById('prev-page-btn')
+    const nextBtn = document.getElementById('next-page-btn')
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--
+        const state = store.getState()
+        this.renderLevelPage(currentPage, state.level)
+      }
+    })
+
+    nextBtn.addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        currentPage++
+        const state = store.getState()
+        this.renderLevelPage(currentPage, state.level)
+      }
+    })
+  }
+
+  renderLevelPage(page, userLevel) {
+    const container = document.getElementById('level-grid-container')
+    const pageIndicator = document.getElementById('page-indicator')
+    const prevBtn = document.getElementById('prev-page-btn')
+    const nextBtn = document.getElementById('next-page-btn')
+
+    if (!container || !pageIndicator) return
+
+    // Update pagination state
+    prevBtn.disabled = page === 1
+    prevBtn.style.opacity = page === 1 ? '0.5' : '1'
+    prevBtn.style.cursor = page === 1 ? 'not-allowed' : 'pointer'
+
+    nextBtn.disabled = page === 6
+    nextBtn.style.opacity = page === 6 ? '0.5' : '1'
+    nextBtn.style.cursor = page === 6 ? 'not-allowed' : 'pointer'
+
+    pageIndicator.innerText = `${page} / 6`
+
+    // Determine level range for this page
+    let startLevel, endLevel
+    if (page === 1) { startLevel = 1; endLevel = 12 }
+    else if (page === 2) { startLevel = 13; endLevel = 24 }
+    else if (page === 3) { startLevel = 25; endLevel = 36 }
+    else if (page === 4) { startLevel = 37; endLevel = 48 }
+    else if (page === 5) { startLevel = 49; endLevel = 60 }
+    else if (page === 6) { startLevel = 61; endLevel = 61 }
+
+    // Special layout for page 6 (Level 61 only)
+    if (page === 6) {
+      const levelInfo = LEVELS.getLevelInfo(61)
+      const isLocked = levelInfo.locked && userLevel < 61
+      const isUnlocked = userLevel >= 61
+
+      container.innerHTML = `
+        <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+          <div style="text-align: center;">
+            <div style="
+              width: 200px;
+              height: 200px;
+              border-radius: var(--radius-lg);
+              overflow: hidden;
+              margin: 0 auto var(--space-3);
+              ${userLevel === 61 ? 'box-shadow: 0 0 30px rgba(255, 215, 64, 0.6);' : ''}
+              ${!isUnlocked ? 'filter: brightness(0.3);' : ''}
+            ">
+              ${isLocked
+                ? `<div style="width: 100%; height: 100%; background: var(--gray-700); display: flex; align-items: center; justify-content: center; font-size: 4rem;">❓</div>`
+                : `<img src="${LEVELS.getLevelImage(61)}" alt="Level 61" style="width: 100%; height: 100%; object-fit: cover;" />`
+              }
+            </div>
+            <div style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: white; margin-bottom: var(--space-1);">
+              Lv 61
+            </div>
+            <div style="font-size: var(--text-lg); color: ${isLocked ? 'var(--gray-500)' : 'var(--gray-300)'};">
+              ${isLocked ? '???' : levelInfo.name}
+            </div>
+            <div style="font-size: var(--text-sm); color: ${isLocked ? 'var(--gray-600)' : 'var(--gray-400)'}; margin-top: var(--space-2);">
+              ${isLocked ? '???' : levelInfo.category}
+            </div>
+          </div>
+        </div>
+      `
+      return
+    }
+
+    // Regular grid layout (3 rows x 4 cols)
+    let gridHTML = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3);">'
+
+    for (let level = startLevel; level <= endLevel; level++) {
+      const levelInfo = LEVELS.getLevelInfo(level)
+      const isCurrentLevel = level === userLevel
+      const isLocked = levelInfo.locked && userLevel < level
+      const isUnlocked = userLevel >= level
+
+      gridHTML += `
+        <div style="text-align: center;">
+          <div style="
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: var(--space-1);
+            position: relative;
+            ${isCurrentLevel ? 'box-shadow: 0 0 15px rgba(255, 215, 64, 0.8);' : ''}
+            ${!isUnlocked ? 'filter: brightness(0.3);' : ''}
+          ">
+            ${isLocked
+              ? `<div style="width: 100%; height: 100%; background: var(--gray-700); display: flex; align-items: center; justify-content: center; font-size: 2rem;">❓</div>`
+              : `<img src="${LEVELS.getLevelImage(level)}" alt="Level ${level}" style="width: 100%; height: 100%; object-fit: cover;" />`
+            }
+          </div>
+          <div style="font-size: var(--text-xs); font-weight: var(--font-bold); color: ${isCurrentLevel ? 'var(--warning)' : 'white'}; margin-bottom: 2px;">
+            Lv ${level}
+          </div>
+          <div style="font-size: 0.65rem; color: ${isLocked ? 'var(--gray-600)' : 'var(--gray-400)'}; line-height: 1.2;">
+            ${isLocked ? '???' : levelInfo.name}
+          </div>
+        </div>
+      `
+    }
+
+    gridHTML += '</div>'
+    container.innerHTML = gridHTML
   }
 
   destroy() {
