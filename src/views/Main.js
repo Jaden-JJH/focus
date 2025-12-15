@@ -445,122 +445,6 @@ export default class Main {
             </div>
             ` : ''}
 
-            <!-- Hard Mode Tooltip Modal -->
-            <div id="hard-mode-tooltip" class="hidden" style="
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 90%;
-              max-width: 320px;
-              background: var(--gray-800);
-              border: 1px solid var(--error);
-              border-radius: var(--radius-md);
-              padding: var(--space-6);
-              text-align: center;
-              box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-              z-index: 201;
-            ">
-              <div style="font-size: 2rem; margin-bottom: var(--space-3);">⚠️</div>
-              <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-3);">하드모드란?</h3>
-              <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6; margin-bottom: var(--space-2);">
-                하드모드는 <strong style="color: var(--error);">오답을 체크하면 바로 게임오버</strong>가 되는 모드입니다. 고난이도 게임이 추가됩니다.
-              </p>
-              <p style="font-size: var(--text-xs); color: var(--gray-500); margin-top: var(--space-3);">
-                Lv 5부터 플레이 가능
-              </p>
-            </div>
-            <!-- Backdrop for tooltip -->
-            <div id="hard-mode-tooltip-backdrop" class="hidden" style="
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: rgba(0, 0, 0, 0.7);
-              z-index: 200;
-            "></div>
-
-            <!-- Hard Mode Level Restriction Modal -->
-            <div id="hard-mode-level-lock" class="hidden" style="
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 90%;
-              max-width: 300px;
-              background: var(--gray-800);
-              border: 1px solid var(--error);
-              border-radius: var(--radius-md);
-              padding: var(--space-6);
-              text-align: center;
-              box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-              z-index: 201;
-            ">
-              <div style="font-size: 2rem; margin-bottom: var(--space-3);">🔒</div>
-              <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-2);">하드모드 잠김</h3>
-              <p style="font-size: var(--text-base); color: var(--gray-100);">
-                Lv 5부터 플레이 가능합니다.
-              </p>
-            </div>
-            <!-- Backdrop for level lock -->
-            <div id="hard-mode-level-lock-backdrop" class="hidden" style="
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: rgba(0, 0, 0, 0.7);
-              z-index: 200;
-            "></div>
-
-            <!-- Coin Info Tooltip Modal -->
-            <div id="coin-info-tooltip" class="hidden" style="
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 90%;
-              max-width: 320px;
-              background: var(--gray-800);
-              border: 1px solid var(--warning);
-              border-radius: var(--radius-md);
-              padding: var(--space-6);
-              text-align: center;
-              box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
-              z-index: 201;
-            ">
-              <div style="font-size: 2rem; margin-bottom: var(--space-3);">🪙</div>
-              <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--warning); margin-bottom: var(--space-3);">코인 획득 방법</h3>
-              <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6; margin-bottom: var(--space-4);">
-                친구 초대 시 <strong style="color: var(--warning);">+1 코인</strong> 지급
-              </p>
-              <button id="coin-share-btn" style="
-                width: 100%;
-                padding: var(--space-3);
-                background: var(--warning);
-                color: var(--gray-900);
-                border: none;
-                border-radius: var(--radius-md);
-                font-size: var(--text-base);
-                font-weight: var(--font-bold);
-                cursor: pointer;
-                transition: var(--transition-fast);
-              " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                공유하기
-              </button>
-            </div>
-            <!-- Backdrop for coin tooltip -->
-            <div id="coin-info-tooltip-backdrop" class="hidden" style="
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: rgba(0, 0, 0, 0.7);
-              z-index: 200;
-            "></div>
-
             <div style="display: flex; gap: var(--space-2); width: 100%;">
               <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px; font-size: var(--text-lg);" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
                  ${user.isGuest
@@ -578,6 +462,119 @@ export default class Main {
             </div>
 
             ${user.isGuest && state.coins <= 0 ? `<button id="login-redirect-btn" style="margin-top:16px; text-decoration:underline;">로그인하고 계속하기</button>` : ''}
+        </div>
+      </div>
+
+      <!-- Hard Mode Tooltip Modal -->
+      <div id="hard-mode-tooltip-backdrop" class="hidden" style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      ">
+        <div style="
+          width: 90%;
+          max-width: 320px;
+          background: var(--gray-800);
+          border: 1px solid var(--error);
+          border-radius: var(--radius-md);
+          padding: var(--space-6);
+          text-align: center;
+          box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+          position: relative;
+        ">
+          <div style="font-size: 2rem; margin-bottom: var(--space-3);">⚠️</div>
+          <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-3);">하드모드란?</h3>
+          <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6; margin-bottom: var(--space-2);">
+            하드모드는 <strong style="color: var(--error);">오답을 체크하면 바로 게임오버</strong>가 되는 모드입니다. 고난이도 게임이 추가됩니다.
+          </p>
+          <p style="font-size: var(--text-xs); color: var(--gray-500); margin-top: var(--space-3);">
+            Lv 5부터 플레이 가능
+          </p>
+        </div>
+      </div>
+
+      <!-- Hard Mode Level Restriction Modal -->
+      <div id="hard-mode-level-lock-backdrop" class="hidden" style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      ">
+        <div style="
+          width: 90%;
+          max-width: 300px;
+          background: var(--gray-800);
+          border: 1px solid var(--error);
+          border-radius: var(--radius-md);
+          padding: var(--space-6);
+          text-align: center;
+          box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+          position: relative;
+        ">
+          <div style="font-size: 2rem; margin-bottom: var(--space-3);">🔒</div>
+          <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-2);">하드모드 잠김</h3>
+          <p style="font-size: var(--text-base); color: var(--gray-100);">
+            Lv 5부터 플레이 가능합니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- Coin Info Tooltip Modal -->
+      <div id="coin-info-tooltip-backdrop" class="hidden" style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      ">
+        <div style="
+          width: 90%;
+          max-width: 320px;
+          background: var(--gray-800);
+          border: 1px solid var(--warning);
+          border-radius: var(--radius-md);
+          padding: var(--space-6);
+          text-align: center;
+          box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+          position: relative;
+        ">
+          <div style="font-size: 2rem; margin-bottom: var(--space-3);">🪙</div>
+          <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--warning); margin-bottom: var(--space-3);">코인 획득 방법</h3>
+          <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6; margin-bottom: var(--space-4);">
+            친구 초대 시 <strong style="color: var(--warning);">+1 코인</strong> 지급
+          </p>
+          <button id="coin-share-btn" style="
+            width: 100%;
+            padding: var(--space-3);
+            background: var(--warning);
+            color: var(--gray-900);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--text-base);
+            font-weight: var(--font-bold);
+            cursor: pointer;
+            transition: var(--transition-fast);
+          " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            공유하기
+          </button>
         </div>
       </div>
 
@@ -744,10 +741,8 @@ export default class Main {
           hardModeToggle.checked = false
 
           // 레벨 제한 모달 표시
-          const levelLockModal = document.getElementById('hard-mode-level-lock')
           const levelLockBackdrop = document.getElementById('hard-mode-level-lock-backdrop')
-          if (levelLockModal && levelLockBackdrop) {
-            levelLockModal.classList.remove('hidden')
+          if (levelLockBackdrop) {
             levelLockBackdrop.classList.remove('hidden')
           }
           return
@@ -760,58 +755,52 @@ export default class Main {
 
     // Hard Mode Tooltip Handler
     const tooltipIcon = document.getElementById('hard-mode-tooltip-icon')
-    const tooltipModal = document.getElementById('hard-mode-tooltip')
     const tooltipBackdrop = document.getElementById('hard-mode-tooltip-backdrop')
-    if (tooltipIcon && tooltipModal && tooltipBackdrop) {
+    if (tooltipIcon && tooltipBackdrop) {
       tooltipIcon.addEventListener('click', (e) => {
         e.stopPropagation()
-        tooltipModal.classList.remove('hidden')
         tooltipBackdrop.classList.remove('hidden')
       })
 
-      // Close on clicking backdrop or modal
-      const closeTooltip = () => {
-        tooltipModal.classList.add('hidden')
-        tooltipBackdrop.classList.add('hidden')
-      }
-
-      tooltipModal.addEventListener('click', closeTooltip)
-      tooltipBackdrop.addEventListener('click', closeTooltip)
+      // Close on clicking backdrop
+      tooltipBackdrop.addEventListener('click', (e) => {
+        if (e.target === tooltipBackdrop) {
+          tooltipBackdrop.classList.add('hidden')
+        }
+      })
     }
 
     // Hard Mode Level Lock Handler
-    const levelLockModal = document.getElementById('hard-mode-level-lock')
     const levelLockBackdrop = document.getElementById('hard-mode-level-lock-backdrop')
-    if (levelLockModal && levelLockBackdrop) {
-      const closeLevelLock = () => {
-        levelLockModal.classList.add('hidden')
-        levelLockBackdrop.classList.add('hidden')
-      }
-
-      levelLockModal.addEventListener('click', closeLevelLock)
-      levelLockBackdrop.addEventListener('click', closeLevelLock)
+    if (levelLockBackdrop) {
+      levelLockBackdrop.addEventListener('click', (e) => {
+        if (e.target === levelLockBackdrop) {
+          levelLockBackdrop.classList.add('hidden')
+        }
+      })
     }
 
     // Coin Info Tooltip Handler
     const coinInfo = document.getElementById('coin-info')
-    const coinTooltipModal = document.getElementById('coin-info-tooltip')
     const coinTooltipBackdrop = document.getElementById('coin-info-tooltip-backdrop')
     const coinShareBtn = document.getElementById('coin-share-btn')
 
-    if (coinInfo && coinTooltipModal && coinTooltipBackdrop) {
+    if (coinInfo && coinTooltipBackdrop) {
       coinInfo.addEventListener('click', (e) => {
         e.stopPropagation()
-        coinTooltipModal.classList.remove('hidden')
         coinTooltipBackdrop.classList.remove('hidden')
       })
 
-      // Close on clicking backdrop (but not modal, since it contains the share button)
+      // Close on clicking backdrop (but not modal content)
       const closeCoinTooltip = () => {
-        coinTooltipModal.classList.add('hidden')
         coinTooltipBackdrop.classList.add('hidden')
       }
 
-      coinTooltipBackdrop.addEventListener('click', closeCoinTooltip)
+      coinTooltipBackdrop.addEventListener('click', (e) => {
+        if (e.target === coinTooltipBackdrop) {
+          closeCoinTooltip()
+        }
+      })
 
       // Share button handler
       if (coinShareBtn) {
