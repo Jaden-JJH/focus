@@ -29,7 +29,7 @@ export default class Result {
             </div>
             <div class="result-row">
                 <span>경험치</span>
-                <span class="value link-color">+${xp || 0} XP</span>
+                <span class="value">+${xp || 0} XP</span>
             </div>
             ${isHardMode ? `
             <div style="margin-top: var(--space-2); text-align: center; font-size: var(--text-sm); color: var(--error); font-weight: var(--font-bold);">
@@ -43,11 +43,11 @@ export default class Result {
         <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin-bottom: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <span style="font-size: 0.9rem; color: #aaa;">레벨 진행도</span>
-                <span id="level-display" style="font-weight: bold; color: var(--color-accent);">Lv. ${initialLevel}</span>
+                <span id="level-display" style="font-weight: bold; color: var(--theme-accent); transition: color var(--theme-transition);">Lv. ${initialLevel}</span>
             </div>
 
             <div class="xp-bar-container" style="background: #333; height: 24px; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid #555;">
-                <div id="xp-bar-fill" style="background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-warning) 100%); height: 100%; width: ${initialProgress.percent}%; transition: width 1.5s ease-out, background 0.3s;"></div>
+                <div id="xp-bar-fill" style="background: linear-gradient(90deg, var(--theme-accent) 0%, var(--color-warning) 100%); height: 100%; width: ${initialProgress.percent}%; transition: width 1.5s ease-out, background 0.3s;"></div>
                 <div id="xp-bar-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.8rem; font-weight: bold; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
                     ${initialProgress.current} / ${initialProgress.max}
                 </div>
@@ -285,9 +285,9 @@ export default class Result {
                 levelDisplay.innerText = `Lv. ${newLevel}`
 
                 // Add celebration effect to the bar
-                xpBarFill.style.background = 'linear-gradient(90deg, var(--color-warning) 0%, var(--color-accent) 100%)'
+                xpBarFill.style.background = 'linear-gradient(90deg, var(--color-warning) 0%, var(--theme-accent) 100%)'
             } else {
-                xpStatus.innerHTML = `<span style="color: var(--color-accent);">+${earnedXp} XP</span> 획득!`
+                xpStatus.innerHTML = `<span style="color: var(--theme-accent);">+${earnedXp} XP</span> 획득!`
             }
         }, 300)
     }

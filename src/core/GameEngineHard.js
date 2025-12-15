@@ -219,8 +219,9 @@ export class GameEngineHard {
             roundTier = 2
         }
 
-        // ColorSequence 게임인지 확인
-        const isColorSequence = GameClass.name === 'ColorSequence'
+        // ColorSequence 게임인지 확인 (방금 선택된 게임 키 확인)
+        const selectedKey = this.state.history[this.state.history.length - 1]
+        const isColorSequence = selectedKey === 'color_sequence'
 
         // 3. Setup Game UI
         this.container.innerHTML = ''
@@ -281,12 +282,12 @@ export class GameEngineHard {
                 color:#fff;
                 animation: fadeIn 0.2s;
             ">
-                <h2 style="font-size:3rem; margin-bottom:1rem; color:var(--color-accent);">${label}</h2>
+                <h2 style="font-size:3rem; margin-bottom:1rem; color:var(--theme-accent); transition: color var(--theme-transition);">${label}</h2>
                 <div style="font-size:1.5rem; color:#fff;">${subLabel}</div>
                 <div style="margin-top:20px; font-size:1rem; color:#ffc107;">
                     💪 집중한 시간: ${focusTimeStr}
                 </div>
-                <div style="margin-top:8px; font-size:1rem; color:#69F0AE;">
+                <div style="margin-top:8px; font-size:1rem; color:#ffc107;">
                     🎯 현재 집중도: ${focusPercent}%
                 </div>
             </div>

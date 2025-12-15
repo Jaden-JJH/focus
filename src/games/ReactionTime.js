@@ -25,11 +25,12 @@ export class ReactionTime {
         const timeLimit = this.getTimeLimit()
         const clickWindow = this.clickWindowByPhase[this.config.roundTier] || 600
 
-        // 여백 시간 계산 (제한시간 - 클릭윈도우 - 안전여백)
-        const safetyMargin = 500 // 0.5초 안전 여백
-        const availableTime = (timeLimit * 1000) - clickWindow - safetyMargin
+        // 안전 여백: 클릭 윈도우의 3배 + 추가 여유시간
+        // 이렇게 하면 초록색으로 바뀐 후 충분한 시간이 남아있음
+        const safetyMargin = clickWindow * 3 + 500
+        const availableTime = (timeLimit * 1000) - safetyMargin
 
-        // 버튼 활성화 타이밍 (1초 ~ 남은시간 범위)
+        // 버튼 활성화 타이밍 (1초 ~ 안전한 범위 내)
         const minDelay = 1000
         const maxDelay = Math.max(minDelay + 500, availableTime)
         const greenDelay = minDelay + Math.random() * (maxDelay - minDelay)
@@ -75,14 +76,16 @@ export class ReactionTime {
         this.greenTimer = setTimeout(() => {
             if (this.hasClicked) return
 
+            // 타이밍 정확성을 위해 시간 먼저 기록
+            this.startTime = Date.now()
             this.isGreen = true
+
+            // 스타일 변경
             button.style.background = 'linear-gradient(135deg, #4ade80, #22c55e)'
             button.style.boxShadow = '0 10px 30px rgba(74, 222, 128, 0.8)'
             button.style.opacity = '1'
             button.innerText = '👆'
             instruction.innerText = '지금!'
-
-            this.startTime = Date.now()
 
             // 클릭 윈도우 타임아웃
             this.timeoutTimer = setTimeout(() => {

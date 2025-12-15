@@ -45,7 +45,7 @@ export class PatternMemory {
         const items = this.container.querySelectorAll('.memory-item')
         targets.forEach(idx => {
             items[idx].classList.add('active')
-            items[idx].style.backgroundColor = 'var(--color-accent)'
+            items[idx].style.backgroundColor = 'var(--theme-accent)'
         })
 
         setTimeout(() => {
@@ -66,7 +66,7 @@ export class PatternMemory {
 
                     if (targets.includes(idx)) {
                         el.classList.add('found')
-                        el.style.backgroundColor = 'var(--color-accent)'
+                        el.style.backgroundColor = 'var(--theme-accent)'
                         found++
                         if (found === targets.length) {
                             this.config.onCorrect()

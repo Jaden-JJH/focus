@@ -201,33 +201,35 @@ export default class Main {
             <!-- Hard Mode Tooltip Modal -->
             <div id="hard-mode-tooltip" class="hidden" style="
               position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 90%;
+              max-width: 320px;
+              background: var(--gray-800);
+              border: 1px solid var(--error);
+              border-radius: var(--radius-md);
+              padding: var(--space-6);
+              text-align: center;
+              box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+              z-index: 201;
+            ">
+              <div style="font-size: 2rem; margin-bottom: var(--space-3);">⚠️</div>
+              <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-3);">하드모드란?</h3>
+              <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6;">
+                하드모드는 <strong style="color: var(--error);">오답을 체크하면 바로 게임오버</strong>가 되는 모드입니다. 고난이도 게임이 추가됩니다.
+              </p>
+            </div>
+            <!-- Backdrop for tooltip -->
+            <div id="hard-mode-tooltip-backdrop" class="hidden" style="
+              position: fixed;
               top: 0;
               left: 0;
               width: 100%;
               height: 100%;
               background: rgba(0, 0, 0, 0.7);
               z-index: 200;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              padding: var(--space-4);
-            ">
-              <div style="
-                background: var(--gray-800);
-                border: 1px solid var(--error);
-                border-radius: var(--radius-md);
-                padding: var(--space-6);
-                max-width: 320px;
-                text-align: center;
-                box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-              ">
-                <div style="font-size: 2rem; margin-bottom: var(--space-3);">⚠️</div>
-                <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--error); margin-bottom: var(--space-3);">하드모드란?</h3>
-                <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6;">
-                  하드모드는 <strong style="color: var(--error);">오답을 체크하면 바로 게임오버</strong>가 되는 모드입니다. 고난이도 게임이 추가됩니다.
-                </p>
-              </div>
-            </div>
+            "></div>
 
             <div style="display: flex; gap: var(--space-2); width: 100%;">
               <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px; font-size: var(--text-lg);" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
@@ -362,16 +364,22 @@ export default class Main {
     // Hard Mode Tooltip Handler
     const tooltipIcon = document.getElementById('hard-mode-tooltip-icon')
     const tooltipModal = document.getElementById('hard-mode-tooltip')
-    if (tooltipIcon && tooltipModal) {
+    const tooltipBackdrop = document.getElementById('hard-mode-tooltip-backdrop')
+    if (tooltipIcon && tooltipModal && tooltipBackdrop) {
       tooltipIcon.addEventListener('click', (e) => {
         e.stopPropagation()
         tooltipModal.classList.remove('hidden')
+        tooltipBackdrop.classList.remove('hidden')
       })
 
-      // Close on clicking anywhere
-      tooltipModal.addEventListener('click', () => {
+      // Close on clicking backdrop or modal
+      const closeTooltip = () => {
         tooltipModal.classList.add('hidden')
-      })
+        tooltipBackdrop.classList.add('hidden')
+      }
+
+      tooltipModal.addEventListener('click', closeTooltip)
+      tooltipBackdrop.addEventListener('click', closeTooltip)
     }
 
     const loginBtn = document.getElementById('login-redirect-btn')
