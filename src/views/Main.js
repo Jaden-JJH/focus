@@ -69,8 +69,101 @@ export default class Main {
           }
         }
 
+        @keyframes floating {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-8px);
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          }
+          50% {
+            box-shadow: 0 2px 20px rgba(124, 77, 255, 0.6), 0 0 30px rgba(124, 77, 255, 0.3);
+          }
+        }
+
+        @keyframes pulseHard {
+          0%, 100% {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          }
+          50% {
+            box-shadow: 0 2px 20px rgba(239, 68, 68, 0.6), 0 0 30px rgba(239, 68, 68, 0.3);
+          }
+        }
+
+        @keyframes slideUpBar {
+          from {
+            height: 0;
+          }
+          to {
+            height: 32px;
+          }
+        }
+
+        @keyframes shimmer {
+          0%, 100% {
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
+
+        @keyframes imagePulse {
+          0%, 100% {
+            box-shadow: 0 0 0 rgba(124, 77, 255, 0);
+          }
+          50% {
+            box-shadow: 0 0 30px rgba(124, 77, 255, 0.6), 0 0 60px rgba(124, 77, 255, 0.3);
+          }
+        }
+
+        @keyframes imagePulseHard {
+          0%, 100% {
+            box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+          }
+          50% {
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.6), 0 0 60px rgba(239, 68, 68, 0.3);
+          }
+        }
+
+        @keyframes pulseGold {
+          0%, 100% {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          }
+          50% {
+            box-shadow: 0 2px 20px rgba(251, 191, 36, 0.6), 0 0 30px rgba(251, 191, 36, 0.3);
+          }
+        }
+
+        @keyframes imagePulseGold {
+          0%, 100% {
+            box-shadow: 0 0 0 rgba(251, 191, 36, 0);
+          }
+          50% {
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), 0 0 60px rgba(251, 191, 36, 0.3);
+          }
+        }
+
+        @keyframes gradientShift {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
         .main-container {
           animation: fadeInUp 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+          background: linear-gradient(180deg, #0a0a0a 0%, #121212 50%, #0a0a0a 100%);
+          background-size: 100% 200%;
+          animation: fadeInUp 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards, gradientShift 20s ease infinite;
         }
 
         .main-header-fixed {
@@ -89,6 +182,36 @@ export default class Main {
           animation: fadeInUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
           animation-delay: 0.3s;
           opacity: 0;
+        }
+
+        .level-image-container {
+          animation: floating 3s ease-in-out infinite;
+          transition: transform 0.3s ease;
+        }
+
+        .level-image-container:hover {
+          transform: translateY(-8px) scale(1.05);
+        }
+
+        .activity-bar {
+          animation: slideUpBar 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+
+        .card-with-shimmer {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .card-with-shimmer::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+          animation: shimmer 3s ease-in-out infinite;
+          pointer-events: none;
         }
       </style>
       <div class="main-container">
@@ -123,7 +246,7 @@ export default class Main {
 
         <!-- XP Progress Card -->
         ${!user.isGuest ? `
-        <div style="
+        <div class="card-with-shimmer" style="
           background: var(--gray-800);
           border-radius: var(--radius-md);
           padding: var(--space-4);
@@ -151,27 +274,57 @@ export default class Main {
 
           <!-- Level Image & Badge -->
           <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: var(--space-3);">
-            <div style="position: relative; margin-bottom: var(--space-3);">
+            <div class="level-image-container" style="position: relative; margin-bottom: var(--space-3);">
               <img src="${LEVELS.getLevelImage(state.level)}" alt="Level ${state.level}" style="
                 width: 160px;
                 height: 160px;
                 border-radius: var(--radius-md);
                 object-fit: cover;
+                animation: ${(() => {
+                  const lv = state.level;
+                  const isHard = state.isHardMode;
+                  if (lv < 10) return 'none';
+                  if (lv < 40) return isHard ? 'imagePulseHard 3s ease-in-out infinite' : 'imagePulse 3s ease-in-out infinite';
+                  if (lv < 61) return 'imagePulseGold 3s ease-in-out infinite';
+                  return isHard ? 'imagePulseHard 3s ease-in-out infinite' : 'imagePulse 3s ease-in-out infinite';
+                })()};
               " />
               <div style="
                 position: absolute;
                 bottom: -12px;
                 left: 50%;
                 transform: translateX(-50%);
-                background: ${state.isHardMode
-                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-                  : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)'};
-                color: white;
+                background: ${(() => {
+                  const lv = state.level;
+                  const isHard = state.isHardMode;
+                  if (lv < 10) return isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+                  if (lv < 30) return isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+                  if (lv < 40) return isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #9d6fff 0%, #7c4dff 50%, #6a3de8 100%)';
+                  if (lv < 50) return isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+                  if (lv < 60) return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+                  if (lv === 60) return 'linear-gradient(135deg, #1e1e1e 0%, #0a0a0a 100%)';
+                  return 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)';
+                })()};
+                color: ${(() => {
+                  const lv = state.level;
+                  const isHard = state.isHardMode;
+                  if (lv >= 50 && lv < 60) return '#1e1e1e';
+                  if (lv === 61) return isHard ? '#ef4444' : '#7c4dff';
+                  return 'white';
+                })()};
                 padding: var(--space-1) var(--space-3);
                 border-radius: var(--radius-full);
                 font-size: var(--text-sm);
                 font-weight: var(--font-bold);
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                animation: ${(() => {
+                  const lv = state.level;
+                  const isHard = state.isHardMode;
+                  if (lv < 10) return 'none';
+                  if (lv < 40) return isHard ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
+                  if (lv < 61) return 'pulseGold 2s ease-in-out infinite';
+                  return isHard ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
+                })()};
               ">
                 Lv ${state.level}
               </div>
@@ -206,7 +359,7 @@ export default class Main {
 
         <!-- Weekly Activity Card -->
         ${!user.isGuest ? `
-        <div id="weekly-activity-card" style="
+        <div id="weekly-activity-card" class="card-with-shimmer" style="
           background: var(--gray-800);
           border-radius: var(--radius-md);
           padding: var(--space-3);
@@ -813,15 +966,50 @@ export default class Main {
     if (!rankings || rankings.length === 0) {
       listEl.innerHTML = `<div style="text-align:center; color: var(--gray-500); font-size: var(--text-sm);">아직 기록이 없습니다</div>`
     } else {
-      listEl.innerHTML = rankings.map((r, idx) => `
+      listEl.innerHTML = rankings.map((r, idx) => {
+        const lv = r.users?.level || 1;
+        const isHard = currentMode === 'hard';
+
+        // 레벨별 배경색
+        let background;
+        if (lv < 10) background = isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+        else if (lv < 30) background = isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+        else if (lv < 40) background = isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #9d6fff 0%, #7c4dff 50%, #6a3de8 100%)';
+        else if (lv < 50) background = isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+        else if (lv < 60) background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+        else if (lv === 60) background = 'linear-gradient(135deg, #1e1e1e 0%, #0a0a0a 100%)';
+        else background = 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)';
+
+        // 레벨별 텍스트 색상
+        let color = 'white';
+        if (lv >= 50 && lv < 60) color = '#1e1e1e';
+        if (lv === 61) color = isHard ? '#ef4444' : '#7c4dff';
+
+        // 레벨별 애니메이션
+        let animation = 'none';
+        if (lv >= 10 && lv < 40) animation = isHard ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
+        else if (lv >= 40 && lv < 61) animation = 'pulseGold 2s ease-in-out infinite';
+        else if (lv === 61) animation = isHard ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
+
+        return `
               <div class="rank-item" style="display:flex; justify-content:space-between; align-items: center; padding: var(--space-2) 0; border-bottom:1px solid var(--gray-700);">
                   <div style="display: flex; align-items: center; gap: var(--space-2);">
                       <span style="font-size: var(--text-base); color: var(--gray-100);">${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
-                      <span class="level-badge" style="font-size: var(--text-xs); padding: var(--space-1) var(--space-2);">Lv. ${r.users?.level || 1}</span>
+                      <span style="
+                        font-size: var(--text-xs);
+                        padding: var(--space-1) var(--space-2);
+                        background: ${background};
+                        color: ${color};
+                        border-radius: var(--radius-full);
+                        font-weight: var(--font-bold);
+                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                        animation: ${animation};
+                      ">Lv. ${lv}</span>
                   </div>
                   <span style="margin-right: var(--space-4); font-size: var(--text-base); font-weight: var(--font-medium); color: var(--gray-300);">${r.max_round}R</span>
               </div>
-          `).join('')
+          `;
+      }).join('')
     }
 
     // Fetch my rank (if not guest) (모드별)
@@ -881,15 +1069,16 @@ export default class Main {
     // Render activity chart
     const chartContainer = document.getElementById('activity-chart')
     if (chartContainer) {
-      chartContainer.innerHTML = chartData.map(day => `
+      chartContainer.innerHTML = chartData.map((day, index) => `
         <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-1);">
-          <div style="
+          <div class="activity-bar" style="
             width: 100%;
             height: 32px;
             background: ${day.played ? 'var(--theme-primary)' : 'var(--gray-700)'};
             border-radius: var(--radius-sm);
             transition: background-color var(--theme-transition), border-color var(--theme-transition);
             ${day.isToday ? 'border: 1px solid var(--theme-primary);' : ''}
+            animation-delay: ${index * 0.1}s;
           "></div>
           <span style="font-size: var(--text-xs); color: ${day.isToday ? 'var(--gray-100)' : 'var(--gray-500)'}; font-weight: ${day.isToday ? 'var(--font-bold)' : 'var(--font-normal)'};">${day.day}</span>
         </div>
