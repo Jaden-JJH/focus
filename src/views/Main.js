@@ -57,6 +57,40 @@ export default class Main {
 
     // 3. Render Main View
     this.container.innerHTML = `
+      <style>
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .main-container {
+          animation: fadeInUp 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+
+        .main-header-fixed {
+          animation: fadeInUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+          animation-delay: 0.1s;
+          opacity: 0;
+        }
+
+        .main-content-scroll {
+          animation: fadeInUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+          animation-delay: 0.2s;
+          opacity: 0;
+        }
+
+        .action-area-fixed {
+          animation: fadeInUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+          animation-delay: 0.3s;
+          opacity: 0;
+        }
+      </style>
       <div class="main-container">
         <!-- Fixed Header -->
         <header class="main-header main-header-fixed">
@@ -66,7 +100,7 @@ export default class Main {
                font-weight: var(--font-bold);
                background: ${state.isHardMode
                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-                 : 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)'};
+                 : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)'};
                -webkit-background-clip: text;
                -webkit-text-fill-color: transparent;
                background-clip: text;
@@ -131,7 +165,7 @@ export default class Main {
                 transform: translateX(-50%);
                 background: ${state.isHardMode
                   ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-                  : 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)'};
+                  : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)'};
                 color: white;
                 padding: var(--space-1) var(--space-3);
                 border-radius: var(--radius-full);
