@@ -1095,11 +1095,27 @@ export default class Main {
 
     let currentPage = 1
     const totalPages = 6
+    let imagesPreloaded = false
+
+    // Preload all level images
+    const preloadAllImages = () => {
+      if (imagesPreloaded) return
+      imagesPreloaded = true
+
+      // Preload images for all levels (1-61)
+      for (let i = 1; i <= 61; i++) {
+        const img = new Image()
+        img.src = LEVELS.getLevelImage(i)
+      }
+    }
 
     // Open modal
     viewAllBtn.addEventListener('click', () => {
       const state = store.getState()
       const userLevel = state.level
+
+      // Preload images on first modal open
+      preloadAllImages()
 
       // Calculate which page the user's level is on
       if (userLevel <= 12) currentPage = 1
