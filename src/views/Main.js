@@ -65,7 +65,7 @@ export default class Main {
              <span class="nickname">${user.nickname || 'Unknown'}</span>
            </div>
            ${!user.isGuest ? `
-           <div class="currency" style="display: flex; align-items: center; gap: var(--space-1);">
+           <div id="coin-info" class="currency" style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
              <span style="font-size: 20px;">🪙</span>
              <span style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--warning);">${state.coins}</span>
            </div>
@@ -173,8 +173,8 @@ export default class Main {
               align-items: center;
               justify-content: center;
               gap: var(--space-2);
-              padding: var(--space-3) 0;
-              margin-bottom: var(--space-2);
+              padding: var(--space-1) 0;
+              margin-bottom: var(--space-1);
               width: 100%;
             ">
               <button id="hard-mode-tooltip-icon" style="
@@ -231,6 +231,53 @@ export default class Main {
               z-index: 200;
             "></div>
 
+            <!-- Coin Info Tooltip Modal -->
+            <div id="coin-info-tooltip" class="hidden" style="
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 90%;
+              max-width: 320px;
+              background: var(--gray-800);
+              border: 1px solid var(--warning);
+              border-radius: var(--radius-md);
+              padding: var(--space-6);
+              text-align: center;
+              box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+              z-index: 201;
+            ">
+              <div style="font-size: 2rem; margin-bottom: var(--space-3);">🪙</div>
+              <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--warning); margin-bottom: var(--space-3);">코인 획득 방법</h3>
+              <p style="font-size: var(--text-base); color: var(--gray-100); line-height: 1.6; margin-bottom: var(--space-4);">
+                친구 초대 시 <strong style="color: var(--warning);">+1 코인</strong> 지급
+              </p>
+              <button id="coin-share-btn" style="
+                width: 100%;
+                padding: var(--space-3);
+                background: var(--warning);
+                color: var(--gray-900);
+                border: none;
+                border-radius: var(--radius-md);
+                font-size: var(--text-base);
+                font-weight: var(--font-bold);
+                cursor: pointer;
+                transition: var(--transition-fast);
+              " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                공유하기
+              </button>
+            </div>
+            <!-- Backdrop for coin tooltip -->
+            <div id="coin-info-tooltip-backdrop" class="hidden" style="
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.7);
+              z-index: 200;
+            "></div>
+
             <div style="display: flex; gap: var(--space-2); width: 100%;">
               <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px; font-size: var(--text-lg);" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
                  ${user.isGuest
@@ -246,13 +293,6 @@ export default class Main {
                 <img src="/share.svg" alt="공유" class="icon icon-md" />
               </button>
             </div>
-
-            ${!user.isGuest ? `
-              <div style="width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--space-1); font-size: var(--text-sm); color: var(--warning); margin-top: var(--space-2); padding-bottom: var(--space-1);">
-                <span style="font-size: 16px;">💡</span>
-                <span>친구 초대 시 +1 코인</span>
-              </div>
-            ` : ''}
 
             ${user.isGuest && state.coins <= 0 ? `<button id="login-redirect-btn" style="margin-top:16px; text-decoration:underline;">로그인하고 계속하기</button>` : ''}
         </div>
@@ -380,6 +420,70 @@ export default class Main {
 
       tooltipModal.addEventListener('click', closeTooltip)
       tooltipBackdrop.addEventListener('click', closeTooltip)
+    }
+
+    // Coin Info Tooltip Handler
+    const coinInfo = document.getElementById('coin-info')
+    const coinTooltipModal = document.getElementById('coin-info-tooltip')
+    const coinTooltipBackdrop = document.getElementById('coin-info-tooltip-backdrop')
+    const coinShareBtn = document.getElementById('coin-share-btn')
+
+    if (coinInfo && coinTooltipModal && coinTooltipBackdrop) {
+      coinInfo.addEventListener('click', (e) => {
+        e.stopPropagation()
+        coinTooltipModal.classList.remove('hidden')
+        coinTooltipBackdrop.classList.remove('hidden')
+      })
+
+      // Close on clicking backdrop (but not modal, since it contains the share button)
+      const closeCoinTooltip = () => {
+        coinTooltipModal.classList.add('hidden')
+        coinTooltipBackdrop.classList.add('hidden')
+      }
+
+      coinTooltipBackdrop.addEventListener('click', closeCoinTooltip)
+
+      // Share button handler
+      if (coinShareBtn) {
+        coinShareBtn.addEventListener('click', async (e) => {
+          e.stopPropagation()
+
+          const _state = store.getState()
+          const user = _state.user
+
+          if (!user || user.isGuest) {
+            return
+          }
+
+          const referralCode = user.referral_code
+          const shareUrl = `${window.location.origin}/?ref=${referralCode}`
+          const shareText = `집중력 게임 Focus에 도전해보세요! 나의 추천 코드로 시작하면 보너스 코인을 드려요!`
+
+          // Check if Web Share API is supported (mainly mobile)
+          if (navigator.share && navigator.canShare) {
+            try {
+              await navigator.share({
+                title: 'Focus - 집중력 게임',
+                text: shareText,
+                url: shareUrl
+              })
+              console.log('Successfully shared via native share')
+              closeCoinTooltip()
+            } catch (err) {
+              if (err.name !== 'AbortError') {
+                console.error('Error sharing:', err)
+                // Fallback to clipboard
+                copyToClipboard(shareText, shareUrl, false)
+                closeCoinTooltip()
+              }
+            }
+          } else {
+            // Desktop: Copy to clipboard
+            copyToClipboard(shareText, shareUrl, false)
+            closeCoinTooltip()
+          }
+        })
+      }
     }
 
     const loginBtn = document.getElementById('login-redirect-btn')
