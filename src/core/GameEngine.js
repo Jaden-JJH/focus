@@ -2,6 +2,7 @@
 import { CONFIG, LEVELS } from '../config/gameConfig.js'
 import { store } from './store.js'
 import { dataService } from '../services/dataService.js'
+import audioManager from '../utils/audioManager.js'
 
 // Import games (later dynamically or via map)
 import { ShapeMatch } from '../games/ShapeMatch.js'
@@ -50,6 +51,9 @@ export class GameEngine {
         this.state.isPlaying = true
         this.state.startTime = Date.now()
         this.state.totalFocusTime = 0
+
+        // Initialize audio on first user interaction
+        audioManager.init()
 
         // Deduct Coin (optimistic update)
         const currentCoins = store.getState().coins
@@ -351,6 +355,9 @@ export class GameEngine {
 
     handleCorrect() {
         clearInterval(this.timerId)
+
+        // Play correct sound effect
+        audioManager.playCorrect()
 
         // 콤보 체크: 단계별 기준 (쉬운 난이도로 조정)
         const timePercent = (this.state.timeLeft / this.state.timeLimit) * 100

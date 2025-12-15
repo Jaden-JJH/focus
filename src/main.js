@@ -3,6 +3,7 @@ import { initRouter, navigateTo } from './core/router.js'
 import { authService } from './services/authService.js'
 import { dataService } from './services/dataService.js'
 import { store } from './core/store.js'
+import audioManager from './utils/audioManager.js'
 
 async function init() {
   const app = document.querySelector('#app')
@@ -90,6 +91,15 @@ async function init() {
       }
     }
   })
+
+  // 4. Global click sound for all buttons
+  document.addEventListener('click', (e) => {
+    // Check if clicked element is a button or has button-like role
+    const target = e.target.closest('button, [role="button"], .btn, .button')
+    if (target) {
+      audioManager.playClick()
+    }
+  }, true) // Use capture phase to ensure we catch all clicks
 }
 
 init().catch(console.error)

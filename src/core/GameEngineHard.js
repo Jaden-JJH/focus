@@ -2,6 +2,7 @@
 import { CONFIG, LEVELS } from '../config/gameConfig.js'
 import { store } from './store.js'
 import { dataService } from '../services/dataService.js'
+import audioManager from '../utils/audioManager.js'
 
 // Import games
 // 기존 5개 게임
@@ -84,6 +85,9 @@ export class GameEngineHard {
         this.state.isPlaying = true
         this.state.startTime = Date.now()
         this.state.totalFocusTime = 0
+
+        // Initialize audio on first user interaction
+        audioManager.init()
 
         // Deduct Coin (optimistic update)
         const currentCoins = store.getState().coins
@@ -449,6 +453,9 @@ export class GameEngineHard {
     handleCorrect() {
         clearInterval(this.timerId)
 
+        // Play correct sound effect
+        audioManager.playCorrect()
+
         // 콤보 체크: 단계별 기준 (쉬운 난이도로 조정)
         const timePercent = (this.state.timeLeft / this.state.timeLimit) * 100
 
@@ -572,6 +579,9 @@ export class GameEngineHard {
 
     handleWrong() {
         // 하드모드: 한번 틀리면 즉시 게임오버 + 특수 이펙트
+
+        // Play wrong sound effect
+        audioManager.playWrong()
 
         // 1. 화면 진동 효과
         document.body.style.animation = 'shake 0.5s'
