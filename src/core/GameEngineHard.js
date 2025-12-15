@@ -271,6 +271,35 @@ export class GameEngineHard {
 
         const focusPercent = Math.min(100, Math.floor((this.state.round / CONFIG.MAX_ROUND) * 100))
 
+        // 애니메이션 스타일 추가 (한 번만)
+        if (!document.getElementById('phase-splash-animations')) {
+            const style = document.createElement('style')
+            style.id = 'phase-splash-animations'
+            style.textContent = `
+                @keyframes phaseToastUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                @keyframes phaseFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+
+                .phase-text {
+                    animation: phaseToastUp 0.8s ease-out forwards;
+                    opacity: 0;
+                }
+            `
+            document.head.appendChild(style)
+        }
+
         this.container.innerHTML = `
             <div style="
                 flex:1;
@@ -280,19 +309,39 @@ export class GameEngineHard {
                 align-items:center;
                 background:rgba(0,0,0,0.8);
                 color:#fff;
-                animation: fadeIn 0.2s;
+                animation: phaseFadeIn 1.5s ease-out;
             ">
-                <h2 style="font-size:3rem; margin-bottom:1rem; color:var(--theme-accent); transition: color var(--theme-transition);">${label}</h2>
-                <div style="font-size:1.5rem; color:#fff;">${subLabel}</div>
-                <div style="margin-top:20px; font-size:1rem; color:#ffc107;">
+                <h2 class="phase-text" style="
+                    font-size:3rem;
+                    margin-bottom:1rem;
+                    color:var(--theme-accent);
+                    transition: color var(--theme-transition);
+                    animation-delay: 0.2s;
+                ">${label}</h2>
+                <div class="phase-text" style="
+                    font-size:1.5rem;
+                    color:#fff;
+                    animation-delay: 0.4s;
+                ">${subLabel}</div>
+                <div class="phase-text" style="
+                    margin-top:20px;
+                    font-size:1rem;
+                    color:#ffc107;
+                    animation-delay: 0.6s;
+                ">
                     💪 집중한 시간: ${focusTimeStr}
                 </div>
-                <div style="margin-top:8px; font-size:1rem; color:#ffc107;">
+                <div class="phase-text" style="
+                    margin-top:8px;
+                    font-size:1rem;
+                    color:#ffc107;
+                    animation-delay: 0.8s;
+                ">
                     🎯 현재 집중도: ${focusPercent}%
                 </div>
             </div>
         `
-        setTimeout(callback, 1500)
+        setTimeout(callback, 2500)
     }
 
     selectGame() {
