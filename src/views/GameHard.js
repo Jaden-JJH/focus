@@ -9,6 +9,33 @@ export default class GameHard {
     }
 
     async render() {
+        // 🔒 Token Verification: 정상 플로우(Main → Game)로만 진입 가능
+        const token = sessionStorage.getItem('game_token')
+        const tokenTime = sessionStorage.getItem('game_token_time')
+
+        if (!token || !tokenTime) {
+            // 토큰 없음 → Main으로 리다이렉트
+            console.log('⚠️ Game token missing - redirecting to /main')
+            navigateTo('/main')
+            return
+        }
+
+        // 토큰 만료 체크 (10초 이내 생성된 토큰만 유효)
+        const tokenAge = Date.now() - parseInt(tokenTime)
+        if (tokenAge > 10000) {
+            // 토큰 만료 → Main으로 리다이렉트
+            console.log('⚠️ Game token expired - redirecting to /main')
+            sessionStorage.removeItem('game_token')
+            sessionStorage.removeItem('game_token_time')
+            navigateTo('/main')
+            return
+        }
+
+        // 토큰 일회성 삭제
+        sessionStorage.removeItem('game_token')
+        sessionStorage.removeItem('game_token_time')
+        console.log('✅ Hard mode game token verified - starting game')
+
         this.container.innerHTML = `
       <div class="game-area">
         <div class="game-header">

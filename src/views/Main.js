@@ -33,25 +33,9 @@ export default class Main {
     // But currently Guest state is in-memory only.
     // So if !user, we probably should go to Splash.
     if (!user) {
-      // Force redirect to splash if we are here without a user
-      // Use a timeout to avoid render-loop if something is weird, but simplest is just:
-      // window.location.href = '/' ? Or via router?
-      // Router isn't imported here as instance.
-      // Let's just show a "Session Expired" or button.
-      this.container.innerHTML = `
-            <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#888;">
-                <p>Session Expired or Invalid</p>
-                <button id="home-redirect" style="margin-top:10px; text-decoration:underline;">Go Home</button>
-            </div>
-        `
-      setTimeout(() => {
-        const btn = document.getElementById('home-redirect')
-        if (btn) btn.addEventListener('click', () => {
-          import('../core/router.js').then(r => r.navigateTo('/'))
-        })
-        // Auto redirect?
-        // import('../core/router.js').then(r => r.navigateTo('/'))
-      }, 0)
+      // 🔒 비로그인 사용자 자동 리다이렉트
+      console.log('⚠️ No user session - redirecting to splash')
+      import('../core/router.js').then(r => r.navigateTo('/'))
       return
     }
 
@@ -727,10 +711,21 @@ export default class Main {
             used: true,
             timestamp: Date.now()
           }))
+
+          // 게임 진입 토큰 생성 (게스트도 동일하게 적용)
+          const gameToken = crypto.randomUUID()
+          sessionStorage.setItem('game_token', gameToken)
+          sessionStorage.setItem('game_token_time', Date.now().toString())
+
           import('../core/router.js').then(r => r.navigateTo('/game'))
         } else {
           // 로그인 사용자 플로우
           if (_state.coins > 0) {
+            // 게임 진입 토큰 생성
+            const gameToken = crypto.randomUUID()
+            sessionStorage.setItem('game_token', gameToken)
+            sessionStorage.setItem('game_token_time', Date.now().toString())
+
             // 하드모드 여부에 따라 라우팅
             const targetPath = _state.isHardMode ? '/game/hard' : '/game'
             import('../core/router.js').then(r => r.navigateTo(targetPath))
