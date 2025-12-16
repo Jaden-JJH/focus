@@ -816,7 +816,7 @@ export default class Main {
 
           const referralCode = user.referral_code
           const shareUrl = `${window.location.origin}/?ref=${referralCode}`
-          const shareText = `집중력 게임 Focus에 도전해보세요! 나의 추천 코드로 시작하면 보너스 코인을 드려요!`
+          const shareText = `집중력 게임 Focus에 도전해보세요! \n 추천 코드로 시작하면 보너스 코인을 드려요!`
 
           // Check if Web Share API is supported (mainly mobile)
           if (navigator.share && navigator.canShare) {
