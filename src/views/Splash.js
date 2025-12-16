@@ -182,6 +182,13 @@ export default class Splash {
 
         // Event Listeners
         document.getElementById('google-login-btn').addEventListener('click', async () => {
+            // 📊 Analytics: login event
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event': 'login',
+                'method': 'google'
+            });
+
             try {
                 await authService.signInWithGoogle()
             } catch (error) {
@@ -190,6 +197,13 @@ export default class Splash {
         });
 
         document.getElementById('kakao-login-btn').addEventListener('click', async () => {
+            // 📊 Analytics: login event
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event': 'login',
+                'method': 'kakao'
+            });
+
             try {
                 await authService.signInWithKakao()
             } catch (error) {
@@ -198,6 +212,13 @@ export default class Splash {
         });
 
         document.getElementById('guest-btn').addEventListener('click', () => {
+            // 📊 Analytics: login event
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event': 'login',
+                'method': 'guest'
+            });
+
             // Initialize Guest State
             store.setState({
                 user: { id: 'guest', nickname: 'Guest', isGuest: true },

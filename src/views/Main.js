@@ -702,6 +702,16 @@ export default class Main {
         const _state = store.getState()
         const user = _state.user
 
+        // 📊 Analytics: game_start event
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'game_start',
+          'mode': _state.isHardMode ? 'hard' : 'normal',
+          'user_type': user?.isGuest ? 'guest' : 'member',
+          'level': _state.level,
+          'coins': _state.coins
+        });
+
         if (user?.isGuest) {
           const sessionData = localStorage.getItem('guest_session_used')
           const sessionUsed = sessionData ? JSON.parse(sessionData).used : false
@@ -748,6 +758,14 @@ export default class Main {
           return
         }
 
+        // 📊 Analytics: toggle_hard_mode event
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'toggle_hard_mode',
+          'enabled': e.target.checked,
+          'level': _state.level
+        });
+
         store.setState({ isHardMode: e.target.checked })
         this.loadRanking()
       })
@@ -788,6 +806,15 @@ export default class Main {
     if (coinInfo && coinTooltipBackdrop) {
       coinInfo.addEventListener('click', (e) => {
         e.stopPropagation()
+
+        // 📊 Analytics: click_coin_info event
+        const _state = store.getState()
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'click_coin_info',
+          'coins': _state.coins
+        });
+
         coinTooltipBackdrop.classList.remove('hidden')
       })
 
@@ -858,6 +885,17 @@ export default class Main {
       shareBtn.addEventListener('click', async () => {
         const _state = store.getState()
         const user = _state.user
+
+        const shareMethod = (navigator.share && navigator.canShare) ? 'native_share' : 'clipboard';
+
+        // 📊 Analytics: share event
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'share',
+          'method': shareMethod,
+          'content_type': 'referral',
+          'user_type': user?.isGuest ? 'guest' : 'member'
+        });
 
         if (user?.isGuest) {
           // 비회원 공유 - 추천 코드 없음
@@ -1113,6 +1151,14 @@ export default class Main {
       else if (userLevel <= 48) currentPage = 4
       else if (userLevel <= 60) currentPage = 5
       else currentPage = 6
+
+      // 📊 Analytics: view_all_levels event
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        'event': 'view_all_levels',
+        'current_level': userLevel,
+        'page': currentPage
+      });
 
       this.renderLevelPage(currentPage, userLevel)
       allLevelsModal.classList.remove('hidden')

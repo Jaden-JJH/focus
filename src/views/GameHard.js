@@ -34,6 +34,17 @@ export default class GameHard {
         const engine = new GameEngineHard(gameContainer, (result) => {
             // Game Over Callback
             console.log('Hard Mode Game Over Result:', result)
+
+            // 📊 Analytics: game_over event
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event': 'game_over',
+                'round': result.round,
+                'xp': result.xp,
+                'mode': 'hard',
+                'level': store.getState().level
+            });
+
             // Add initial rank to result for rank movement tracking
             result.initialRank = initialRank
             // Navigate to Result with state

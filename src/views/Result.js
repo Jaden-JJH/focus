@@ -108,6 +108,15 @@ export default class Result {
 
             const currentCoins = _state.coins
             if (currentCoins > 0) {
+                // 📊 Analytics: retry_game event
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({
+                    'event': 'retry_game',
+                    'previous_round': round || 0,
+                    'coins': currentCoins,
+                    'mode': isHardMode ? 'hard' : 'normal'
+                });
+
                 // 하드모드 여부에 따라 라우팅
                 const targetPath = isHardMode ? '/game/hard' : '/game'
                 import('../core/router.js').then(r => r.navigateTo(targetPath))
@@ -125,6 +134,18 @@ export default class Result {
         if (shareBtn) {
             shareBtn.addEventListener('click', async () => {
                 const user = store.getState().user
+
+                const shareMethod = (navigator.share && navigator.canShare) ? 'native_share' : 'clipboard';
+
+                // 📊 Analytics: share event
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({
+                    'event': 'share',
+                    'method': shareMethod,
+                    'content_type': 'game_result',
+                    'round': round,
+                    'user_type': user?.isGuest ? 'guest' : 'member'
+                });
 
                 if (user?.isGuest) {
                     const shareUrl = window.location.origin

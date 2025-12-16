@@ -34,6 +34,17 @@ export default class Game {
         const engine = new GameEngine(gameContainer, (result) => {
             // Game Over Callback
             console.log('Game Over Result:', result)
+
+            // 📊 Analytics: game_over event
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                'event': 'game_over',
+                'round': result.round,
+                'xp': result.xp,
+                'mode': 'normal',
+                'level': store.getState().level
+            });
+
             // Add initial rank to result for rank movement tracking
             result.initialRank = initialRank
             // Navigate to Result with state

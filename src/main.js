@@ -38,6 +38,14 @@ async function init() {
       if (user) {
         console.log('Session restored:', user.nickname)
 
+        // 📊 Analytics: Set User ID, Level & Nickname for GA4
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'user_id': user.id,
+          'user_level': user.level,
+          'user_nickname': user.nickname
+        });
+
         // Check and reset daily coins if needed
         await dataService.checkAndResetDailyCoins(currentUser.id)
 
@@ -75,6 +83,15 @@ async function init() {
           const user = await dataService.fetchUserData(currentUser.id)
           if (user) {
             console.log('Session still valid:', user.nickname)
+
+            // 📊 Analytics: Update User ID, Level & Nickname for GA4
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+              'user_id': user.id,
+              'user_level': user.level,
+              'user_nickname': user.nickname
+            });
+
             // Check and reset daily coins if needed
             await dataService.checkAndResetDailyCoins(currentUser.id)
 

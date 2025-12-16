@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase.js'
+import { store } from './store.js'
 
 const routes = {
     '/': () => import('../views/Splash.js'),
@@ -49,6 +50,31 @@ export async function handleLocation() {
         currentView = viewInstance // Reference for next cleanup
 
         await viewInstance.render()
+
+        // 📊 Analytics: screen_view event
+        const screenNameMap = {
+            '/': 'splash',
+            '/onboarding': 'onboarding',
+            '/main': 'main',
+            '/game': 'game',
+            '/game/hard': 'game_hard',
+            '/result': 'result'
+        }
+        const screenName = screenNameMap[path] || 'unknown'
+
+        const state = store.getState()
+        const user = state.user
+        let userType = 'anonymous'
+        if (user) {
+            userType = user.isGuest ? 'guest' : 'member'
+        }
+
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            'event': 'screen_view',
+            'screen_name': screenName,
+            'user_type': userType
+        });
 
     } catch (err) {
         console.error('Failed to load view:', err)
