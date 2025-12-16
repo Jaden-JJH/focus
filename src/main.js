@@ -32,6 +32,16 @@ async function init() {
         // Get stored referral code for new user
         const storedRefCode = localStorage.getItem('referral_code')
         user = await dataService.createUser(currentUser.id, currentUser.user_metadata, storedRefCode)
+
+        // 📊 Analytics: sign_up event (new user created)
+        const loginMethod = localStorage.getItem('last_login_provider') || 'unknown'
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          'event': 'sign_up',
+          'method': loginMethod,
+          'referral_code': storedRefCode || undefined
+        });
+
         // Clear referral code after use
         localStorage.removeItem('referral_code')
       }
