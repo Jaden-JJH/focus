@@ -1,3 +1,5 @@
+import audioManager from '../utils/audioManager.js'
+
 export class PatternMemory {
     constructor(container, { difficulty, roundTier, onCorrect, onWrong }) {
         this.container = container
@@ -63,6 +65,9 @@ export class PatternMemory {
             items.forEach((el, idx) => {
                 el.addEventListener('click', () => {
                     if (el.classList.contains('found')) return
+
+                    // 🔊 인게임 클릭음
+                    audioManager.playInGameClick()
 
                     if (targets.includes(idx)) {
                         el.classList.add('found')

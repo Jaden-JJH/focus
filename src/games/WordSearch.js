@@ -1,3 +1,5 @@
+import audioManager from '../utils/audioManager.js'
+
 export class WordSearch {
     constructor(container, { difficulty, roundTier, onCorrect, onWrong }) {
         this.container = container
@@ -95,6 +97,9 @@ export class WordSearch {
         items.forEach((el, idx) => {
             el.addEventListener('click', () => {
                 if (el.classList.contains('found')) return
+
+                // 🔊 인게임 클릭음
+                audioManager.playInGameClick()
 
                 if (targetIndices.includes(idx)) {
                     // Check if it's the correct order? Or just any part?

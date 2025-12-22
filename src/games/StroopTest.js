@@ -1,3 +1,5 @@
+import audioManager from '../utils/audioManager.js'
+
 export class StroopTest {
     constructor(container, { difficulty, roundTier, onCorrect, onWrong }) {
         this.container = container
@@ -102,6 +104,9 @@ export class StroopTest {
 
         this.container.querySelectorAll('.option-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                // 🔊 인게임 클릭음
+                audioManager.playInGameClick()
+
                 let isCorrect
 
                 if (inverseQuestion) {

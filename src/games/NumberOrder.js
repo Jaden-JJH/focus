@@ -1,3 +1,5 @@
+import audioManager from '../utils/audioManager.js'
+
 export class NumberOrder {
     constructor(container, { difficulty, roundTier, onCorrect, onWrong }) {
         this.container = container
@@ -55,6 +57,9 @@ export class NumberOrder {
             if (el.classList.contains('empty')) return
 
             el.addEventListener('click', () => {
+                // 🔊 인게임 클릭음
+                audioManager.playInGameClick()
+
                 const val = parseInt(el.dataset.val)
                 const currentTarget = targetSequence[currentStep]
 

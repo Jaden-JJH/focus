@@ -190,13 +190,17 @@ export const dataService = {
     },
 
     async saveGameRecord(userId, round, xp, mode = 'normal') {
+        // 🔒 Security: xp_earned 값은 서버 Trigger에서 재계산됩니다.
+        // 클라이언트에서 전달한 xp 값은 무시되고, calculate_xp_for_round() 함수로 재계산됩니다.
+        // 이는 게임 결과 조작을 방지하기 위한 보안 조치입니다.
+
         // 1. Insert Record
         const { error } = await supabase
             .from('game_records')
             .insert({
                 user_id: userId,
                 max_round: round,
-                xp_earned: xp,
+                xp_earned: xp,  // ← 이 값은 무시되고 서버에서 재계산됨
                 mode: mode
             })
 

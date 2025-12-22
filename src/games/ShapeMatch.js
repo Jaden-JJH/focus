@@ -1,3 +1,5 @@
+import audioManager from '../utils/audioManager.js'
+
 export class ShapeMatch {
     constructor(container, { difficulty, onCorrect, onWrong }) {
         this.container = container
@@ -75,6 +77,9 @@ export class ShapeMatch {
         const gridItems = this.container.querySelectorAll('.grid-item');
         gridItems.forEach((el, idx) => {
             el.addEventListener('click', () => {
+                // 🔊 인게임 클릭음
+                audioManager.playInGameClick()
+
                 const item = items[idx]
                 if (item.isTarget) {
                     this.config.onCorrect()

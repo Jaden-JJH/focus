@@ -1,5 +1,6 @@
 import { authService } from '../services/authService.js'
 import { store } from '../core/store.js'
+import audioManager from '../utils/audioManager.js'
 
 export default class Splash {
     constructor(container) {
@@ -10,6 +11,9 @@ export default class Splash {
     }
 
     async render() {
+        // 🔊 2-a: 스플래시 화면 효과음
+        audioManager.playSplash();
+
         // Get last login provider
         const lastProvider = localStorage.getItem('last_login_provider')
 
@@ -182,6 +186,9 @@ export default class Splash {
 
         // Event Listeners
         document.getElementById('google-login-btn').addEventListener('click', async () => {
+            // 🔊 1-14: 버튼 클릭음
+            audioManager.playButtonClick();
+
             // 📊 Analytics: login event
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({
@@ -197,6 +204,9 @@ export default class Splash {
         });
 
         document.getElementById('kakao-login-btn').addEventListener('click', async () => {
+            // 🔊 1-14: 버튼 클릭음
+            audioManager.playButtonClick();
+
             // 📊 Analytics: login event
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({
@@ -212,6 +222,9 @@ export default class Splash {
         });
 
         document.getElementById('guest-btn').addEventListener('click', () => {
+            // 🔊 1-14: 버튼 클릭음
+            audioManager.playButtonClick();
+
             // 📊 Analytics: login event
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({

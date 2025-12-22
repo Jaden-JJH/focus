@@ -2,6 +2,8 @@
 // Color Sequence (색상 순서 기억)
 // Hard Mode Only - 한번 실패하면 게임오버
 // ========================================
+import audioManager from '../utils/audioManager.js'
+
 export class ColorSequence {
     constructor(container, { difficulty, roundTier, onCorrect, onWrong, onReady }) {
         this.container = container
@@ -121,6 +123,9 @@ export class ColorSequence {
     }
 
     async flashTile(tile) {
+        // 🔊 1-8: 칼라시퀀스 가이드음
+        audioManager.playColorGuide();
+
         // 하드모드 전용 색상으로 밝게 표시
         tile.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)'
         tile.style.transform = 'scale(0.95)'
@@ -145,6 +150,9 @@ export class ColorSequence {
 
             tile.addEventListener('click', () => {
                 if (this.isShowing || this.hasFailed) return
+
+                // 🔊 인게임 클릭음
+                audioManager.playInGameClick()
 
                 const index = parseInt(tile.dataset.index)
                 this.userSequence.push(index)

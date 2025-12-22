@@ -2,10 +2,18 @@ import { authService } from '../services/authService.js'
 import { store } from '../core/store.js'
 import { dataService } from '../services/dataService.js'
 import { LEVELS, LEVEL_DATA } from '../config/gameConfig.js'
+import audioManager from '../utils/audioManager.js'
 
 export default class Main {
   constructor(container) {
     this.container = container
+    this.mainSoundPlayed = false // 메인 진입음 1회 재생 플래그
+
+    // 🔊 효과음 설정 복원 (localStorage) - 최초 1회만
+    const soundEnabled = localStorage.getItem('sound_enabled')
+    if (soundEnabled !== null) {
+      audioManager.setEnabled(soundEnabled === 'true')
+    }
 
     // Subscribe to store updates
     this.unsub = store.subscribe(() => {
@@ -16,6 +24,24 @@ export default class Main {
   async render() {
     const state = store.getState()
     const user = state.user
+
+    // 🔊 1-1: 메인 화면 진입음 (최초 1회만)
+    if (!this.mainSoundPlayed) {
+      audioManager.playMainEnter();
+      this.mainSoundPlayed = true;
+    }
+
+    // 🔊 1-12: 하드모드 해금 알림 (레벨 5 달성 후 최초 1회)
+    if (!user?.isGuest && state.level >= 5) {
+      const hardModeUnlockShown = localStorage.getItem('hardmode_unlock_shown');
+      if (!hardModeUnlockShown) {
+        // 약간의 딜레이 후 하드모드 해금 팝업 표시
+        setTimeout(() => {
+          this.showHardModeUnlockModal();
+        }, 1000);
+        localStorage.setItem('hardmode_unlock_shown', 'true');
+      }
+    }
 
     // 1. Loading State
     if (state.isLoading) {
@@ -140,6 +166,28 @@ export default class Main {
           }
           50% {
             background-position: 100% 50%;
+          }
+        }
+
+        @keyframes rankFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes rankItemSlide {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
           }
         }
 
@@ -369,7 +417,7 @@ export default class Main {
         ` : ''}
 
         <!-- Ranking Section -->
-        <section class="rank-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: var(--space-1); min-height: 0; overflow: hidden;">
+        <section class="rank-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: var(--space-1); min-height: 0; overflow: hidden; opacity: 0; animation: rankFadeIn 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards; animation-delay: 0.4s;">
            <div style="flex-shrink: 0; padding: var(--space-1) 0; display: flex; justify-content: space-between; align-items: center;">
              <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--gray-100);">Weekly Ranking</h3>
              ${state.isHardMode ? `
@@ -397,37 +445,65 @@ export default class Main {
 
         <!-- Fixed Action Area -->
         <div class="action-area action-area-fixed">
-            <!-- Hard Mode Toggle -->
-            ${!user.isGuest ? `
-            <div class="hard-mode-toggle-container" style="
+            <!-- Toggles Container -->
+            <div style="
               display: flex;
               align-items: center;
-              justify-content: center;
-              gap: var(--space-2);
-              padding: var(--space-1) 0;
-              margin-bottom: var(--space-1);
+              justify-content: space-between;
+              gap: var(--space-3);
+              padding: var(--space-2) 0;
+              margin-bottom: var(--space-2);
               width: 100%;
             ">
-              <button id="hard-mode-tooltip-icon" style="
-                background: none;
-                border: none;
-                cursor: pointer;
-                padding: 0;
+              <!-- Hard Mode Toggle (Left) -->
+              ${!user.isGuest ? `
+              <div class="hard-mode-toggle-container" style="
                 display: flex;
                 align-items: center;
-                opacity: 0.5;
-                transition: opacity var(--transition-fast);
-              " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
-                <img src="/lucide_info.svg" alt="info" style="width: 18px; height: 18px; filter: brightness(0.7);" />
-              </button>
-              <span style="font-size: var(--text-base); color: var(--gray-100); font-weight: var(--font-medium);">하드모드</span>
-              <label class="toggle-switch">
-                <input type="checkbox" id="hard-mode-toggle" ${state.isHardMode ? 'checked' : ''}>
-                <span class="toggle-slider"></span>
-              </label>
-              <span style="font-size: var(--text-sm); color: ${state.isHardMode ? 'var(--error)' : 'var(--gray-400)'}; font-weight: var(--font-bold); min-width: 32px;">${state.isHardMode ? 'ON' : 'OFF'}</span>
+                gap: var(--space-2);
+                flex: 1;
+                justify-content: center;
+              ">
+                <button id="hard-mode-tooltip-icon" style="
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 0;
+                  display: flex;
+                  align-items: center;
+                  opacity: 0.5;
+                  transition: opacity var(--transition-fast);
+                " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
+                  <img src="/lucide_info.svg" alt="info" style="width: 16px; height: 16px; filter: brightness(0.7);" />
+                </button>
+                <span style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">하드모드</span>
+                <label class="toggle-switch toggle-hard">
+                  <input type="checkbox" id="hard-mode-toggle" ${state.isHardMode ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+                <span style="font-size: var(--text-xs); color: ${state.isHardMode ? 'white' : 'var(--gray-400)'}; font-weight: var(--font-bold); min-width: 28px;">${state.isHardMode ? 'ON' : 'OFF'}</span>
+              </div>
+              ` : `
+              <!-- Guest: Empty space for alignment -->
+              <div style="flex: 1;"></div>
+              `}
+
+              <!-- Sound Toggle (Right) -->
+              <div class="sound-toggle-container" style="
+                display: flex;
+                align-items: center;
+                gap: var(--space-2);
+                flex: 1;
+                justify-content: center;
+              ">
+                <span style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">효과음</span>
+                <label class="toggle-switch toggle-sound-${state.isHardMode ? 'hard' : 'normal'}">
+                  <input type="checkbox" id="sound-toggle" ${audioManager.isEnabled() ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+                <span id="sound-status" style="font-size: var(--text-xs); color: ${audioManager.isEnabled() ? 'white' : 'var(--gray-400)'}; font-weight: var(--font-bold); min-width: 28px;">${audioManager.isEnabled() ? 'ON' : 'OFF'}</span>
+              </div>
             </div>
-            ` : ''}
 
             <div style="display: flex; gap: var(--space-2); width: 100%;">
               <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px; font-size: var(--text-lg);" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
@@ -658,6 +734,10 @@ export default class Main {
 
     if (userInfoArea) {
       userInfoArea.addEventListener('click', () => {
+        // 🔊 1-14: 버튼 클릭음
+        audioManager.playButtonClick();
+        // 🔊 1-3: 팝업 열림음
+        audioManager.playPopupOpen();
         const _state = store.getState()
         const { current, max, percent } = LEVELS.calcXpProgress(_state.totalXp, _state.level)
         if (xpBarFill) xpBarFill.style.width = `${percent}%`
@@ -668,12 +748,18 @@ export default class Main {
 
     if (closeModal) {
       closeModal.addEventListener('click', () => {
+        // 🔊 1-14: 버튼 클릭음
+        audioManager.playButtonClick();
+        // 🔊 1-4: 팝업 닫힘음
+        audioManager.playPopupClose();
         if (xpModal) xpModal.classList.add('hidden')
       })
     }
 
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
+        // 🔊 1-14: 버튼 클릭음
+        audioManager.playButtonClick();
         await authService.signOut()
         store.setState({ user: null, coins: 0, level: 0 })
         import('../core/router.js').then(r => r.navigateTo('/'))
@@ -683,6 +769,9 @@ export default class Main {
     const playBtn = document.getElementById('play-btn')
     if (playBtn) {
       playBtn.addEventListener('click', async () => {
+        // 🔊 1-14: 버튼 클릭음
+        audioManager.playButtonClick();
+
         const _state = store.getState()
         const user = _state.user
 
@@ -734,10 +823,35 @@ export default class Main {
       });
     }
 
+    // Sound Toggle Event Handler
+    const soundToggle = document.getElementById('sound-toggle')
+    const soundStatus = document.getElementById('sound-status')
+    if (soundToggle && soundStatus) {
+      soundToggle.addEventListener('change', (e) => {
+        const isEnabled = e.target.checked
+        audioManager.setEnabled(isEnabled)
+
+        // localStorage에 설정 저장
+        localStorage.setItem('sound_enabled', isEnabled ? 'true' : 'false')
+
+        // 상태 텍스트 업데이트
+        soundStatus.innerText = isEnabled ? 'ON' : 'OFF'
+        soundStatus.style.color = isEnabled ? 'white' : 'var(--gray-400)'
+
+        // 효과음 ON일 때만 토글 변경음 재생
+        if (isEnabled) {
+          audioManager.playToggleChange()
+        }
+      })
+    }
+
     // Hard Mode Toggle Event Handler
     const hardModeToggle = document.getElementById('hard-mode-toggle')
     if (hardModeToggle) {
       hardModeToggle.addEventListener('change', (e) => {
+        // 🔊 1-2: 토글 변경음
+        audioManager.playToggleChange();
+
         const _state = store.getState()
 
         // 레벨 5 미만이면 토글을 원래 상태로 되돌리고 경고 모달 표시
@@ -802,6 +916,9 @@ export default class Main {
       coinInfo.addEventListener('click', (e) => {
         e.stopPropagation()
 
+        // 🔊 1-3: 팝업 열림음
+        audioManager.playPopupOpen();
+
         // 📊 Analytics: click_coin_info event
         const _state = store.getState()
         window.dataLayer = window.dataLayer || [];
@@ -815,6 +932,8 @@ export default class Main {
 
       // Close on clicking backdrop (but not modal content)
       const closeCoinTooltip = () => {
+        // 🔊 1-4: 팝업 닫힘음
+        audioManager.playPopupClose();
         coinTooltipBackdrop.classList.add('hidden')
       }
 
@@ -828,6 +947,9 @@ export default class Main {
       if (coinShareBtn) {
         coinShareBtn.addEventListener('click', async (e) => {
           e.stopPropagation()
+
+          // 🔊 1-14: 버튼 클릭음
+          audioManager.playButtonClick();
 
           const _state = store.getState()
           const user = _state.user
@@ -870,6 +992,8 @@ export default class Main {
     const loginBtn = document.getElementById('login-redirect-btn')
     if (loginBtn) {
       loginBtn.addEventListener('click', () => {
+        // 🔊 1-14: 버튼 클릭음
+        audioManager.playButtonClick();
         import('../core/router.js').then(r => r.navigateTo('/'));
       })
     }
@@ -878,6 +1002,9 @@ export default class Main {
     const shareBtn = document.getElementById('share-btn')
     if (shareBtn) {
       shareBtn.addEventListener('click', async () => {
+        // 🔊 1-14: 버튼 클릭음
+        audioManager.playButtonClick();
+
         const _state = store.getState()
         const user = _state.user
 
@@ -1014,7 +1141,7 @@ export default class Main {
         else if (lv === 61) animation = isHard ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
 
         return `
-              <div class="rank-item" style="display:flex; justify-content:space-between; align-items: center; padding: var(--space-2) 0; border-bottom:1px solid var(--gray-700);">
+              <div class="rank-item" style="display:flex; justify-content:space-between; align-items: center; padding: var(--space-2) 0; border-bottom:1px solid var(--gray-700); opacity: 0; animation: rankItemSlide 0.4s ease-out forwards; animation-delay: ${0.5 + idx * 0.05}s;">
                   <div style="display: flex; align-items: center; gap: var(--space-2);">
                       <span style="font-size: var(--text-base); color: var(--gray-100);">${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
                       <span style="
@@ -1133,6 +1260,9 @@ export default class Main {
 
     // Open modal
     viewAllBtn.addEventListener('click', () => {
+      // 🔊 1-14: 버튼 클릭음
+      audioManager.playButtonClick();
+
       const state = store.getState()
       const userLevel = state.level
 
@@ -1161,6 +1291,8 @@ export default class Main {
 
     // Close modal
     closeAllLevelsModal.addEventListener('click', () => {
+      // 🔊 1-14: 버튼 클릭음
+      audioManager.playButtonClick();
       allLevelsModal.classList.add('hidden')
     })
 
@@ -1169,6 +1301,8 @@ export default class Main {
     const nextBtn = document.getElementById('next-page-btn')
 
     prevBtn.addEventListener('click', () => {
+      // 🔊 1-14: 버튼 클릭음
+      audioManager.playButtonClick();
       if (currentPage > 1) {
         currentPage--
         const state = store.getState()
@@ -1177,6 +1311,8 @@ export default class Main {
     })
 
     nextBtn.addEventListener('click', () => {
+      // 🔊 1-14: 버튼 클릭음
+      audioManager.playButtonClick();
       if (currentPage < totalPages) {
         currentPage++
         const state = store.getState()
@@ -1289,6 +1425,81 @@ export default class Main {
 
     gridHTML += '</div>'
     container.innerHTML = gridHTML
+  }
+
+  showHardModeUnlockModal() {
+    // 🔊 1-12: 하드모드 해금 효과음
+    audioManager.playHardModeUnlock();
+
+    // 모달 생성
+    const modalHTML = `
+      <div id="hardmode-unlock-modal" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      ">
+        <div style="
+          width: 90%;
+          max-width: 360px;
+          background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+          border: 2px solid #ef4444;
+          border-radius: 16px;
+          padding: 32px;
+          text-align: center;
+          box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+          position: relative;
+        ">
+          <div style="font-size: 4rem; margin-bottom: 24px;">🔓</div>
+          <h3 style="font-size: 24px; font-weight: bold; color: #ef4444; margin-bottom: 16px;">
+            하드모드 해금!
+          </h3>
+          <p style="font-size: 16px; color: #d1d5db; line-height: 1.6; margin-bottom: 24px;">
+            축하합니다!<br/>
+            지금부터 <strong style="color: #ef4444;">하드모드</strong> 플레이가 가능합니다.
+          </p>
+          <p style="font-size: 14px; color: #9ca3af; margin-bottom: 24px;">
+            하드모드에서는 한 번의 실수로 게임오버!<br/>
+            최고의 집중력을 발휘하세요.
+          </p>
+          <button id="hardmode-unlock-confirm" style="
+            width: 100%;
+            padding: 14px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+          " onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+            확인
+          </button>
+        </div>
+      </div>
+    `;
+
+    // 모달 삽입
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = modalHTML;
+    document.body.appendChild(modalContainer);
+
+    // 확인 버튼 이벤트
+    const confirmBtn = document.getElementById('hardmode-unlock-confirm');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => {
+        // 🔊 1-14: 버튼 클릭음
+        audioManager.playButtonClick();
+        document.getElementById('hardmode-unlock-modal').remove();
+      });
+    }
   }
 
   destroy() {

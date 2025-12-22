@@ -177,6 +177,9 @@ export class GameEngine {
     }
 
     showIntermission(label, subLabel, callback) {
+        // 🔊 1-6: Phase 진입 효과음 (2초만 재생)
+        audioManager.playPhaseEnter();
+
         // Phase별 별 개수 결정
         let stars = '★☆☆'
         if (label === 'Phase 2') stars = '★★☆'
@@ -476,6 +479,9 @@ export class GameEngine {
     }
 
     handleWrong() {
+        // 🔊 1-13: 오답 효과음
+        audioManager.playIncorrect();
+
         // FX: Wrong (Shake?)
         // Time penalty or just retry? Plan says "Retry within time limit"
     }
@@ -593,12 +599,47 @@ export class GameEngine {
 
                 @keyframes focusGlow {
                     0%, 100% {
-                        box-shadow: inset 0 0 20px rgba(0, 217, 255, 0.2),
-                                    inset 0 0 40px rgba(0, 217, 255, 0.1);
+                        box-shadow: inset 0 0 30px rgba(0, 217, 255, 0.4),
+                                    inset 0 0 60px rgba(0, 217, 255, 0.2),
+                                    inset 0 0 100px rgba(0, 217, 255, 0.1);
                     }
                     50% {
-                        box-shadow: inset 0 0 30px rgba(0, 217, 255, 0.3),
-                                    inset 0 0 60px rgba(0, 217, 255, 0.15);
+                        box-shadow: inset 0 0 50px rgba(0, 217, 255, 0.6),
+                                    inset 0 0 100px rgba(0, 217, 255, 0.3),
+                                    inset 0 0 150px rgba(0, 217, 255, 0.15);
+                    }
+                }
+
+                @keyframes gradientShift {
+                    0%, 100% {
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                }
+
+                @keyframes feverPulse {
+                    0%, 100% {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                    50% {
+                        transform: scale(1.05);
+                        opacity: 0.9;
+                    }
+                }
+
+                @keyframes feverTextGlow {
+                    0%, 100% {
+                        text-shadow: 0 0 10px rgba(255, 215, 0, 0.8),
+                                     0 0 20px rgba(255, 215, 0, 0.6),
+                                     0 0 30px rgba(255, 215, 0, 0.4);
+                    }
+                    50% {
+                        text-shadow: 0 0 20px rgba(255, 215, 0, 1),
+                                     0 0 40px rgba(255, 215, 0, 0.8),
+                                     0 0 60px rgba(255, 215, 0, 0.6);
                     }
                 }
 
@@ -610,7 +651,40 @@ export class GameEngine {
                     height: 100%;
                     pointer-events: none;
                     z-index: 999;
-                    animation: focusGlow 3s ease-in-out infinite;
+                    animation: focusGlow 2s ease-in-out infinite;
+                    transition: opacity 0.5s ease-out;
+                }
+
+                .focus-glow-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    z-index: 998;
+                    background: linear-gradient(45deg,
+                        rgba(0, 217, 255, 0.05),
+                        rgba(124, 77, 255, 0.05),
+                        rgba(255, 215, 0, 0.05));
+                    background-size: 400% 400%;
+                    animation: gradientShift 8s ease infinite;
+                    transition: opacity 0.5s ease-out;
+                }
+
+                .fever-text {
+                    position: fixed;
+                    top: 8%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    font-size: 1.8rem;
+                    font-weight: bold;
+                    color: #ffd700;
+                    z-index: 1000;
+                    pointer-events: none;
+                    letter-spacing: 3px;
+                    animation: feverPulse 1.5s ease-in-out infinite, feverTextGlow 2s ease-in-out infinite;
+                    transition: opacity 0.5s ease-out;
                 }
             `
             document.head.appendChild(style)
@@ -626,23 +700,121 @@ export class GameEngine {
 
     showFocusGlow() {
         // 이미 있으면 제거하고 새로 생성
-        const existingGlow = document.getElementById('focus-glow')
-        if (existingGlow) existingGlow.remove()
+        this.removeFocusGlow()
 
+        // Glow Border
         const glowBorder = document.createElement('div')
-        glowBorder.id = 'focus-glow'
+        glowBorder.id = 'focus-glow-border'
         glowBorder.className = 'focus-glow-border'
         document.body.appendChild(glowBorder)
 
+        // Gradient Overlay
+        const glowOverlay = document.createElement('div')
+        glowOverlay.id = 'focus-glow-overlay'
+        glowOverlay.className = 'focus-glow-overlay'
+        document.body.appendChild(glowOverlay)
+
+        // FEVER TIME! Text (제거됨 - 파티클과 Glow 효과만 유지)
+
+        // 파티클 효과 (주기적으로 생성)
+        this.feverParticleInterval = setInterval(() => {
+            if (this.state.combo >= 10) {
+                this.createFeverParticle()
+            }
+        }, 300)
+
         // 10콤보 미만으로 떨어지면 제거하기 위해 참조 저장
-        this.focusGlowElement = glowBorder
+        this.focusGlowElements = [glowBorder, glowOverlay]
     }
 
     removeFocusGlow() {
+        // 파티클 생성 중지
+        if (this.feverParticleInterval) {
+            clearInterval(this.feverParticleInterval)
+            this.feverParticleInterval = null
+        }
+
+        // 페이드아웃 효과
+        if (this.focusGlowElements && this.focusGlowElements.length > 0) {
+            this.focusGlowElements.forEach(element => {
+                if (element && element.style) {
+                    element.style.opacity = '0'
+                    setTimeout(() => element.remove(), 500)
+                }
+            })
+            this.focusGlowElements = null
+        }
+
+        // Legacy 호환성 (기존 코드)
         if (this.focusGlowElement) {
-            this.focusGlowElement.remove()
+            this.focusGlowElement.style.opacity = '0'
+            setTimeout(() => this.focusGlowElement.remove(), 500)
             this.focusGlowElement = null
         }
+    }
+
+    createFeverParticle() {
+        const particle = document.createElement('div')
+        const side = Math.floor(Math.random() * 4) // 0: top, 1: right, 2: bottom, 3: left
+        let startX, startY, endX, endY
+
+        const margin = 20
+        const distance = 50 + Math.random() * 100
+
+        switch (side) {
+            case 0: // top
+                startX = Math.random() * window.innerWidth
+                startY = margin
+                endX = startX + (Math.random() - 0.5) * 100
+                endY = startY + distance
+                break
+            case 1: // right
+                startX = window.innerWidth - margin
+                startY = Math.random() * window.innerHeight
+                endX = startX - distance
+                endY = startY + (Math.random() - 0.5) * 100
+                break
+            case 2: // bottom
+                startX = Math.random() * window.innerWidth
+                startY = window.innerHeight - margin
+                endX = startX + (Math.random() - 0.5) * 100
+                endY = startY - distance
+                break
+            case 3: // left
+                startX = margin
+                startY = Math.random() * window.innerHeight
+                endX = startX + distance
+                endY = startY + (Math.random() - 0.5) * 100
+                break
+        }
+
+        const colors = ['rgba(0, 217, 255, 0.6)', 'rgba(124, 77, 255, 0.6)', 'rgba(255, 215, 0, 0.6)']
+        const color = colors[Math.floor(Math.random() * colors.length)]
+        const size = 4 + Math.random() * 6
+
+        particle.style.cssText = `
+            position: fixed;
+            left: ${startX}px;
+            top: ${startY}px;
+            width: ${size}px;
+            height: ${size}px;
+            background: ${color};
+            border-radius: 50%;
+            z-index: 997;
+            pointer-events: none;
+            box-shadow: 0 0 10px ${color};
+        `
+        document.body.appendChild(particle)
+
+        particle.animate([
+            { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+            { transform: `translate(${endX - startX}px, ${endY - startY}px) scale(0)`, opacity: 0 }
+        ], {
+            duration: 1500,
+            easing: 'ease-out'
+        })
+
+        setTimeout(() => particle.remove(), 1500)
     }
 
     createComboParticle(color) {
@@ -683,6 +855,9 @@ export class GameEngine {
         clearInterval(this.timerId)
         console.log('Game Over:', reason)
 
+        // 게임오버 시 Fever 효과 제거
+        this.removeFocusGlow()
+
         // Calculate XP
         const earnedXp = LEVELS.calcXpForRound(this.state.round)
 
@@ -694,5 +869,6 @@ export class GameEngine {
 
     cleanup() {
         clearInterval(this.timerId)
+        this.removeFocusGlow()
     }
 }

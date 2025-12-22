@@ -148,10 +148,22 @@
     border-radius: 50%;
 }
 
-input:checked + .toggle-slider {
+/* 효과음 토글 - 일반 모드: 보라색 */
+.toggle-sound-normal input:checked + .toggle-slider {
+    background-color: #7c4dff;
+}
+
+/* 효과음 토글 - 하드 모드: 빨간색 */
+.toggle-sound-hard input:checked + .toggle-slider {
     background-color: var(--error);
 }
 
+/* 하드모드 토글 - 빨간색 */
+.toggle-hard input:checked + .toggle-slider {
+    background-color: var(--error);
+}
+
+/* 토글 슬라이더 이동 애니메이션 */
 input:checked + .toggle-slider:before {
     transform: translateX(24px);
 }

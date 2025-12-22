@@ -1,6 +1,7 @@
 import { dataService } from '../services/dataService.js'
 import { store } from '../core/store.js'
 import { LEVELS, LEVEL_DATA } from '../config/gameConfig.js'
+import audioManager from '../utils/audioManager.js'
 
 export default class Result {
     constructor(container) {
@@ -11,6 +12,20 @@ export default class Result {
         const state = history.state || {} // Router pushState data
         const { round, xp, initialRank, isHardMode } = state
         const user = store.getState().user
+
+        // 🔊 1-9/1-10: GameOver 성공/실패 효과음
+        if (user && round && !user.isGuest) {
+            const mode = isHardMode ? 'hard' : 'normal';
+            const userMaxRound = mode === 'hard' ? (user.max_round_hard || 0) : (user.max_round_normal || 0);
+            const isSuccess = round >= userMaxRound;
+
+            // GameOver 효과음 재생
+            if (isSuccess) {
+                audioManager.playGameOverSuccess();
+            } else {
+                audioManager.playGameOverFail();
+            }
+        }
 
         // Store initial level and XP before saving record
         const initialLevel = user ? user.level : 1
@@ -97,6 +112,9 @@ export default class Result {
     `
 
         document.getElementById('retry-btn').addEventListener('click', async () => {
+            // 🔊 1-14: 버튼 클릭음
+            audioManager.playButtonClick();
+
             const _state = store.getState()
             const user = _state.user
 
@@ -126,6 +144,8 @@ export default class Result {
         });
 
         document.getElementById('home-btn').addEventListener('click', () => {
+            // 🔊 1-14: 버튼 클릭음
+            audioManager.playButtonClick();
             import('../core/router.js').then(r => r.navigateTo('/main'));
         });
 
@@ -133,6 +153,9 @@ export default class Result {
         const shareBtn = document.getElementById('share-btn')
         if (shareBtn) {
             shareBtn.addEventListener('click', async () => {
+                // 🔊 1-14: 버튼 클릭음
+                audioManager.playButtonClick();
+
                 const user = store.getState().user
 
                 const shareMethod = (navigator.share && navigator.canShare) ? 'native_share' : 'clipboard';
@@ -192,6 +215,8 @@ export default class Result {
             const mode = isHardMode ? 'hard' : 'normal'
 
             try {
+                // 🔒 Security: xp 값은 참고용이며, 실제로는 서버에서 재계산됩니다.
+                // Supabase Trigger가 max_round 기반으로 정확한 XP를 계산합니다.
                 await dataService.saveGameRecord(user.id, round, xp, mode)
 
                 const newUser = store.getState().user
@@ -355,6 +380,9 @@ export default class Result {
     }
 
     showLevelUp(level) {
+        // 🔊 1-11: 레벨업 효과음
+        audioManager.playLevelUp();
+
         const levelInfo = LEVELS.getLevelInfo(level)
         const overlay = document.createElement('div')
         overlay.style.cssText = `
@@ -371,10 +399,52 @@ export default class Result {
         `
         this.container.appendChild(overlay)
 
+        // 🎉 컨페티 효과 (30개 파티클)
+        for (let i = 0; i < 30; i++) {
+            setTimeout(() => {
+                this.createConfetti()
+            }, i * 30) // 약간의 시차를 두고 생성
+        }
+
         setTimeout(() => {
             overlay.style.opacity = '0'
             overlay.style.transition = 'opacity 0.5s'
             setTimeout(() => overlay.remove(), 500)
         }, 2000)
+    }
+
+    createConfetti() {
+        const confetti = document.createElement('div')
+        const colors = ['#ffd740', '#69f0ae', '#7c4dff', '#ff5252', '#00bcd4']
+        const color = colors[Math.floor(Math.random() * colors.length)]
+        const size = Math.random() * 10 + 6 // 레벨업은 조금 더 크게
+        const startX = Math.random() * window.innerWidth
+        const startY = window.innerHeight / 2
+        const endX = startX + (Math.random() - 0.5) * 400
+        const endY = startY + Math.random() * 500
+
+        confetti.style.cssText = `
+            position: fixed;
+            left: ${startX}px;
+            top: ${startY}px;
+            width: ${size}px;
+            height: ${size}px;
+            background-color: ${color};
+            border-radius: 50%;
+            z-index: 999;
+            pointer-events: none;
+        `
+        document.body.appendChild(confetti)
+
+        // Animate using Web Animations API
+        confetti.animate([
+            { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
+            { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+        ], {
+            duration: 1000, // 레벨업은 조금 더 길게
+            easing: 'ease-out'
+        })
+
+        setTimeout(() => confetti.remove(), 1000)
     }
 }
