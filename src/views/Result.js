@@ -59,19 +59,19 @@ export default class Result {
         this.container.innerHTML = `
       <div class="main-container">
         <!-- Fixed Header -->
-        <header class="main-header main-header-fixed" style="display: flex; justify-content: center; align-items: center; padding: var(--space-4);">
-          <h2 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--gray-100); margin: 0;">Game Over</h2>
+        <header class="main-header main-header-fixed" style="display: flex; justify-content: center; align-items: center; padding: 12px 16px;">
+          <h2 style="font-size: 1.25rem; font-weight: var(--font-bold); color: var(--gray-100); margin: 0;">Game Over</h2>
         </header>
 
         <!-- Scrollable Content Area -->
         <div class="main-content-scroll">
         <!-- Result Card with unified width -->
-        <div class="result-card" style="width: 100%; max-width: 400px; margin: 20px auto; box-sizing: border-box;">
-            <div class="result-row">
+        <div class="result-card" style="width: 100%; max-width: 400px; margin: 8px auto 16px; padding: 12px 16px; box-sizing: border-box;">
+            <div class="result-row" style="margin-bottom: 6px; font-size: 0.95rem;">
                 <span>라운드</span>
                 <span class="value">${round || 0}</span>
             </div>
-            <div class="result-row">
+            <div class="result-row" style="margin-bottom: 6px; font-size: 0.95rem;">
                 <span>경험치</span>
                 <span class="value">+${xp || 0} XP</span>
             </div>
@@ -102,12 +102,12 @@ export default class Result {
             50% { box-shadow: 0 2px 20px rgba(251,191,36,0.6), 0 0 30px rgba(251,191,36,0.3); }
           }
         </style>
-        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin: 0 auto 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box;">
+        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin: 0 auto 12px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box;">
             <!-- Level Image with Badge -->
             <div class="level-image-container" style="
               position: relative;
-              margin: 0 auto 16px;
-              width: 120px;
+              margin: 0 auto 12px;
+              width: 100px;
               animation: floating 3s ease-in-out infinite;
             ">
               <img
@@ -115,8 +115,8 @@ export default class Result {
                 src="${LEVELS.getLevelImage(initialLevel)}"
                 alt="Level ${initialLevel}"
                 style="
-                  width: 120px;
-                  height: 120px;
+                  width: 100px;
+                  height: 100px;
                   border-radius: 12px;
                   object-fit: cover;
                   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -124,14 +124,14 @@ export default class Result {
               />
               <div id="level-badge" style="
                 position: absolute;
-                bottom: -12px;
+                bottom: -10px;
                 left: 50%;
                 transform: translateX(-50%);
                 background: ${this.getLevelBadgeGradient(initialLevel, isHardMode)};
                 color: ${this.getLevelBadgeColor(initialLevel, isHardMode)};
-                padding: 6px 16px;
+                padding: 4px 12px;
                 border-radius: 9999px;
-                font-size: 0.875rem;
+                font-size: 0.8rem;
                 font-weight: bold;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                 animation: ${this.getLevelBadgeAnimation(initialLevel, isHardMode)};
@@ -142,16 +142,16 @@ export default class Result {
             </div>
 
             <!-- Level Info -->
-            <div style="text-align: center; margin-bottom: 12px;">
+            <div style="text-align: center; margin-bottom: 10px;">
               <div id="level-name" style="
-                font-size: 1.125rem;
+                font-size: 1rem;
                 font-weight: bold;
                 color: white;
               ">
                 ${LEVELS.getLevelInfo(initialLevel).name}
               </div>
               <div id="level-category" style="
-                font-size: 0.875rem;
+                font-size: 0.8rem;
                 color: #aaa;
               ">
                 ${LEVELS.getLevelInfo(initialLevel).category}
@@ -159,15 +159,15 @@ export default class Result {
             </div>
 
             <!-- XP Progress Bar (Enhanced) -->
-            <div class="xp-bar-container" style="background: #333; height: 24px; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid #555; margin-bottom: 8px;">
+            <div class="xp-bar-container" style="background: #333; height: 20px; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid #555; margin-bottom: 6px;">
                 <div id="xp-bar-fill" style="background: linear-gradient(90deg, var(--theme-accent) 0%, var(--color-warning) 100%); height: 100%; width: 0%; transition: width 1.5s ease-out, background 0.3s;"></div>
-                <div id="xp-bar-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.8rem; font-weight: bold; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+                <div id="xp-bar-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.75rem; font-weight: bold; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
                     ${initialProgress.current} / ${initialProgress.max}
                 </div>
             </div>
 
             <!-- XP Status -->
-            <div style="text-align: center; font-size: 0.8rem; color: #888;" id="xp-status">
+            <div style="text-align: center; font-size: 0.75rem; color: #888;" id="xp-status">
                 Calculating...
             </div>
 
@@ -177,24 +177,24 @@ export default class Result {
               display: flex;
               align-items: center;
               gap: 8px;
-              margin-top: 12px;
-              padding: 8px 12px;
+              margin-top: 8px;
+              padding: 6px 10px;
               background: rgba(255,255,255,0.03);
               border-radius: 8px;
             ">
               <img
                 src="${LEVELS.getLevelImage(initialLevel + 1)}"
                 style="
-                  width: 40px;
-                  height: 40px;
+                  width: 36px;
+                  height: 36px;
                   border-radius: 6px;
                   object-fit: cover;
                   ${LEVELS.getLevelInfo(initialLevel + 1).locked ? 'filter: brightness(0.3);' : ''}
                 "
               />
               <div style="flex: 1;">
-                <div style="font-size: 0.75rem; color: #888;">다음 레벨</div>
-                <div style="font-size: 0.875rem; color: white; font-weight: 500;">
+                <div style="font-size: 0.7rem; color: #888;">다음 레벨</div>
+                <div style="font-size: 0.8rem; color: white; font-weight: 500;">
                   ${LEVELS.getLevelInfo(initialLevel + 1).locked
                     ? '???'
                     : LEVELS.getLevelInfo(initialLevel + 1).name}
@@ -207,10 +207,10 @@ export default class Result {
 
         <!-- Rank Movement Section -->
         ${user && !user.isGuest ? `
-        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin: 0 auto 20px; padding: 20px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none; box-sizing: border-box;">
+        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin: 0 auto 12px; padding: 12px 16px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none; box-sizing: border-box;">
             <div style="text-align: center;">
-                <div id="rank-movement-text" style="font-size: 1rem; font-weight: bold; color: var(--color-success);"></div>
-                <div id="rank-movement-detail" style="font-size: 0.85rem; color: #aaa; margin-top: 4px;"></div>
+                <div id="rank-movement-text" style="font-size: 0.95rem; font-weight: bold; color: var(--color-success);"></div>
+                <div id="rank-movement-detail" style="font-size: 0.8rem; color: #aaa; margin-top: 4px;"></div>
             </div>
         </div>
         ` : ''}

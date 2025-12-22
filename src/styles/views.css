@@ -31,7 +31,7 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: var(--space-4);
+    padding: 8px var(--space-4);
     padding-bottom: 200px;
     -webkit-overflow-scrolling: touch;
     box-sizing: border-box;
