@@ -119,12 +119,16 @@ async function init() {
     }
   })
 
-  // 4. Global click sound for all buttons
+  // 4. Global click sound for in-game buttons only
   document.addEventListener('click', (e) => {
+    // Only play in-game click sound when in game routes
+    const isInGame = window.location.pathname.startsWith('/game')
+    if (!isInGame) return
+
     // Check if clicked element is a button or has button-like role
     const target = e.target.closest('button, [role="button"], .btn, .button')
     if (target) {
-      audioManager.playClick()
+      audioManager.playInGameClick()
     }
   }, true) // Use capture phase to ensure we catch all clicks
 }

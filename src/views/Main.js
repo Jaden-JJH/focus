@@ -8,6 +8,7 @@ export default class Main {
   constructor(container) {
     this.container = container
     this.mainSoundPlayed = false // 메인 진입음 1회 재생 플래그
+    this.allLevelsModalSetup = false // 전체 레벨 모달 setup 1회 실행 플래그
 
     // 🔊 효과음 설정 복원 (localStorage) - 최초 1회만
     const soundEnabled = localStorage.getItem('sound_enabled')
@@ -719,9 +720,10 @@ export default class Main {
       this.loadWeeklyActivity()
     }
 
-    // Setup All Levels Modal
-    if (!user.isGuest) {
+    // Setup All Levels Modal (최초 1회만)
+    if (!user.isGuest && !this.allLevelsModalSetup) {
       this.setupAllLevelsModal()
+      this.allLevelsModalSetup = true
     }
 
     // Level Click Handler
@@ -734,9 +736,7 @@ export default class Main {
 
     if (userInfoArea) {
       userInfoArea.addEventListener('click', () => {
-        // 🔊 1-14: 버튼 클릭음
-        audioManager.playButtonClick();
-        // 🔊 1-3: 팝업 열림음
+        // 🔊 1-3: 팝업 열림음 (1-14 제외 - 팝업은 1-3만 재생)
         audioManager.playPopupOpen();
         const _state = store.getState()
         const { current, max, percent } = LEVELS.calcXpProgress(_state.totalXp, _state.level)
@@ -748,9 +748,7 @@ export default class Main {
 
     if (closeModal) {
       closeModal.addEventListener('click', () => {
-        // 🔊 1-14: 버튼 클릭음
-        audioManager.playButtonClick();
-        // 🔊 1-4: 팝업 닫힘음
+        // 🔊 1-4: 팝업 닫힘음 (1-14 제외 - 팝업은 1-4만 재생)
         audioManager.playPopupClose();
         if (xpModal) xpModal.classList.add('hidden')
       })
@@ -886,12 +884,16 @@ export default class Main {
     if (tooltipIcon && tooltipBackdrop) {
       tooltipIcon.addEventListener('click', (e) => {
         e.stopPropagation()
+        // 🔊 1-3: 팝업 열림음
+        audioManager.playPopupOpen();
         tooltipBackdrop.classList.remove('hidden')
       })
 
       // Close on clicking backdrop
       tooltipBackdrop.addEventListener('click', (e) => {
         if (e.target === tooltipBackdrop) {
+          // 🔊 1-4: 팝업 닫힘음
+          audioManager.playPopupClose();
           tooltipBackdrop.classList.add('hidden')
         }
       })
@@ -902,6 +904,8 @@ export default class Main {
     if (levelLockBackdrop) {
       levelLockBackdrop.addEventListener('click', (e) => {
         if (e.target === levelLockBackdrop) {
+          // 🔊 1-4: 팝업 닫힘음
+          audioManager.playPopupClose();
           levelLockBackdrop.classList.add('hidden')
         }
       })
@@ -1260,8 +1264,8 @@ export default class Main {
 
     // Open modal
     viewAllBtn.addEventListener('click', () => {
-      // 🔊 1-14: 버튼 클릭음
-      audioManager.playButtonClick();
+      // 🔊 1-3: 팝업 열림음 (1-14 제외 - 팝업은 1-3만 재생)
+      audioManager.playPopupOpen();
 
       const state = store.getState()
       const userLevel = state.level
@@ -1291,8 +1295,8 @@ export default class Main {
 
     // Close modal
     closeAllLevelsModal.addEventListener('click', () => {
-      // 🔊 1-14: 버튼 클릭음
-      audioManager.playButtonClick();
+      // 🔊 1-4: 팝업 닫힘음 (1-14 제외 - 팝업은 1-4만 재생)
+      audioManager.playPopupClose();
       allLevelsModal.classList.add('hidden')
     })
 
