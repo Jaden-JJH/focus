@@ -57,11 +57,16 @@ export default class Result {
         const initialProgress = LEVELS.calcXpProgress(initialTotalXp, initialLevel)
 
         this.container.innerHTML = `
-      <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-        <h2>Game Over</h2>
+      <div class="main-container">
+        <!-- Fixed Header -->
+        <header class="main-header main-header-fixed" style="display: flex; justify-content: center; align-items: center; padding: var(--space-4);">
+          <h2 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--gray-100); margin: 0;">Game Over</h2>
+        </header>
 
+        <!-- Scrollable Content Area -->
+        <div class="main-content-scroll">
         <!-- Result Card with unified width -->
-        <div class="result-card" style="width: 100%; max-width: 400px; margin: 20px 0;">
+        <div class="result-card" style="width: 100%; max-width: 400px; margin: 20px auto;">
             <div class="result-row">
                 <span>라운드</span>
                 <span class="value">${round || 0}</span>
@@ -97,7 +102,7 @@ export default class Result {
             50% { box-shadow: 0 2px 20px rgba(251,191,36,0.6), 0 0 30px rgba(251,191,36,0.3); }
           }
         </style>
-        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin-bottom: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin: 0 auto 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
             <!-- Level Image with Badge -->
             <div class="level-image-container" style="
               position: relative;
@@ -202,16 +207,18 @@ export default class Result {
 
         <!-- Rank Movement Section -->
         ${user && !user.isGuest ? `
-        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin-bottom: 20px; padding: 20px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none;">
+        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin: 0 auto 20px; padding: 20px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none;">
             <div style="text-align: center;">
                 <div id="rank-movement-text" style="font-size: 1rem; font-weight: bold; color: var(--color-success);"></div>
                 <div id="rank-movement-detail" style="font-size: 0.85rem; color: #aaa; margin-top: 4px;"></div>
             </div>
         </div>
         ` : ''}
+        </div>
+        <!-- End of Scrollable Content Area -->
 
-        <!-- Action Buttons with unified width -->
-        <div class="action-area" style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px;">
+        <!-- Fixed Action Area -->
+        <div class="action-area action-area-fixed" style="max-width: 400px; margin: 0 auto;">
            ${user && user.isGuest ? `
            <div style="width: 100%; padding: 16px; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; margin-bottom: 16px; text-align: center;">
              <div style="font-size: 0.95rem; color: #ffc107; margin-bottom: 8px;">🎮 체험 플레이 완료!</div>
@@ -234,7 +241,9 @@ export default class Result {
 
            <button id="home-btn" style="margin-top: 8px; color: #888; background: transparent; border: none; cursor: pointer; padding: 8px;">메인으로</button>
         </div>
+        <!-- End of Fixed Action Area -->
       </div>
+      <!-- End of Main Container -->
     `
 
         document.getElementById('retry-btn').addEventListener('click', async () => {

@@ -528,7 +528,7 @@ export default class Main {
 
       <!-- Hard Mode Tooltip Modal -->
       <div id="hard-mode-tooltip-backdrop" class="hidden" style="
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
@@ -595,7 +595,7 @@ export default class Main {
 
       <!-- Coin Info Tooltip Modal -->
       <div id="coin-info-tooltip-backdrop" class="hidden" style="
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
@@ -641,7 +641,7 @@ export default class Main {
 
       <!-- XP Modal -->
       <div id="xp-modal" class="hidden" style="
-          position:absolute; top:0; left:0; width:100%; height:100%;
+          position:fixed; top:0; left:0; width:100%; height:100%;
           background:rgba(0,0,0,0.85); z-index:100;
           display:flex; justify-content:center; align-items:center;">
           <div class="card" style="width:80%; max-width:300px; text-align:center; position:relative; background: var(--gray-800); padding: var(--space-6);">
@@ -661,7 +661,7 @@ export default class Main {
 
       <!-- All Levels Modal -->
       <div id="all-levels-modal" class="hidden" style="
-          position:absolute; top:0; left:0; width:100%; height:100%;
+          position:fixed; top:0; left:0; width:100%; height:100%;
           background:rgba(0,0,0,0.9); z-index:100;
           display:flex; justify-content:center; align-items:center; overflow: hidden;">
           <div style="width:90%; max-width:500px; max-height:90%; background: var(--gray-800); border-radius: var(--radius-lg); position:relative; display: flex; flex-direction: column; overflow: hidden;">
