@@ -8,6 +8,30 @@ export default class Result {
         this.container = container
     }
 
+    // Helper functions for level badge styling (from Main.js pattern)
+    getLevelBadgeGradient(level, isHardMode) {
+        if (level < 10) return isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+        if (level < 30) return isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+        if (level < 40) return isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #9d6fff 0%, #7c4dff 50%, #6a3de8 100%)';
+        if (level < 50) return isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
+        if (level < 60) return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
+        if (level === 60) return 'linear-gradient(135deg, #1e1e1e 0%, #0a0a0a 100%)';
+        return 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)';
+    }
+
+    getLevelBadgeColor(level, isHardMode) {
+        if (level >= 50 && level < 60) return '#1e1e1e';
+        if (level === 61) return isHardMode ? '#ef4444' : '#7c4dff';
+        return 'white';
+    }
+
+    getLevelBadgeAnimation(level, isHardMode) {
+        if (level < 10) return 'none';
+        if (level < 40) return isHardMode ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
+        if (level < 61) return 'pulseGold 2s ease-in-out infinite';
+        return isHardMode ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
+    }
+
     async render() {
         const state = history.state || {} // Router pushState data
         const { round, xp, initialRank, isHardMode } = state
@@ -53,24 +77,126 @@ export default class Result {
             ` : ''}
         </div>
 
-        <!-- XP Progress Section -->
+        <!-- XP Progress Section (Enhanced) -->
         ${user && !user.isGuest ? `
+        <style>
+          @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+          }
+          @keyframes pulse {
+            0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+            50% { box-shadow: 0 2px 20px rgba(124,77,255,0.6), 0 0 30px rgba(124,77,255,0.3); }
+          }
+          @keyframes pulseHard {
+            0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+            50% { box-shadow: 0 2px 20px rgba(239,68,68,0.6), 0 0 30px rgba(239,68,68,0.3); }
+          }
+          @keyframes pulseGold {
+            0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+            50% { box-shadow: 0 2px 20px rgba(251,191,36,0.6), 0 0 30px rgba(251,191,36,0.3); }
+          }
+        </style>
         <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin-bottom: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 0.9rem; color: #aaa;">레벨 진행도</span>
-                <span id="level-display" style="font-weight: bold; color: var(--theme-accent); transition: color var(--theme-transition);">Lv. ${initialLevel}</span>
+            <!-- Level Image with Badge -->
+            <div class="level-image-container" style="
+              position: relative;
+              margin: 0 auto 16px;
+              width: 120px;
+              animation: floating 3s ease-in-out infinite;
+            ">
+              <img
+                id="current-level-image"
+                src="${LEVELS.getLevelImage(initialLevel)}"
+                alt="Level ${initialLevel}"
+                style="
+                  width: 120px;
+                  height: 120px;
+                  border-radius: 12px;
+                  object-fit: cover;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                "
+              />
+              <div id="level-badge" style="
+                position: absolute;
+                bottom: -12px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${this.getLevelBadgeGradient(initialLevel, isHardMode)};
+                color: ${this.getLevelBadgeColor(initialLevel, isHardMode)};
+                padding: 6px 16px;
+                border-radius: 9999px;
+                font-size: 0.875rem;
+                font-weight: bold;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                animation: ${this.getLevelBadgeAnimation(initialLevel, isHardMode)};
+                white-space: nowrap;
+              ">
+                Lv. ${initialLevel}
+              </div>
             </div>
 
-            <div class="xp-bar-container" style="background: #333; height: 24px; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid #555;">
-                <div id="xp-bar-fill" style="background: linear-gradient(90deg, var(--theme-accent) 0%, var(--color-warning) 100%); height: 100%; width: ${initialProgress.percent}%; transition: width 1.5s ease-out, background 0.3s;"></div>
+            <!-- Level Info -->
+            <div style="text-align: center; margin-bottom: 12px;">
+              <div id="level-name" style="
+                font-size: 1.125rem;
+                font-weight: bold;
+                color: white;
+              ">
+                ${LEVELS.getLevelInfo(initialLevel).name}
+              </div>
+              <div id="level-category" style="
+                font-size: 0.875rem;
+                color: #aaa;
+              ">
+                ${LEVELS.getLevelInfo(initialLevel).category}
+              </div>
+            </div>
+
+            <!-- XP Progress Bar (Enhanced) -->
+            <div class="xp-bar-container" style="background: #333; height: 24px; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid #555; margin-bottom: 8px;">
+                <div id="xp-bar-fill" style="background: linear-gradient(90deg, var(--theme-accent) 0%, var(--color-warning) 100%); height: 100%; width: 0%; transition: width 1.5s ease-out, background 0.3s;"></div>
                 <div id="xp-bar-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.8rem; font-weight: bold; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
                     ${initialProgress.current} / ${initialProgress.max}
                 </div>
             </div>
 
-            <div style="text-align: center; margin-top: 8px; font-size: 0.8rem; color: #888;" id="xp-status">
+            <!-- XP Status -->
+            <div style="text-align: center; font-size: 0.8rem; color: #888;" id="xp-status">
                 Calculating...
             </div>
+
+            <!-- Next Level Preview -->
+            ${initialLevel < 61 ? `
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-top: 12px;
+              padding: 8px 12px;
+              background: rgba(255,255,255,0.03);
+              border-radius: 8px;
+            ">
+              <img
+                src="${LEVELS.getLevelImage(initialLevel + 1)}"
+                style="
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 6px;
+                  object-fit: cover;
+                  ${LEVELS.getLevelInfo(initialLevel + 1).locked ? 'filter: brightness(0.3);' : ''}
+                "
+              />
+              <div style="flex: 1;">
+                <div style="font-size: 0.75rem; color: #888;">다음 레벨</div>
+                <div style="font-size: 0.875rem; color: white; font-weight: 500;">
+                  ${LEVELS.getLevelInfo(initialLevel + 1).locked
+                    ? '???'
+                    : LEVELS.getLevelInfo(initialLevel + 1).name}
+                </div>
+              </div>
+            </div>
+            ` : ''}
         </div>
         ` : ''}
 
@@ -309,33 +435,108 @@ export default class Result {
         }
     }
 
+    // Helper function for async delays
+    _sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms))
+    }
+
+    // Animate normal XP gain (no level up)
+    _animateNormalXp(newProgress, earnedXp, elements) {
+        const { xpBarFill, xpBarText, xpStatus } = elements
+
+        // Step 1: Force bar to 0% instantly (remove transition)
+        xpBarFill.style.transition = 'none'
+        xpBarFill.style.width = '0%'
+
+        // Step 2: Force browser reflow
+        void xpBarFill.offsetWidth
+
+        // Step 3: Re-enable transition and animate to target
+        xpBarFill.style.transition = 'width 1.5s ease-out'
+        xpBarFill.style.width = `${newProgress.percent}%`
+
+        // Step 4: Update text
+        xpBarText.innerText = `${newProgress.current} / ${newProgress.max}`
+        xpStatus.innerHTML = `<span style="color: var(--theme-accent);">+${earnedXp} XP</span> 획득!`
+    }
+
+    // Animate level up sequence (4 stages, 2.3 seconds total)
+    async _animateLevelUp(oldLevel, newLevel, oldProgress, newProgress, earnedXp, elements, isHardMode) {
+        const { xpBarFill, xpBarText, xpStatus, levelBadge, levelImage, levelName, levelCategory } = elements
+
+        // Stage 1: Fill current level to 100% (1.0s)
+        xpBarFill.style.transition = 'width 1.0s ease-out'
+        xpBarFill.style.width = '100%'
+        xpBarText.innerText = `${oldProgress.max} / ${oldProgress.max}`
+        await this._sleep(1000)
+
+        // Stage 2: Celebration effect (0.3s)
+        xpBarFill.style.background = 'linear-gradient(90deg, var(--color-warning) 0%, var(--theme-accent) 100%)'
+        xpBarFill.style.boxShadow = '0 0 20px rgba(255, 215, 64, 0.6)'
+        xpStatus.innerHTML = `🎉 <span style="color: var(--color-warning);">LEVEL UP!</span>`
+        await this._sleep(300)
+
+        // Stage 3: Level transition (0.2s)
+        if (levelBadge) {
+            levelBadge.innerText = `Lv. ${newLevel}`
+            levelBadge.style.background = this.getLevelBadgeGradient(newLevel, isHardMode)
+            levelBadge.style.color = this.getLevelBadgeColor(newLevel, isHardMode)
+            levelBadge.style.animation = this.getLevelBadgeAnimation(newLevel, isHardMode)
+        }
+        if (levelImage) levelImage.src = LEVELS.getLevelImage(newLevel)
+        if (levelName) levelName.innerText = LEVELS.getLevelInfo(newLevel).name
+        if (levelCategory) levelCategory.innerText = LEVELS.getLevelInfo(newLevel).category
+
+        // Reset bar instantly to 0%
+        xpBarFill.style.transition = 'none'
+        xpBarFill.style.width = '0%'
+        xpBarFill.style.background = 'linear-gradient(90deg, var(--theme-accent) 0%, var(--color-warning) 100%)'
+        xpBarFill.style.boxShadow = 'none'
+        await this._sleep(200)
+
+        // Stage 4: Fill new level progress (0.8s)
+        void xpBarFill.offsetWidth // Force reflow
+        xpBarFill.style.transition = 'width 0.8s ease-out'
+        xpBarFill.style.width = `${newProgress.percent}%`
+        xpBarText.innerText = `${newProgress.current} / ${newProgress.max}`
+        xpStatus.innerHTML = `Lv. ${oldLevel} → Lv. ${newLevel}`
+    }
+
     animateXpProgress(oldTotalXp, newTotalXp, oldLevel, newLevel, earnedXp) {
-        const xpBarFill = document.getElementById('xp-bar-fill')
-        const xpBarText = document.getElementById('xp-bar-text')
-        const xpStatus = document.getElementById('xp-status')
-        const levelDisplay = document.getElementById('level-display')
+        // Get current state for isHardMode
+        const state = store.getState()
+        const isHardMode = state.isHardMode || false
 
-        if (!xpBarFill || !xpBarText || !xpStatus || !levelDisplay) return
+        // DOM element references
+        const elements = {
+            xpBarFill: document.getElementById('xp-bar-fill'),
+            xpBarText: document.getElementById('xp-bar-text'),
+            xpStatus: document.getElementById('xp-status'),
+            levelBadge: document.getElementById('level-badge'),
+            levelImage: document.getElementById('current-level-image'),
+            levelName: document.getElementById('level-name'),
+            levelCategory: document.getElementById('level-category')
+        }
 
-        // Calculate new progress
+        // Check element existence
+        if (!elements.xpBarFill || !elements.xpBarText || !elements.xpStatus) {
+            console.warn('XP progress elements not found')
+            return
+        }
+
+        // Calculate progress for both levels
+        const oldProgress = LEVELS.calcXpProgress(oldTotalXp, oldLevel)
         const newProgress = LEVELS.calcXpProgress(newTotalXp, newLevel)
 
-        // Animate the progress bar
-        setTimeout(() => {
-            xpBarFill.style.width = `${newProgress.percent}%`
-            xpBarText.innerText = `${newProgress.current} / ${newProgress.max}`
+        console.log(`📊 Animating XP: ${oldTotalXp} → ${newTotalXp} (Level ${oldLevel} → ${newLevel})`)
 
-            // Update status text
-            if (newLevel > oldLevel) {
-                xpStatus.innerHTML = `🎉 <span style="color: var(--color-warning);">LEVEL UP!</span> Lv. ${oldLevel} → Lv. ${newLevel}`
-                levelDisplay.innerText = `Lv. ${newLevel}`
-
-                // Add celebration effect to the bar
-                xpBarFill.style.background = 'linear-gradient(90deg, var(--color-warning) 0%, var(--theme-accent) 100%)'
-            } else {
-                xpStatus.innerHTML = `<span style="color: var(--theme-accent);">+${earnedXp} XP</span> 획득!`
-            }
-        }, 300)
+        // Branch based on whether level up occurred
+        if (newLevel > oldLevel) {
+            console.log(`🎉 LEVEL UP! ${oldLevel} → ${newLevel}`)
+            this._animateLevelUp(oldLevel, newLevel, oldProgress, newProgress, earnedXp, elements, isHardMode)
+        } else {
+            this._animateNormalXp(newProgress, earnedXp, elements)
+        }
     }
 
     copyToClipboard(text, url, isGuest = false) {

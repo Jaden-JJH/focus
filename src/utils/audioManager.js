@@ -1,67 +1,93 @@
-// Audio Manager for game sound effects
+// Optimized Audio Manager for game sound effects
 class AudioManager {
     constructor() {
         this.sounds = {};
         this.enabled = true;
-        this.activeSounds = []; // Track active sounds for cleanup
-        this.defaultVolume = 0.5; // Default volume for new sounds
+        this.initialized = false;
+        this.defaultVolume = 0.5;
 
-        // Sound file paths (lazy loaded)
+        // Sound file paths with preload priority
         this.soundFiles = {
-            // 기존 효과음 (호환성 유지)
-            correct: '/sounds/1-15_correct.mp3',
-            wrong: '/sounds/1-13_ incorrect.mp3',
-            click: '/sounds/1-7_ingame_buttonclick.mp3',
+            // High priority - preload immediately (frequently used)
+            inGameClick: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: 'auto' },
+            buttonClick: { path: '/sounds/1-14_menu_button click.mp3', preload: 'auto' },
+            popupOpen: { path: '/sounds/1-3_popup_open.mp3', preload: 'auto' },
+            popupClose: { path: '/sounds/1-4_popup_close.mp3', preload: 'auto' },
+            correctSound: { path: '/sounds/1-15_correct.mp3', preload: 'auto' },
+            incorrect: { path: '/sounds/1-13_ incorrect.mp3', preload: 'auto' },
 
-            // 1. 화면 전환 및 UI
-            mainEnter: '/sounds/1-1_main-refresh.mp3',
-            toggleChange: '/sounds/1-2_toggle.mp3',
-            popupOpen: '/sounds/1-3_popup_open.mp3',
-            popupClose: '/sounds/1-4_popup_close.mp3',
-            splash: '/sounds/2-a_splash.mp3',
+            // Medium priority - preload metadata (sometimes used)
+            toggleChange: { path: '/sounds/1-2_toggle.mp3', preload: 'metadata' },
+            mainEnter: { path: '/sounds/1-1_main-refresh.mp3', preload: 'metadata' },
+            phaseEnter: { path: '/sounds/1-6_phasethrough.mp3', preload: 'metadata' },
+            colorGuide: { path: '/sounds/1-8_colorsequenceguide.mp3', preload: 'metadata' },
 
-            // 2. 게임 진행
-            hardModeIntro: '/sounds/1-5_hardmode.wav',
-            phaseEnter: '/sounds/1-6_phasethrough.mp3',
+            // Low priority - lazy load (rarely used)
+            splash: { path: '/sounds/2-a_splash.mp3', preload: 'none' },
+            hardModeIntro: { path: '/sounds/1-5_hardmode.wav', preload: 'none' },
+            gameOverFail: { path: '/sounds/1-9_gameover(fail).mp3', preload: 'none' },
+            gameOverSuccess: { path: '/sounds/1-10_gameover(success).wav', preload: 'none' },
+            levelUp: { path: '/sounds/1-11_levelup.wav', preload: 'none' },
+            hardModeUnlock: { path: '/sounds/1-12_hardmodeopen.mp3', preload: 'none' },
 
-            // 3. 인게임 상호작용
-            inGameClick: '/sounds/1-7_ingame_buttonclick.mp3',
-            colorGuide: '/sounds/1-8_colorsequenceguide.mp3',
-            incorrect: '/sounds/1-13_ incorrect.mp3',
-            correctSound: '/sounds/1-15_correct.mp3',
-
-            // 4. 일반 UI 버튼
-            buttonClick: '/sounds/1-14_menu_button click.mp3',
-
-            // 5. 게임 결과 및 보상
-            gameOverFail: '/sounds/1-9_gameover(fail).mp3',
-            gameOverSuccess: '/sounds/1-10_gameover(success).wav',
-            levelUp: '/sounds/1-11_levelup.wav',
-            hardModeUnlock: '/sounds/1-12_hardmodeopen.mp3',
+            // Legacy aliases
+            correct: { path: '/sounds/1-15_correct.mp3', preload: 'auto' },
+            wrong: { path: '/sounds/1-13_ incorrect.mp3', preload: 'auto' },
+            click: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: 'auto' },
         };
     }
 
-    // Lazy load: Create Audio object only when first needed
-    _getOrCreateSound(soundName) {
-        if (!this.sounds[soundName]) {
-            const path = this.soundFiles[soundName];
-            if (!path) return null;
+    // Initialize audio on first user interaction (for mobile compatibility)
+    async init() {
+        if (this.initialized) return;
 
-            const audio = new Audio(path);
-            audio.preload = 'none';
-            audio.volume = this.defaultVolume;
-            this.sounds[soundName] = audio;
+        console.log('🔊 Initializing AudioManager...');
+
+        // Create and preload high-priority sounds
+        const highPrioritySounds = Object.entries(this.soundFiles)
+            .filter(([_, config]) => config.preload === 'auto');
+
+        for (const [name, config] of highPrioritySounds) {
+            this._createSound(name, config);
         }
-        return this.sounds[soundName];
+
+        this.initialized = true;
+        console.log(`🔊 AudioManager initialized with ${highPrioritySounds.length} high-priority sounds`);
     }
 
-    // Initialize audio (compatibility method - no longer needed with lazy loading)
-    init() {
-        // Audio objects are now created on-demand, so init is no-op
-        return;
+    // Create Audio object with specified preload strategy
+    _createSound(soundName, config) {
+        if (this.sounds[soundName]) return this.sounds[soundName];
+
+        const audio = new Audio(config.path);
+        audio.preload = config.preload;
+        audio.volume = this.defaultVolume;
+
+        // For auto-preload sounds, trigger loading immediately
+        if (config.preload === 'auto') {
+            audio.load();
+        }
+
+        this.sounds[soundName] = audio;
+        return audio;
     }
 
-    // Play a sound effect with optional duration limit
+    // Get or create sound on-demand
+    _getOrCreateSound(soundName) {
+        if (this.sounds[soundName]) {
+            return this.sounds[soundName];
+        }
+
+        const config = this.soundFiles[soundName];
+        if (!config) {
+            console.warn(`Sound not found: ${soundName}`);
+            return null;
+        }
+
+        return this._createSound(soundName, config);
+    }
+
+    // Optimized play method with instant response
     play(soundName, options = {}) {
         if (!this.enabled) {
             return Promise.resolve();
@@ -69,45 +95,41 @@ class AudioManager {
 
         return new Promise((resolve) => {
             try {
-                // Lazy load: Create audio only when needed
                 const sound = this._getOrCreateSound(soundName);
                 if (!sound) {
                     resolve();
                     return;
                 }
 
-                // Clone the audio to allow overlapping sounds
+                // Clone for overlapping sounds
                 const clone = sound.cloneNode();
                 clone.volume = sound.volume;
 
-                // Track active sound for cleanup
-                this.activeSounds.push(clone);
-
-                // Handle duration limit (재생 시간 제한)
+                // Handle duration limit
                 let timeoutId = null;
                 if (options.maxDuration) {
                     timeoutId = setTimeout(() => {
                         clone.pause();
                         clone.currentTime = 0;
-                        this._removeActiveSound(clone);
                         resolve();
                     }, options.maxDuration * 1000);
                 }
 
-                // Cleanup when sound ends naturally
+                // Cleanup when sound ends
                 clone.addEventListener('ended', () => {
                     if (timeoutId) clearTimeout(timeoutId);
-                    this._removeActiveSound(clone);
                     resolve();
-                });
+                }, { once: true });
 
-                clone.play().catch(err => {
-                    // Silently fail if autoplay is blocked
-                    console.warn('Audio play failed:', err);
-                    if (timeoutId) clearTimeout(timeoutId);
-                    this._removeActiveSound(clone);
-                    resolve();
-                });
+                // Play immediately - catch errors silently for mobile autoplay restrictions
+                const playPromise = clone.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => {
+                        console.warn('Audio play blocked (expected on mobile):', soundName);
+                        if (timeoutId) clearTimeout(timeoutId);
+                        resolve();
+                    });
+                }
             } catch (error) {
                 console.warn('Error playing sound:', error);
                 resolve();
@@ -115,15 +137,7 @@ class AudioManager {
         });
     }
 
-    // Remove sound from active sounds array
-    _removeActiveSound(sound) {
-        const index = this.activeSounds.indexOf(sound);
-        if (index > -1) {
-            this.activeSounds.splice(index, 1);
-        }
-    }
-
-    // Play sounds in sequence (순차 재생)
+    // Play sounds in sequence
     async playSequence(soundNames) {
         for (const item of soundNames) {
             if (typeof item === 'string') {
@@ -134,13 +148,12 @@ class AudioManager {
         }
     }
 
-    // Stop all active sounds
-    stopAll() {
-        this.activeSounds.forEach(sound => {
-            sound.pause();
-            sound.currentTime = 0;
+    // Preload all sounds (call on splash screen or first interaction)
+    preloadAll() {
+        console.log('🔊 Preloading all sounds...');
+        Object.entries(this.soundFiles).forEach(([name, config]) => {
+            this._createSound(name, config);
         });
-        this.activeSounds = [];
     }
 
     // ===== 기존 호환성 메서드 =====
@@ -162,7 +175,7 @@ class AudioManager {
     }
 
     playToggleChange() {
-        return this.play('toggleChange', { maxDuration: 0.5 }); // 0.5초만 재생
+        return this.play('toggleChange', { maxDuration: 0.5 });
     }
 
     playPopupOpen() {
@@ -179,11 +192,11 @@ class AudioManager {
 
     // ===== 게임 진행 =====
     playHardModeIntro() {
-        return this.play('hardModeIntro', { maxDuration: 3 }); // 3초만 재생
+        return this.play('hardModeIntro', { maxDuration: 3 });
     }
 
     playPhaseEnter() {
-        return this.play('phaseEnter', { maxDuration: 2 }); // 2초만 재생
+        return this.play('phaseEnter', { maxDuration: 2 });
     }
 
     // ===== 인게임 상호작용 =====
@@ -225,16 +238,14 @@ class AudioManager {
         return this.play('hardModeUnlock');
     }
 
-    // ===== 게임 종료 시 순차 재생 (GameOver → LevelUp) =====
+    // ===== 게임 종료 시 순차 재생 =====
     async playGameEndSequence(isSuccess, didLevelUp) {
-        // 1. GameOver 사운드 재생
         if (isSuccess) {
             await this.playGameOverSuccess();
         } else {
             await this.playGameOverFail();
         }
 
-        // 2. 레벨업 했다면 레벨업 사운드 재생
         if (didLevelUp) {
             await this.playLevelUp();
         }
@@ -250,19 +261,31 @@ class AudioManager {
         return this.enabled;
     }
 
-    // Set volume for all sounds (0.0 - 1.0)
+    // Set volume for all sounds
     setVolume(volume) {
         const clampedVolume = Math.max(0, Math.min(1, volume));
-        // Set volume for already created sounds
         Object.values(this.sounds).forEach(sound => {
             sound.volume = clampedVolume;
         });
-        // Store default volume for future sounds
         this.defaultVolume = clampedVolume;
     }
 }
 
 // Create singleton instance
 const audioManager = new AudioManager();
+
+// Auto-initialize on first user interaction (for mobile)
+const autoInit = () => {
+    audioManager.init();
+    // Remove listeners after first interaction
+    document.removeEventListener('click', autoInit, true);
+    document.removeEventListener('touchstart', autoInit, true);
+    document.removeEventListener('keydown', autoInit, true);
+};
+
+// Listen for first user interaction
+document.addEventListener('click', autoInit, true);
+document.addEventListener('touchstart', autoInit, true);
+document.addEventListener('keydown', autoInit, true);
 
 export default audioManager;
