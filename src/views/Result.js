@@ -66,7 +66,7 @@ export default class Result {
         <!-- Scrollable Content Area -->
         <div class="main-content-scroll">
         <!-- Result Card with unified width -->
-        <div class="result-card" style="width: 100%; max-width: 400px; margin: 20px auto;">
+        <div class="result-card" style="width: 100%; max-width: 400px; margin: 20px auto; box-sizing: border-box;">
             <div class="result-row">
                 <span>라운드</span>
                 <span class="value">${round || 0}</span>
@@ -102,7 +102,7 @@ export default class Result {
             50% { box-shadow: 0 2px 20px rgba(251,191,36,0.6), 0 0 30px rgba(251,191,36,0.3); }
           }
         </style>
-        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin: 0 auto 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="xp-progress-section" style="width: 100%; max-width: 400px; margin: 0 auto 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box;">
             <!-- Level Image with Badge -->
             <div class="level-image-container" style="
               position: relative;
@@ -207,7 +207,7 @@ export default class Result {
 
         <!-- Rank Movement Section -->
         ${user && !user.isGuest ? `
-        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin: 0 auto 20px; padding: 20px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none;">
+        <div id="rank-movement-section" style="width: 100%; max-width: 400px; margin: 0 auto 20px; padding: 20px; background: rgba(76,175,80,0.1); border-radius: 12px; border: 1px solid rgba(76,175,80,0.3); display: none; box-sizing: border-box;">
             <div style="text-align: center;">
                 <div id="rank-movement-text" style="font-size: 1rem; font-weight: bold; color: var(--color-success);"></div>
                 <div id="rank-movement-detail" style="font-size: 0.85rem; color: #aaa; margin-top: 4px;"></div>

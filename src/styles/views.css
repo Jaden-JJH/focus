@@ -31,9 +31,10 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0 var(--space-4);
+    padding: var(--space-4);
     padding-bottom: 200px;
     -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
 }
 
 .user-info {
@@ -91,8 +92,9 @@
     padding: 20px;
     border-radius: 12px;
     width: 100%;
-    max-width: 300px;
+    max-width: 400px;
     margin-top: 20px;
+    box-sizing: border-box;
 }
 
 .result-row {
