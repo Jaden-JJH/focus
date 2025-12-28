@@ -282,7 +282,7 @@ body.hard-mode .card-glow {
 }
 
 .animate-slide-up {
-  animation: slideUp var(--transition-base);
+  animation: slideUp var(--duration-base);
 }
 
 /* Fade in animation */
@@ -296,7 +296,7 @@ body.hard-mode .card-glow {
 }
 
 .animate-fade-in {
-  animation: fadeIn var(--transition-base);
+  animation: fadeIn var(--duration-base);
 }
 
 /* Pulse animation for highlighting */
@@ -327,7 +327,54 @@ body.hard-mode .card-glow {
 }
 
 .animate-scale-bounce {
-  animation: scaleBounce var(--transition-slow);
+  animation: scaleBounce var(--duration-slow);
+}
+
+/* Stagger animation for lists (apply to container) */
+.animate-stagger > * {
+  animation: fadeIn var(--duration-base);
+}
+
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 50ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 100ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 150ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 200ms; }
+.animate-stagger > *:nth-child(6) { animation-delay: 250ms; }
+.animate-stagger > *:nth-child(7) { animation-delay: 300ms; }
+.animate-stagger > *:nth-child(8) { animation-delay: 350ms; }
+.animate-stagger > *:nth-child(9) { animation-delay: 400ms; }
+.animate-stagger > *:nth-child(10) { animation-delay: 450ms; }
+
+/* Flash animation for success feedback */
+@keyframes flash {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-flash {
+  animation: flash var(--duration-fast);
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
+}
+
+.animate-shake {
+  animation: shake var(--duration-base);
 }
 
 /* ================================
@@ -614,3 +661,188 @@ body.hard-mode .card-glow {
 .rounded-md { border-radius: var(--radius-md); }
 .rounded-lg { border-radius: var(--radius-lg); }
 .rounded-full { border-radius: var(--radius-full); }
+
+/* ================================
+   IMAGE OPTIMIZATION
+   ================================ */
+
+/* Lazy loading images - add to <img> tags */
+.lazy-img {
+  opacity: 0;
+  transition: opacity var(--duration-base);
+}
+
+.lazy-img.loaded {
+  opacity: 1;
+}
+
+/* Skeleton loader for images */
+.skeleton-img {
+  background: linear-gradient(
+    90deg,
+    var(--gray-700) 0%,
+    var(--gray-600) 50%,
+    var(--gray-700) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Picture element support for WebP */
+.responsive-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Loading spinner for critical images */
+.img-loading {
+  position: relative;
+}
+
+.img-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 2px solid var(--gray-600);
+  border-top-color: var(--theme-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ================================
+   PERFORMANCE OPTIMIZATION
+   ================================ */
+
+/* GPU acceleration - use for animated elements */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Will-change optimization (use sparingly!) */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.will-change-auto {
+  will-change: auto; /* Reset will-change after animation */
+}
+
+/* Hardware-accelerated transitions */
+.transition-transform {
+  transition: transform var(--transition-fast);
+  will-change: transform;
+}
+
+.transition-opacity {
+  transition: opacity var(--transition-fast);
+  will-change: opacity;
+}
+
+/* Optimized scale animations (GPU-accelerated) */
+.scale-hover:hover {
+  transform: scale(1.02);
+}
+
+.scale-active:active {
+  transform: scale(0.98);
+}
+
+/* Contain layout for performance */
+.contain-layout {
+  contain: layout;
+}
+
+.contain-paint {
+  contain: paint;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
+/* Prevent layout shift */
+.prevent-shift {
+  transform: translateZ(0);
+}
+
+/* Smooth scrolling optimization */
+.smooth-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+}
+
+/* Force layer creation for complex animations */
+.force-layer {
+  transform: translate3d(0, 0, 0);
+}
+
+/* View transition animations */
+.view-exit {
+  animation: viewFadeOut var(--duration-base) ease-out forwards;
+}
+
+.view-enter {
+  animation: viewFadeIn var(--duration-base) ease-in forwards;
+}
+
+@keyframes viewFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Optimized list rendering */
+.render-optimized {
+  content-visibility: auto;
+  contain-intrinsic-size: 100px;
+}
+
+/* Reduce paint area */
+.isolate {
+  isolation: isolate;
+}

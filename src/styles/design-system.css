@@ -146,13 +146,38 @@ body.hard-mode {
 }
 
 /* ================================
-   6. TRANSITIONS
+   6. TRANSITIONS & ANIMATION TIMING
    ================================ */
 
 :root {
+    /* Transition speeds */
     --transition-fast: 150ms ease;
     --transition-base: 250ms ease;
     --transition-slow: 350ms ease;
+
+    /* Animation durations (for @keyframes) */
+    --duration-instant: 100ms;
+    --duration-fast: 200ms;
+    --duration-base: 300ms;
+    --duration-slow: 500ms;
+    --duration-slower: 800ms;
+    --duration-special: 1000ms;
+
+    /* Animation delays for sequencing */
+    --delay-instant: 0ms;
+    --delay-short: 100ms;
+    --delay-medium: 300ms;
+    --delay-long: 500ms;
+
+    /* Synchronized timing rules (for audio + visual sync) */
+    --timing-button-click: 0ms;        /* Sound + scale together */
+    --timing-levelup-sound: 0ms;       /* Sound starts */
+    --timing-levelup-xp: 500ms;        /* XP bar fills */
+    --timing-levelup-change: 1000ms;   /* Level number updates */
+    --timing-levelup-confetti: 1200ms; /* Celebration effect */
+    --timing-gameover-sound: 0ms;      /* Sound starts */
+    --timing-gameover-fade: 300ms;     /* Screen transition */
+    --timing-gameover-card: 600ms;     /* Result card appears */
 
     /* LEGACY ALIASES */
     --transition-normal: var(--transition-base);

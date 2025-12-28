@@ -104,10 +104,46 @@ export default class Main {
       // Play button
       if (target.id === 'play-btn') {
         audioManager.playButtonClick()
-        const state = store.getState()
-        const isHardMode = state.isHardMode || false
-        const gameRoute = isHardMode ? '/game-hard' : '/game'
-        import('../core/router.js').then(r => r.navigateTo(gameRoute))
+        const _state = store.getState()
+        const user = _state.user
+        const isHardMode = _state.isHardMode || false
+
+        // Guest user flow
+        if (user?.isGuest) {
+          const sessionData = localStorage.getItem('guest_session_used')
+          const sessionUsed = sessionData ? JSON.parse(sessionData).used : false
+
+          if (sessionUsed) {
+            // Session used - prompt login
+            await authService.signInWithGoogle()
+            return
+          }
+
+          // Mark session as used
+          localStorage.setItem('guest_session_used', JSON.stringify({
+            used: true,
+            timestamp: Date.now()
+          }))
+
+          // Generate game token
+          const gameToken = crypto.randomUUID()
+          sessionStorage.setItem('game_token', gameToken)
+          sessionStorage.setItem('game_token_time', Date.now().toString())
+
+          import('../core/router.js').then(r => r.navigateTo('/game'))
+        } else {
+          // Logged in user flow
+          if (_state.coins > 0) {
+            // Generate game token
+            const gameToken = crypto.randomUUID()
+            sessionStorage.setItem('game_token', gameToken)
+            sessionStorage.setItem('game_token_time', Date.now().toString())
+
+            // Route based on mode
+            const targetPath = isHardMode ? '/game/hard' : '/game'
+            import('../core/router.js').then(r => r.navigateTo(targetPath))
+          }
+        }
         return
       }
 
