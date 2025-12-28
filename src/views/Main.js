@@ -8,7 +8,10 @@ export default class Main {
   constructor(container) {
     this.container = container
     this.mainSoundPlayed = false // 메인 진입음 1회 재생 플래그
-    this.allLevelsModalSetup = false // 전체 레벨 모달 setup 1회 실행 플래그
+
+    // All Levels Modal state (moved from setupAllLevelsModal to instance)
+    this.currentPage = 1
+    this.imagesPreloaded = false
 
     // 🔊 효과음 설정 복원 (localStorage) - 최초 1회만
     const soundEnabled = localStorage.getItem('sound_enabled')
@@ -16,10 +19,256 @@ export default class Main {
       audioManager.setEnabled(soundEnabled === 'true')
     }
 
+    // Setup event delegation (runs once, persists forever)
+    this.setupEventDelegation()
+
     // Subscribe to store updates
     this.unsub = store.subscribe(() => {
       this.render()
     })
+  }
+
+  setupEventDelegation() {
+    // Use event delegation on document to catch all clicks
+    // This persists even when innerHTML replaces DOM elements
+    document.addEventListener('click', async (e) => {
+      const target = e.target
+
+      // Logout button
+      if (target.id === 'logout-btn') {
+        audioManager.playButtonClick()
+        await authService.signOut()
+        store.setState({ user: null, coins: 0 })
+        import('../core/router.js').then(r => r.navigateTo('/'))
+        return
+      }
+
+      // View All Levels button
+      if (target.id === 'view-all-levels-btn') {
+        this.handleViewAllLevels()
+        return
+      }
+
+      // Close All Levels Modal
+      if (target.id === 'close-all-levels-modal') {
+        audioManager.playPopupClose()
+        const modal = document.getElementById('all-levels-modal')
+        if (modal) modal.classList.add('hidden')
+        return
+      }
+
+      // Previous Page button
+      if (target.id === 'prev-page-btn') {
+        audioManager.playButtonClick()
+        if (this.currentPage > 1) {
+          this.currentPage--
+          const state = store.getState()
+          this.renderLevelPage(this.currentPage, state.level)
+        }
+        return
+      }
+
+      // Next Page button
+      if (target.id === 'next-page-btn') {
+        audioManager.playButtonClick()
+        if (this.currentPage < 6) {
+          this.currentPage++
+          const state = store.getState()
+          this.renderLevelPage(this.currentPage, state.level)
+        }
+        return
+      }
+
+      // User info area (XP modal)
+      if (target.closest('#user-info-area')) {
+        audioManager.playPopupOpen()
+        const _state = store.getState()
+        const { current, max, percent } = LEVELS.calcXpProgress(_state.totalXp, _state.level)
+        const xpBarFill = document.getElementById('xp-bar-fill')
+        const xpText = document.getElementById('xp-text')
+        const xpModal = document.getElementById('xp-modal')
+        if (xpBarFill) xpBarFill.style.width = `${percent}%`
+        if (xpText) xpText.innerText = `${current} / ${max} XP (${percent}%)`
+        if (xpModal) xpModal.classList.remove('hidden')
+        return
+      }
+
+      // Close XP modal
+      if (target.id === 'close-modal') {
+        audioManager.playPopupClose()
+        const xpModal = document.getElementById('xp-modal')
+        if (xpModal) xpModal.classList.add('hidden')
+        return
+      }
+
+      // Play button
+      if (target.id === 'play-btn') {
+        audioManager.playButtonClick()
+        const state = store.getState()
+        const isHardMode = state.isHardMode || false
+        const gameRoute = isHardMode ? '/game-hard' : '/game'
+        import('../core/router.js').then(r => r.navigateTo(gameRoute))
+        return
+      }
+
+      // Hard mode tooltip
+      if (target.closest('.hard-mode-info-icon')) {
+        e.stopPropagation()
+        audioManager.playPopupOpen()
+        const backdrop = document.getElementById('hard-mode-tooltip-backdrop')
+        if (backdrop) backdrop.classList.remove('hidden')
+        return
+      }
+
+      // Close hard mode tooltip backdrop
+      if (target.id === 'hard-mode-tooltip-backdrop' && e.target === target) {
+        audioManager.playPopupClose()
+        target.classList.add('hidden')
+        return
+      }
+
+      // Close level lock backdrop
+      if (target.id === 'hard-mode-level-lock-backdrop' && e.target === target) {
+        audioManager.playPopupClose()
+        target.classList.add('hidden')
+        return
+      }
+
+      // Coin info
+      if (target.closest('#coin-info')) {
+        e.stopPropagation()
+        audioManager.playPopupOpen()
+        const backdrop = document.getElementById('coin-tooltip-backdrop')
+        if (backdrop) backdrop.classList.remove('hidden')
+        return
+      }
+
+      // Close coin tooltip backdrop
+      if (target.id === 'coin-tooltip-backdrop' && e.target === target) {
+        const backdrop = document.getElementById('coin-tooltip-backdrop')
+        if (backdrop) backdrop.classList.add('hidden')
+        return
+      }
+
+      // Coin share button
+      if (target.id === 'coin-share-btn') {
+        e.stopPropagation()
+        audioManager.playButtonClick()
+        const state = store.getState()
+        const shareText = `🎯 Focus 게임에서 ${state.coins}코인을 모았어요! 같이 도전해볼래요?`
+        const shareUrl = window.location.origin
+
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: 'Focus 게임',
+              text: shareText,
+              url: shareUrl
+            })
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              console.error('Share failed:', err)
+            }
+          }
+        } else {
+          try {
+            await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`)
+            alert('클립보드에 복사되었습니다!')
+          } catch (err) {
+            console.error('Copy failed:', err)
+            alert('공유 기능을 사용할 수 없습니다.')
+          }
+        }
+        return
+      }
+
+      // Login redirect button
+      if (target.id === 'login-redirect-btn') {
+        audioManager.playButtonClick()
+        import('../core/router.js').then(r => r.navigateTo('/'))
+        return
+      }
+
+      // Share button
+      if (target.id === 'share-btn') {
+        audioManager.playButtonClick()
+        const state = store.getState()
+        const shareText = `🎯 Focus 게임 Lv${state.level}! 같이 도전해볼래요?`
+        const shareUrl = window.location.origin
+
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: 'Focus 게임',
+              text: shareText,
+              url: shareUrl
+            })
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              console.error('Share failed:', err)
+            }
+          }
+        } else {
+          try {
+            await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`)
+            alert('클립보드에 복사되었습니다!')
+          } catch (err) {
+            console.error('Copy failed:', err)
+            alert('공유 기능을 사용할 수 없습니다.')
+          }
+        }
+        return
+      }
+
+      // Hard mode unlock confirm button
+      if (target.id === 'hardmode-unlock-confirm') {
+        audioManager.playButtonClick()
+        const modal = document.getElementById('hardmode-unlock-modal')
+        if (modal) modal.remove()
+        return
+      }
+    })
+  }
+
+  handleViewAllLevels() {
+    audioManager.playPopupOpen()
+
+    const state = store.getState()
+    const userLevel = state.level
+
+    // Preload images on first modal open
+    this.preloadAllImages()
+
+    // Calculate which page the user's level is on
+    if (userLevel <= 12) this.currentPage = 1
+    else if (userLevel <= 24) this.currentPage = 2
+    else if (userLevel <= 36) this.currentPage = 3
+    else if (userLevel <= 48) this.currentPage = 4
+    else if (userLevel <= 60) this.currentPage = 5
+    else this.currentPage = 6
+
+    // 📊 Analytics: view_all_levels event
+    window.dataLayer = window.dataLayer || []
+    window.dataLayer.push({
+      'event': 'view_all_levels',
+      'current_level': userLevel,
+      'page': this.currentPage
+    })
+
+    this.renderLevelPage(this.currentPage, userLevel)
+    const modal = document.getElementById('all-levels-modal')
+    if (modal) modal.classList.remove('hidden')
+  }
+
+  preloadAllImages() {
+    if (this.imagesPreloaded) return
+    this.imagesPreloaded = true
+
+    // Preload images for all levels (1-61)
+    for (let i = 1; i <= 61; i++) {
+      const img = new Image()
+      img.src = LEVELS.getLevelImage(i)
+    }
   }
 
   async render() {
@@ -720,106 +969,8 @@ export default class Main {
       this.loadWeeklyActivity()
     }
 
-    // Setup All Levels Modal (최초 1회만)
-    if (!user.isGuest && !this.allLevelsModalSetup) {
-      this.setupAllLevelsModal()
-      this.allLevelsModalSetup = true
-    }
-
-    // Level Click Handler
-    const userInfoArea = document.getElementById('user-info-area')
-    const xpModal = document.getElementById('xp-modal')
-    const closeModal = document.getElementById('close-modal')
-    const xpBarFill = document.getElementById('xp-bar-fill')
-    const xpText = document.getElementById('xp-text')
-    const logoutBtn = document.getElementById('logout-btn')
-
-    if (userInfoArea) {
-      userInfoArea.addEventListener('click', () => {
-        // 🔊 1-3: 팝업 열림음 (1-14 제외 - 팝업은 1-3만 재생)
-        audioManager.playPopupOpen();
-        const _state = store.getState()
-        const { current, max, percent } = LEVELS.calcXpProgress(_state.totalXp, _state.level)
-        if (xpBarFill) xpBarFill.style.width = `${percent}%`
-        if (xpText) xpText.innerText = `${current} / ${max} XP (${percent}%)`
-        if (xpModal) xpModal.classList.remove('hidden')
-      })
-    }
-
-    if (closeModal) {
-      closeModal.addEventListener('click', () => {
-        // 🔊 1-4: 팝업 닫힘음 (1-14 제외 - 팝업은 1-4만 재생)
-        audioManager.playPopupClose();
-        if (xpModal) xpModal.classList.add('hidden')
-      })
-    }
-
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async () => {
-        // 🔊 1-14: 버튼 클릭음
-        audioManager.playButtonClick();
-        await authService.signOut()
-        store.setState({ user: null, coins: 0, level: 0 })
-        import('../core/router.js').then(r => r.navigateTo('/'))
-      })
-    }
-
-    const playBtn = document.getElementById('play-btn')
-    if (playBtn) {
-      playBtn.addEventListener('click', async () => {
-        // 🔊 1-14: 버튼 클릭음
-        audioManager.playButtonClick();
-
-        const _state = store.getState()
-        const user = _state.user
-
-        // 📊 Analytics: game_start event
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({
-          'event': 'game_start',
-          'mode': _state.isHardMode ? 'hard' : 'normal',
-          'user_type': user?.isGuest ? 'guest' : 'member',
-          'level': _state.level,
-          'coins': _state.coins
-        });
-
-        if (user?.isGuest) {
-          const sessionData = localStorage.getItem('guest_session_used')
-          const sessionUsed = sessionData ? JSON.parse(sessionData).used : false
-
-          if (sessionUsed) {
-            // 세션 사용 완료 - 로그인 실행
-            await authService.signInWithGoogle()
-            return
-          }
-
-          // 세션 사용 표시 및 게임 시작
-          localStorage.setItem('guest_session_used', JSON.stringify({
-            used: true,
-            timestamp: Date.now()
-          }))
-
-          // 게임 진입 토큰 생성 (게스트도 동일하게 적용)
-          const gameToken = crypto.randomUUID()
-          sessionStorage.setItem('game_token', gameToken)
-          sessionStorage.setItem('game_token_time', Date.now().toString())
-
-          import('../core/router.js').then(r => r.navigateTo('/game'))
-        } else {
-          // 로그인 사용자 플로우
-          if (_state.coins > 0) {
-            // 게임 진입 토큰 생성
-            const gameToken = crypto.randomUUID()
-            sessionStorage.setItem('game_token', gameToken)
-            sessionStorage.setItem('game_token_time', Date.now().toString())
-
-            // 하드모드 여부에 따라 라우팅
-            const targetPath = _state.isHardMode ? '/game/hard' : '/game'
-            import('../core/router.js').then(r => r.navigateTo(targetPath))
-          }
-        }
-      });
-    }
+    // Event listeners are now handled by event delegation in constructor
+    // Only toggle event listeners need to be reattached on render
 
     // Sound Toggle Event Handler
     const soundToggle = document.getElementById('sound-toggle')
@@ -1237,92 +1388,6 @@ export default class Main {
         </div>
       `).join('')
     }
-  }
-
-  setupAllLevelsModal() {
-    const viewAllBtn = document.getElementById('view-all-levels-btn')
-    const allLevelsModal = document.getElementById('all-levels-modal')
-    const closeAllLevelsModal = document.getElementById('close-all-levels-modal')
-
-    if (!viewAllBtn || !allLevelsModal || !closeAllLevelsModal) return
-
-    let currentPage = 1
-    const totalPages = 6
-    let imagesPreloaded = false
-
-    // Preload all level images
-    const preloadAllImages = () => {
-      if (imagesPreloaded) return
-      imagesPreloaded = true
-
-      // Preload images for all levels (1-61)
-      for (let i = 1; i <= 61; i++) {
-        const img = new Image()
-        img.src = LEVELS.getLevelImage(i)
-      }
-    }
-
-    // Open modal
-    viewAllBtn.addEventListener('click', () => {
-      // 🔊 1-3: 팝업 열림음 (1-14 제외 - 팝업은 1-3만 재생)
-      audioManager.playPopupOpen();
-
-      const state = store.getState()
-      const userLevel = state.level
-
-      // Preload images on first modal open
-      preloadAllImages()
-
-      // Calculate which page the user's level is on
-      if (userLevel <= 12) currentPage = 1
-      else if (userLevel <= 24) currentPage = 2
-      else if (userLevel <= 36) currentPage = 3
-      else if (userLevel <= 48) currentPage = 4
-      else if (userLevel <= 60) currentPage = 5
-      else currentPage = 6
-
-      // 📊 Analytics: view_all_levels event
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        'event': 'view_all_levels',
-        'current_level': userLevel,
-        'page': currentPage
-      });
-
-      this.renderLevelPage(currentPage, userLevel)
-      allLevelsModal.classList.remove('hidden')
-    })
-
-    // Close modal
-    closeAllLevelsModal.addEventListener('click', () => {
-      // 🔊 1-4: 팝업 닫힘음 (1-14 제외 - 팝업은 1-4만 재생)
-      audioManager.playPopupClose();
-      allLevelsModal.classList.add('hidden')
-    })
-
-    // Pagination
-    const prevBtn = document.getElementById('prev-page-btn')
-    const nextBtn = document.getElementById('next-page-btn')
-
-    prevBtn.addEventListener('click', () => {
-      // 🔊 1-14: 버튼 클릭음
-      audioManager.playButtonClick();
-      if (currentPage > 1) {
-        currentPage--
-        const state = store.getState()
-        this.renderLevelPage(currentPage, state.level)
-      }
-    })
-
-    nextBtn.addEventListener('click', () => {
-      // 🔊 1-14: 버튼 클릭음
-      audioManager.playButtonClick();
-      if (currentPage < totalPages) {
-        currentPage++
-        const state = store.getState()
-        this.renderLevelPage(currentPage, state.level)
-      }
-    })
   }
 
   renderLevelPage(page, userLevel) {

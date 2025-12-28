@@ -1,5 +1,6 @@
 /* Import Design System First */
 @import './design-system.css';
+@import './components.css';
 @import './views.css';
 @import './game.css';
 
@@ -43,10 +44,7 @@ button {
     background: none;
 }
 
-.hidden {
-    display: none !important;
-}
-
+/* Legacy animations - kept for backward compatibility */
 .fade-in {
     animation: fadeIn var(--transition-normal) forwards;
 }
@@ -87,31 +85,4 @@ button {
     }
 }
 
-/* Base Utility Classes */
-.btn-primary {
-    background-color: var(--theme-accent);
-    color: white;
-    padding: var(--spacing-md) var(--spacing-xl);
-    border-radius: var(--radius-lg);
-    font-weight: 600;
-    font-size: var(--font-size-lg);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    transition: transform var(--transition-fast), background-color var(--theme-transition);
-}
-
-.btn-primary:active:not(:disabled) {
-    transform: scale(0.95);
-}
-
-.btn-primary:disabled {
-    background-color: var(--color-bg-card);
-    color: var(--color-text-secondary);
-    cursor: not-allowed;
-}
-
-.card {
-    background-color: var(--color-bg-card);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
+/* Component classes have been moved to components.css */

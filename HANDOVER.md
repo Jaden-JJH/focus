@@ -1,79 +1,177 @@
-# Project Handover Document: Focus Game
+# Focus 게임 버그 수정 작업 인수인계
 
-## 1. Project Overview & Context
-**Product**: "Focus" - A mobile-web concentration training game.
-**Goal**: Viral growth through competitive mini-games, ranking systems, and social sharing.
-
-### Tech Stack
-- **Frontend**: Vanilla JavaScript (ES Modules), Vite.
-- **Backend / Auth**: Supabase (Auth, Database, Realtime).
-- **Styling**: CSS Variables, Mobile-first centralized layout.
-- **Hosting**: Vercel.
-
-### Critical URLs
-- **Production**: [https://focus-seven.vercel.app/](https://focus-seven.vercel.app/)
-- **Supabase Project**: `utaueussdjvunpbkusbl` (Check your Dashboard)
-- **Repo**: (Local Git initialized)
-
-### Development Environment
-- **Node Version**: v20+ / v22+
-- **Command**: `npm run dev` (Localhost: 5173/5174/5175)
-- **Build**: `npm run build` -> `dist/`
+## ⚠️ 현재 상태
+- **코드 버전**: commit `6b15654` (배포 버전)
+- **상태**: 정상 동작
+- **작업 실패 이유**: 이벤트 리스너 문제 해결 시도 중 서비스 전체 오류 발생
 
 ---
 
-## 2. Current Development Status
-- **Auth**: Google Login implemented. Manual user creation fallback added for robustness. Session persistence fixed.
-- **Core Loop**: Game Engine works. 5 Mini-games implemented. Coins deducted per play.
-- **Database**: `users` and `game_records` tables active. RLS policies adjusted.
-- **UI**: Mobile layout constrained on desktop. Dark theme. Splash, Main, Game, Result views operational.
+## 🐛 수정 필요한 버그 목록
+
+### 1. 랭킹 리스트 애니메이션 버벅임
+**파일**: `src/views/Main.js`
+**함수**: `loadRanking()`
+**라인**: 약 1120~1200
+
+**문제점**:
+- 스켈레톤 로딩 UI가 표시된 후 실제 데이터로 교체되면서 이중 애니메이션 발생
+- "내 랭킹" 강조 시 `myRankPulse` 무한 애니메이션 + glow 효과가 과함
+- 원래는 왼쪽→오른쪽으로 도미노처럼 부드럽게 나타나야 함
+
+**해결 방법**:
+```javascript
+// ❌ 제거할 것
+// 1. 스켈레톤 로딩 HTML 전체 제거 (이중 애니메이션 원인)
+// 2. myRankPulse 애니메이션 제거
+// 3. box-shadow glow 효과 제거
+
+// ✅ 유지할 것
+// - rankItemSlide 애니메이션만 유지
+// - stagger 타이밍: ${0.5 + idx * 0.05}s
+```
 
 ---
 
-## 3. Prioritized To-Do List (Roadmap)
-The following tasks are prioritized for the next phase of development. **Developers should check off items as they complete them.**
+### 2. 내 랭킹 텍스트 색상 문제
+**파일**: `src/views/Main.js`
+**함수**: `loadRanking()`
 
-### 🚨 Priority 1: Critical Core & Economy
-*These features define the "value" of the coin and the fairness of the game.*
-- [x] **Credit System Refactor (Daily vs. Viral)**
-    - [x] Create separation in `users` table: `daily_coins` (resets daily) vs `viral_coins` (permanent/carry-over).
-    - [x] Logic: Consume `daily_coins` first, then `viral_coins`.
-    - [x] Implement Cron Job or "First Login of Day" logic to reset `daily_coins` to 3.
-- [x] **Weekly Ranking Logic Update**
-    - [x] **DB Query**: Change from "All Records" to "Max Round per User". (Currently shows duplicate users).
-    - [x] **My Rank**: Add a pinned section above the list showing "My Rank" and "My Best Round".
+**문제점**:
+- 닉네임과 라운드 숫자가 accent 색상(보라색)으로 표시됨
+- 흰색이어야 함
 
-### 🚀 Priority 2: Viral Growth Engines
-*These features are essential for the "1 Coin per Share" loop.*
-- [x] **Sharing Functionality**
-    - [x] Implement `Web Share API` (Native Mobile Share) on Result/Main screens.
-    - [x] Generate Referral Links (e.g., `?ref=USER_ID`).
-    - [x] **Reward Logic**: When a new user joins via `?ref=USER_ID`, grant +1 `viral_coin` to the referrer.
-- [x] **SEO & Metadata (OG Tags)**
-    - [x] Add `og:image`, `og:title`, `og:description` in `index.html`.
-    - [x] Design and add a compelling `og-image.png` (Game screenshot + "Can you beat level 5?").
-    - [x] Add custom Favicon.
-
-### ✨ Priority 3: Engagement & UI Polish
-*Enhancing the feeling of progression and competition.*
-- [x] **Result Screen Upgrade**
-    - [x] **XP Contribution**: Show visual bar: `Current Level [====--] Next Level`. Highlight "+XP" filling the bar with animation.
-    - [x] **Rank Movement**: Display rank changes like "📈 3위 상승!" or "🏆 TOP 3!" with color-coded badges.
-- [x] **Announcement Banner**
-    - [x] Add "Weekly 1st Place = Starbucks Coupon" banner at top of Main view with pulsing animation.
-- [x] **Game Polish**
-    - [x] **Visuals**: Added confetti particles and green flash effect for correct answers with checkmark icon.
-
-### 📝 Priority 4: Backlog / Optimization
-- [ ] **Admin Dashboard** (Optional): View to see total users, total plays.
-- [ ] **Security Hardening (Important)**:
-    - [ ] **Vulnerability**: Game logic and Coin deduction currently happen on the Client (Browser). A savvy user could manipulate the JavaScript to play for free or submit fake high scores.
-    - [ ] **Fix**: Move critical logic (Coin deduction, Score verification) to Supabase Edge Functions (Server-side) to prevent cheating.
+**수정**:
+- `color: var(--gray-100)` 적용
+- `font-weight: ${isMyRank ? 'var(--font-bold)' : 'var(--font-normal)'}`
+- " (나)" 텍스트 추가
 
 ---
 
-## 4. How to Work
-1. **Pick a Task**: Select an unchecked item from Section 3.
-2. **Implement**: Code the solution.
-3. **Verify**: Test locally and on the Vercel preview.
-4. **Check Off**: Mark the task as `[x]` in this document.
+### 3. 라운드 숫자 우측 여백 과다
+**파일**: `src/views/Main.js`
+**함수**: `loadRanking()`
+
+**문제점**:
+- 라운드 숫자에 `margin-right: var(--space-4)` 적용
+- 우측 끝에 더 가깝게 붙여야 함
+
+**수정**:
+- `margin-right` 제거
+
+---
+
+### 4. 게임 시작 버튼 각짐
+**파일**: `src/styles/index.css`
+**라인**: 약 115~127
+
+**문제점**:
+- `#play-btn` 에 `border-radius` 적용 안됨
+
+**수정**:
+```css
+.game-options .btn-primary,
+.option-btn.btn-primary,
+#play-btn.btn-primary {  /* ← 이 줄 추가 */
+    border-radius: var(--radius-lg);
+}
+```
+
+---
+
+### 5. 🔥 CRITICAL: "전체 레벨" & 로그아웃 버튼 작동 안 함
+**파일**: `src/views/Main.js`
+
+**문제점**:
+- `render()` 호출마다 `innerHTML` 교체로 DOM 재생성
+- `setupAllLevelsModal()`이 플래그로 최초 1회만 실행
+- 재렌더링 시 이벤트 리스너 소실
+
+**해결 방안 1: 매번 호출**
+```javascript
+// render() 내부
+if (!user.isGuest) {
+  this.setupAllLevelsModal()  // 매번 호출
+}
+
+// constructor에서 플래그 제거
+// this.allLevelsModalSetup = false  ← 삭제
+```
+
+**해결 방안 2: 이벤트 위임 (더 안전)**
+```javascript
+setupEventDelegation() {
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'view-all-levels-btn') {
+      this.openAllLevelsModal()
+    }
+    if (e.target.id === 'logout-btn') {
+      this.handleLogout()
+    }
+  })
+}
+```
+
+---
+
+### 6. 🔥 CRITICAL: chartContainer 중복 선언 오류
+**파일**: `src/views/Main.js`
+**함수**: `loadWeeklyActivity()`
+
+**에러**:
+```
+SyntaxError: Identifier 'chartContainer' has already been declared
+```
+
+**해결**:
+```bash
+grep -n "const chartContainer" src/views/Main.js
+# 중복 선언 제거 (1개만 남기기)
+```
+
+---
+
+## 📋 테스트 체크리스트
+
+### 빌드 테스트
+```bash
+npm run build
+```
+- [ ] 빌드 에러 없음
+
+### 런타임 테스트
+```bash
+npm run dev
+```
+- [ ] 콘솔 에러 없음
+- [ ] 메인 페이지 로딩
+
+### 기능 테스트
+- [ ] 랭킹 애니메이션 부드러움
+- [ ] 내 랭킹 흰색 텍스트
+- [ ] 게임 버튼 둥근 모서리
+- [ ] "전체 레벨" 버튼 작동
+- [ ] 로그아웃 작동
+- [ ] 하드모드 토글 후에도 모달 작동
+
+---
+
+## 🚨 주의사항
+
+### 절대 하지 말 것
+1. `git reset --hard`로 전체 리셋
+2. 여러 문제 한 번에 수정
+3. 테스트 없이 플래그 제거
+
+### 반드시 할 것
+1. 단계별 커밋
+2. 각 단계마다 테스트
+3. 브라우저 콘솔 확인
+
+---
+
+## 현재 배포 버전
+```bash
+commit 6b15654 (origin/main)
+상태: 정상 동작
+```
