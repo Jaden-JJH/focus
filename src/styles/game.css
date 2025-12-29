@@ -80,10 +80,16 @@
     border-radius: 8px;
     cursor: pointer;
     transition: transform 0.1s;
+    /* Mobile touch optimization */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
 }
 
 .grid-item:active {
     transform: scale(0.95);
+    /* Instant feedback - no transition delay */
+    transition: none;
 }
 
 /* Color Sequence Tiles */
@@ -93,6 +99,10 @@
     border: 2px solid rgba(255, 255, 255, 0.1);
     font-size: 0;
     user-select: none;
+    /* Mobile touch optimization */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    cursor: pointer;
 }
 
 .shake {

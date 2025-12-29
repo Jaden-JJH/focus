@@ -258,10 +258,16 @@ body {
     border: none;
     cursor: pointer;
     transition: var(--transition-fast);
+    /* Mobile touch optimization */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
 }
 
 .btn:active:not(:disabled) {
     transform: scale(0.98);
+    /* Instant feedback - no transition delay */
+    transition: none;
 }
 
 .btn:disabled {
