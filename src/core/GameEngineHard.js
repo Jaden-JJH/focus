@@ -485,6 +485,12 @@ export class GameEngineHard {
             this.removeFocusGlow()
         }
 
+        // 🎮 Geometry Dash Style: 화면 진동 (콤보별 강도)
+        this.screenShake()
+
+        // 🎮 Geometry Dash Style: 충격파 이펙트
+        this.createShockwave()
+
         // FX: Correct - Show visual feedback
         this.showCorrectFeedback()
 
@@ -525,18 +531,28 @@ export class GameEngineHard {
         feedback.innerText = '✓'
         document.body.appendChild(feedback)
 
-        // Create confetti particles
-        for (let i = 0; i < 15; i++) {
+        // 🎮 Geometry Dash Style: 콤보별 파티클 개수 증가
+        const particleCount = Math.min(15 + this.state.combo * 2, 40)
+        for (let i = 0; i < particleCount; i++) {
             this.createConfetti()
         }
 
-        // Flash background with fiery effect (하드모드 전용)
+        // 🎮 Geometry Dash Style: 콤보별 배경 플래시 색상 변화 (하드모드 - 붉은 계열)
         const originalBg = document.body.style.backgroundColor
         const originalBgImage = document.body.style.backgroundImage
+        let flashColor = 'rgba(255, 87, 34, 0.3)' // 기본 주황 (1-5 콤보)
 
-        // 불꽃 느낌의 주황-붉은 그라디언트 효과
-        document.body.style.backgroundImage = 'radial-gradient(circle at center, rgba(255, 119, 0, 0.4), rgba(239, 68, 68, 0.2))'
-        document.body.style.backgroundColor = 'rgba(255, 87, 34, 0.15)'
+        if (this.state.combo >= 16) {
+            flashColor = 'rgba(255, 193, 7, 0.4)' // 금색 (16+ 콤보)
+        } else if (this.state.combo >= 11) {
+            flashColor = 'rgba(233, 30, 99, 0.4)' // 핑크 (11-15 콤보)
+        } else if (this.state.combo >= 6) {
+            flashColor = 'rgba(239, 68, 68, 0.3)' // 빨강 (6-10 콤보)
+        }
+
+        // 불꽃 느낌의 그라디언트 효과 강화
+        document.body.style.backgroundImage = `radial-gradient(circle at center, ${flashColor}, transparent)`
+        document.body.style.backgroundColor = flashColor
 
         setTimeout(() => {
             document.body.style.backgroundImage = originalBgImage
@@ -547,13 +563,19 @@ export class GameEngineHard {
 
     createConfetti() {
         const confetti = document.createElement('div')
-        const colors = ['#ffd740', '#69f0ae', '#7c4dff', '#ff5252', '#00bcd4']
+
+        // 🎮 Geometry Dash Style: 네온 색상 팔레트 (하드모드 - 붉은 계열 강조)
+        const colors = ['#ff1744', '#ff00ff', '#ffff00', '#ff5252', '#ff6f00', '#ef4444']
         const color = colors[Math.floor(Math.random() * colors.length)]
-        const size = Math.random() * 8 + 4
-        const startX = Math.random() * window.innerWidth
+        const size = Math.random() * 10 + 5 // 크기 증가
+
+        // 중앙에서 사방으로 폭발하는 방향성
+        const startX = window.innerWidth / 2
         const startY = window.innerHeight / 2
-        const endX = startX + (Math.random() - 0.5) * 300
-        const endY = startY + Math.random() * 400
+        const angle = Math.random() * Math.PI * 2 // 360도 랜덤 각도
+        const distance = 200 + Math.random() * 300 // 폭발 거리 증가
+        const endX = startX + Math.cos(angle) * distance
+        const endY = startY + Math.sin(angle) * distance
 
         confetti.style.cssText = `
             position: fixed;
@@ -563,24 +585,22 @@ export class GameEngineHard {
             height: ${size}px;
             background-color: ${color};
             border-radius: 50%;
+            box-shadow: 0 0 ${size * 2}px ${color};
             z-index: 999;
             pointer-events: none;
-            animation: confettiFall 0.8s ease-out forwards;
-            --end-x: ${endX}px;
-            --end-y: ${endY}px;
         `
         document.body.appendChild(confetti)
 
-        // Animate using transform
+        // 🎮 Geometry Dash Style: 속도 증가 (800ms → 500ms)
         confetti.animate([
-            { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
-            { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+            { transform: 'translate(0, 0) rotate(0deg) scale(1)', opacity: 1 },
+            { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${Math.random() * 720}deg) scale(0)`, opacity: 0 }
         ], {
-            duration: 800,
-            easing: 'ease-out'
+            duration: 500,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
         })
 
-        setTimeout(() => confetti.remove(), 800)
+        setTimeout(() => confetti.remove(), 500)
     }
 
     handleWrong() {
@@ -865,29 +885,43 @@ export class GameEngineHard {
         // 이미 있으면 제거하고 새로 생성
         this.removeFocusGlow()
 
-        // Glow Border (하드모드는 빨간색)
+        // 🎮 Geometry Dash Style: 콤보별 네온 색상 (하드모드 - 붉은 계열)
+        let color1, color2, color3
+        if (this.state.combo >= 16) {
+            // 16+ 콤보: 옐로우 네온
+            color1 = 'rgba(255, 255, 0, 0.8)'
+            color2 = 'rgba(255, 215, 0, 0.6)'
+            color3 = 'rgba(255, 193, 7, 0.4)'
+        } else if (this.state.combo >= 13) {
+            // 13-15 콤보: 마젠타 네온
+            color1 = 'rgba(255, 0, 255, 0.8)'
+            color2 = 'rgba(236, 64, 122, 0.6)'
+            color3 = 'rgba(233, 30, 99, 0.4)'
+        } else {
+            // 10-12 콤보: 빨강 네온
+            color1 = 'rgba(255, 68, 68, 0.8)'
+            color2 = 'rgba(239, 68, 68, 0.6)'
+            color3 = 'rgba(220, 38, 38, 0.4)'
+        }
+
+        // Glow Border (테두리만 유지, 오버레이 제거)
         const glowBorder = document.createElement('div')
         glowBorder.id = 'focus-glow-border'
         glowBorder.className = 'focus-glow-border'
+        glowBorder.style.setProperty('--neon-color-1', color1)
+        glowBorder.style.setProperty('--neon-color-2', color2)
+        glowBorder.style.setProperty('--neon-color-3', color3)
         document.body.appendChild(glowBorder)
 
-        // Gradient Overlay
-        const glowOverlay = document.createElement('div')
-        glowOverlay.id = 'focus-glow-overlay'
-        glowOverlay.className = 'focus-glow-overlay'
-        document.body.appendChild(glowOverlay)
-
-        // FEVER TIME! Text (제거됨 - 파티클과 Glow 효과만 유지)
-
-        // 파티클 효과 (주기적으로 생성)
+        // 파티클 효과 (주기적으로 생성, 더 빠르게)
         this.feverParticleInterval = setInterval(() => {
             if (this.state.combo >= 10) {
                 this.createFeverParticle()
             }
-        }, 300)
+        }, 200) // 300ms → 200ms
 
         // 10콤보 미만으로 떨어지면 제거하기 위해 참조 저장
-        this.focusGlowElements = [glowBorder, glowOverlay]
+        this.focusGlowElements = [glowBorder]
     }
 
     removeFocusGlow() {
@@ -1193,6 +1227,89 @@ export class GameEngineHard {
                 : 'translateX(-50%) translateY(-30px)'
             setTimeout(() => banner.remove(), 400)
         }, displayDuration)
+    }
+
+    // 🎮 Geometry Dash Style: 화면 진동 (Screen Shake)
+    screenShake() {
+        // 콤보별 진동 강도 계산
+        let intensity = 3 // 기본 (1-5 콤보)
+        let duration = 80
+
+        if (this.state.combo >= 16) {
+            intensity = 12
+            duration = 150
+        } else if (this.state.combo >= 11) {
+            intensity = 8
+            duration = 120
+        } else if (this.state.combo >= 6) {
+            intensity = 5
+            duration = 100
+        }
+
+        const container = this.container
+        const originalTransform = container.style.transform || ''
+
+        // 랜덤 방향으로 진동
+        const shake = () => {
+            const x = (Math.random() - 0.5) * intensity * 2
+            const y = (Math.random() - 0.5) * intensity * 2
+            container.style.transform = `translate(${x}px, ${y}px)`
+        }
+
+        // 60fps로 진동 (더 부드럽게)
+        const interval = setInterval(shake, 16)
+
+        setTimeout(() => {
+            clearInterval(interval)
+            container.style.transform = originalTransform
+        }, duration)
+    }
+
+    // 🎮 Geometry Dash Style: 충격파 이펙트 (Shockwave) - 하드모드 붉은 계열
+    createShockwave() {
+        const shockwave = document.createElement('div')
+
+        // 콤보별 색상 (하드모드 - 붉은 계열)
+        let color = '#ff5252' // 빨강 (1-5 콤보)
+        if (this.state.combo >= 16) {
+            color = '#ffff00' // 옐로우 (16+ 콤보)
+        } else if (this.state.combo >= 11) {
+            color = '#ff00ff' // 마젠타 (11-15 콤보)
+        } else if (this.state.combo >= 6) {
+            color = '#ff1744' // 진한 빨강 (6-10 콤보)
+        }
+
+        shockwave.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            border: 3px solid ${color};
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px ${color}, inset 0 0 20px ${color};
+            z-index: 998;
+            pointer-events: none;
+        `
+        document.body.appendChild(shockwave)
+
+        // 충격파 확장 애니메이션
+        shockwave.animate([
+            {
+                transform: 'translate(-50%, -50%) scale(1)',
+                opacity: 0.8
+            },
+            {
+                transform: 'translate(-50%, -50%) scale(8)',
+                opacity: 0
+            }
+        ], {
+            duration: 300,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+        })
+
+        setTimeout(() => shockwave.remove(), 300)
     }
 
     handleGameOver(reason) {
