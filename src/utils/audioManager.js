@@ -32,10 +32,10 @@ class AudioManager {
 
             // Low priority - lazy load (rarely used)
             splash: { path: '/sounds/2-a_splash.mp3', preload: 'none', pooled: false },
-            hardModeIntro: { path: '/sounds/1-5_hardmode.wav', preload: 'none', pooled: false },
+            hardModeIntro: { path: '/sounds/1-5_hardmode.mp3', preload: 'none', pooled: false },
             gameOverFail: { path: '/sounds/1-9_gameover(fail).mp3', preload: 'none', pooled: false },
-            gameOverSuccess: { path: '/sounds/1-10_gameover(success).wav', preload: 'none', pooled: false },
-            levelUp: { path: '/sounds/1-11_levelup.wav', preload: 'none', pooled: false },
+            gameOverSuccess: { path: '/sounds/1-10_gameover(success).mp3', preload: 'none', pooled: false },
+            levelUp: { path: '/sounds/1-11_levelup.mp3', preload: 'none', pooled: false },
             hardModeUnlock: { path: '/sounds/1-12_hardmodeopen.mp3', preload: 'none', pooled: false },
 
             // Legacy aliases
