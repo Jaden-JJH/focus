@@ -216,6 +216,12 @@ export class GameEngineHard {
     }
 
     proceedToRound() {
+        // 🔒 라운드 시작 전 타이머 확실히 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
+
         // 2. Select Game
         const GameClass = this.selectGame()
         if (!GameClass) {
@@ -235,6 +241,8 @@ export class GameEngineHard {
         const selectedKey = this.state.history[this.state.history.length - 1]
         const isColorSequence = selectedKey === 'color_sequence'
 
+        console.log(`🎮 Starting Round ${this.state.round}, Game: ${selectedKey}, isColorSequence: ${isColorSequence}`)
+
         // 3. Setup Game UI with fade animation
         // 페이드아웃
         this.container.style.transition = 'opacity 0.2s'
@@ -253,6 +261,7 @@ export class GameEngineHard {
             // ColorSequence의 경우 onReady 콜백 추가
             if (isColorSequence) {
                 gameConfig.onReady = () => {
+                    console.log('🎵 ColorSequence ready - starting timer')
                     // 안내가 끝나면 타이머 시작
                     this.startTimer()
                 }
@@ -270,7 +279,10 @@ export class GameEngineHard {
 
             // ColorSequence가 아닌 경우에만 바로 타이머 시작
             if (!isColorSequence) {
+                console.log('⏱️ Starting timer immediately (not ColorSequence)')
                 this.startTimer()
+            } else {
+                console.log('⏸️ Waiting for ColorSequence onReady callback...')
             }
 
             // Update View
@@ -437,13 +449,18 @@ export class GameEngineHard {
     }
 
     startTimer() {
-        if (this.timerId) clearInterval(this.timerId)
+        // 🔒 안전하게 기존 타이머 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
 
         const tickRate = 100 // ms
 
         this.timerId = setInterval(() => {
             if (!this.state.isPlaying) {
                 clearInterval(this.timerId)
+                this.timerId = null
                 return
             }
 
@@ -461,7 +478,11 @@ export class GameEngineHard {
     }
 
     handleCorrect() {
-        clearInterval(this.timerId)
+        // 🔒 안전하게 타이머 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
 
         // Play correct sound effect
         audioManager.playCorrect()
@@ -1313,7 +1334,13 @@ export class GameEngineHard {
 
     handleGameOver(reason) {
         this.state.isPlaying = false
-        clearInterval(this.timerId)
+
+        // 🔒 안전하게 타이머 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
+
         console.log('Game Over:', reason)
 
         // 게임오버 시 Fever 효과 제거
@@ -1339,7 +1366,12 @@ export class GameEngineHard {
     }
 
     cleanup() {
-        clearInterval(this.timerId)
+        // 🔒 안전하게 타이머 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
+
         this.removeFocusGlow()
 
         // 🎵 배경음악 정지

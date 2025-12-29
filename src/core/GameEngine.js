@@ -131,6 +131,12 @@ export class GameEngine {
     }
 
     proceedToRound() {
+        // 🔒 라운드 시작 전 타이머 확실히 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
+
         // 2. Select Game
         const GameClass = this.selectGame()
         if (!GameClass) {
@@ -337,13 +343,18 @@ export class GameEngine {
     }
 
     startTimer() {
-        if (this.timerId) clearInterval(this.timerId)
+        // 🔒 안전하게 기존 타이머 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
 
         const tickRate = 100 // ms
 
         this.timerId = setInterval(() => {
             if (!this.state.isPlaying) {
                 clearInterval(this.timerId)
+                this.timerId = null
                 return
             }
 
@@ -361,7 +372,11 @@ export class GameEngine {
     }
 
     handleCorrect() {
-        clearInterval(this.timerId)
+        // 🔒 안전하게 타이머 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
 
         // Play correct sound effect
         audioManager.playCorrect()
@@ -1155,7 +1170,13 @@ export class GameEngine {
 
     handleGameOver(reason) {
         this.state.isPlaying = false
-        clearInterval(this.timerId)
+
+        // 🔒 안전하게 타이머 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
+
         console.log('Game Over:', reason)
 
         // 게임오버 시 Fever 효과 제거
@@ -1174,7 +1195,12 @@ export class GameEngine {
     }
 
     cleanup() {
-        clearInterval(this.timerId)
+        // 🔒 안전하게 타이머 정리
+        if (this.timerId) {
+            clearInterval(this.timerId)
+            this.timerId = null
+        }
+
         this.removeFocusGlow()
 
         // 🎵 배경음악 정지
