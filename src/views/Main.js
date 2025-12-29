@@ -9,6 +9,7 @@ export default class Main {
   constructor(container) {
     this.container = container
     this.mainSoundPlayed = false // 메인 진입음 1회 재생 플래그
+    this.mainMusicStarted = false // 메인 음악 1회 재생 플래그
 
     // All Levels Modal state (moved from setupAllLevelsModal to instance)
     this.currentPage = 1
@@ -20,13 +21,21 @@ export default class Main {
       audioManager.setEnabled(soundEnabled === 'true')
     }
 
-    // 🎵 배경음악 설정 복원 (localStorage) - 최초 1회만
+    // 🎵 배경음악 설정 복원 - localStorage에서 읽어서 즉시 재생 또는 정지
     const bgmEnabled = localStorage.getItem('bgm_enabled')
-    if (bgmEnabled !== null) {
-      musicManager.setEnabled(bgmEnabled === 'true')
+    this.shouldPlayBGM = bgmEnabled !== null ? bgmEnabled === 'true' : true
+
+    if (this.shouldPlayBGM) {
+      // 초기 재생 플래그 설정 (render에서 한 번만 재생)
+      this.mainMusicStarted = false
     } else {
-      // 디폴트는 ON
-      musicManager.setEnabled(true)
+      // BGM OFF 상태로 시작
+      this.mainMusicStarted = true
+      localStorage.setItem('bgm_enabled', 'false')
+    }
+
+    // 디폴트 설정이 없으면 ON으로 저장
+    if (bgmEnabled === null) {
       localStorage.setItem('bgm_enabled', 'true')
     }
 
@@ -43,6 +52,10 @@ export default class Main {
   }
 
   setupEventDelegation() {
+    // BGM 버튼 클릭 쿨다운 (연속 클릭 방지)
+    let bgmLastClickTime = 0
+    const BGM_CLICK_COOLDOWN = 300 // 0.3초 쿨다운
+
     // Use event delegation on document to catch all clicks
     // This persists even when innerHTML replaces DOM elements
     document.addEventListener('click', async (e) => {
@@ -200,30 +213,48 @@ export default class Main {
         return
       }
 
-      // BGM toggle button
-      if (target.id === 'bgm-toggle-btn') {
-        audioManager.playToggleChange()
-        const currentState = musicManager.isEnabled()
-        const newState = !currentState
+      // BGM toggle button (버튼 내부 요소 클릭도 감지)
+      if (target.id === 'bgm-toggle-btn' || target.closest('#bgm-toggle-btn')) {
+        const now = Date.now()
 
-        musicManager.setEnabled(newState)
-        localStorage.setItem('bgm_enabled', newState ? 'true' : 'false')
+        // 쿨다운 체크 - 연속 클릭 차단
+        if (now - bgmLastClickTime < BGM_CLICK_COOLDOWN) {
+          console.log('⚠️ BGM 버튼 쿨다운 중... 잠시 후 다시 시도하세요')
+          return
+        }
 
-        // Update button text
-        const bgmBtn = document.getElementById('bgm-toggle-btn')
+        bgmLastClickTime = now
+
+        // 효과음
+        audioManager.playButtonClick()
+
+        // 현재 재생 상태 확인
+        const isCurrentlyPlaying = musicManager.isPlaying()
+        console.log('🎵 BGM 현재 상태:', isCurrentlyPlaying ? 'PLAYING' : 'STOPPED')
+
+        // UI 즉시 업데이트
         const bgmText = document.getElementById('bgm-status-text')
-        if (bgmBtn && bgmText) {
-          bgmText.innerText = newState ? 'ON' : 'OFF'
-          bgmText.style.color = newState ? 'var(--warning)' : 'var(--gray-500)'
+        if (bgmText) {
+          bgmText.innerText = isCurrentlyPlaying ? 'OFF' : 'ON'
+          bgmText.style.color = isCurrentlyPlaying ? 'var(--gray-500)' : 'var(--warning)'
         }
 
-        // If turning ON, restart appropriate music
-        if (newState) {
-          const _state = store.getState()
-          if (_state.user) {
-            musicManager.playMainMusic()
-          }
+        // 음악 즉시 재생/정지 토글
+        if (isCurrentlyPlaying) {
+          console.log('🎵 BGM 정지 실행')
+          musicManager.stopMusic()
+          localStorage.setItem('bgm_enabled', 'false')
+        } else {
+          console.log('🎵 BGM 재생 실행')
+          musicManager.playMainMusic()
+          localStorage.setItem('bgm_enabled', 'true')
         }
+
+        // 상태 재확인 (디버깅용)
+        setTimeout(() => {
+          console.log('🎵 BGM 변경 후 상태:', musicManager.isPlaying() ? 'PLAYING' : 'STOPPED')
+        }, 100)
+
         return
       }
 
@@ -387,9 +418,10 @@ export default class Main {
       this.mainSoundPlayed = true;
     }
 
-    // 🎵 배경음악: 메인 화면 음악 재생 (이미 메인 모드가 아닐 때만)
-    if (musicManager.currentMode !== 'main' && musicManager.isEnabled()) {
-      musicManager.playMainMusic();
+    // 🎵 배경음악: 메인 화면 음악 재생 (최초 1회만, shouldPlayBGM이 true일 때만)
+    if (!this.mainMusicStarted && this.shouldPlayBGM) {
+      musicManager.playMainMusic()
+      this.mainMusicStarted = true
     }
 
     // 🔊 1-12: 하드모드 해금 알림 (레벨 5 달성 후 최초 1회)
@@ -640,7 +672,7 @@ export default class Main {
                transition: all 0.2s;
              " onmouseover="this.style.borderColor='var(--gray-500)'" onmouseout="this.style.borderColor='var(--gray-600)'">
                <span style="font-size: var(--text-xs); color: var(--gray-300); font-weight: var(--font-medium); line-height: 1;">BGM</span>
-               <span id="bgm-status-text" style="font-size: var(--text-xs); font-weight: var(--font-bold); line-height: 1; color: ${musicManager.isEnabled() ? 'var(--warning)' : 'var(--gray-500)'};">${musicManager.isEnabled() ? 'ON' : 'OFF'}</span>
+               <span id="bgm-status-text" style="font-size: var(--text-xs); font-weight: var(--font-bold); line-height: 1; color: ${musicManager.isPlaying() ? 'var(--warning)' : 'var(--gray-500)'};">${musicManager.isPlaying() ? 'ON' : 'OFF'}</span>
              </button>
              ${!user.isGuest ? `
              <div id="coin-info" class="currency" style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
@@ -1755,7 +1787,7 @@ export default class Main {
 
   destroy() {
     // 🎵 배경음악 정지 (즉시 정지 - 게임으로 전환 시)
-    musicManager.stop(0);
+    musicManager.stopMusic()
 
     // Cleanup subscription
     if (this.unsub) {

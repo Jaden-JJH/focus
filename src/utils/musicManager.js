@@ -1,12 +1,10 @@
 // Background Music Manager for Focus Game
 class MusicManager {
     constructor() {
-        this.enabled = true
         this.currentMusic = null
-        this.nextMusic = null
         this.currentMode = null // 'main', 'normal', 'hard'
         this.volume = 0.15 // 15% 볼륨
-        this.isFading = false
+        this.targetState = 'stopped' // 'playing' | 'stopped' - 즉시 반영되는 상태
 
         // 노말모드 랜덤 재생 관련
         this.normalPlaylist = []
@@ -33,10 +31,52 @@ class MusicManager {
         console.log('🎵 MusicManager initialized')
     }
 
-    // 메인 화면 음악 재생
-    playMainMusic() {
-        if (!this.enabled) return
+    // ===== PUBLIC API =====
 
+    // 현재 음악이 재생 중인지 확인 (targetState 기반으로 즉시 반영)
+    isPlaying() {
+        const result = this.targetState === 'playing'
+        console.log('🎵 isPlaying() 호출 - targetState:', this.targetState, '→ 결과:', result)
+        return result
+    }
+
+    // 메인 화면 음악 즉시 재생 (BGM 버튼용)
+    playMainMusic() {
+        console.log('🎵 playMainMusic() 호출됨')
+        this._stopImmediate()
+
+        this.targetState = 'playing' // 즉시 상태 업데이트
+        console.log('🎵 targetState = playing')
+        this.currentMode = 'main'
+        const audio = new Audio(this.musicPaths.main)
+        audio.volume = this.volume
+        audio.loop = true
+
+        audio.play()
+            .then(() => {
+                console.log('🎵 Main BGM ON - 재생 성공')
+            })
+            .catch(err => {
+                console.warn('🎵 BGM play blocked:', err)
+                this.targetState = 'stopped' // 재생 실패 시 상태 복구
+                console.log('🎵 재생 실패 - targetState = stopped')
+            })
+
+        this.currentMusic = audio
+    }
+
+    // 음악 즉시 정지 (BGM 버튼용)
+    stopMusic() {
+        console.log('🎵 stopMusic() 호출됨')
+        this.targetState = 'stopped' // 즉시 상태 업데이트
+        console.log('🎵 targetState = stopped')
+        this._stopImmediate()
+        console.log('🎵 BGM OFF - 정지 완료')
+    }
+
+    // 메인 화면 음악 재생 (페이드인)
+    playMainMusicWithFade() {
+        this.targetState = 'playing'
         this.currentMode = 'main'
         this._loadAndPlay(this.musicPaths.main, {
             loop: true,
@@ -47,8 +87,7 @@ class MusicManager {
 
     // 노말모드 음악 재생 (랜덤 순서)
     playNormalMusic() {
-        if (!this.enabled) return
-
+        this.targetState = 'playing'
         this.currentMode = 'normal'
 
         // 첫 재생이거나 플레이리스트가 끝난 경우 새로운 랜덤 순서 생성
@@ -65,6 +104,62 @@ class MusicManager {
             startTime: 0,
             onEnded: () => this._playNextNormalTrack()
         })
+    }
+
+    // 하드모드 음악 재생 (3초부터 시작, 크로스페이드로 반복)
+    playHardMusic() {
+        this.targetState = 'playing'
+        this.currentMode = 'hard'
+
+        this._loadAndPlay(this.musicPaths.hard, {
+            loop: false,
+            fadeIn: 2.0,
+            startTime: this.hardModeStartTime,
+            onEnded: () => this._loopHardMusic()
+        })
+    }
+
+    // 음악 정지 (페이드아웃)
+    stopWithFade(fadeOutDuration = 2.0) {
+        this.targetState = 'stopped'
+
+        if (this.currentMusic) {
+            this._fadeOut(this.currentMusic, fadeOutDuration, () => {
+                if (this.currentMusic) {
+                    this.currentMusic.pause()
+                    this.currentMusic.currentTime = 0
+                    this.currentMusic = null
+                }
+            })
+        }
+
+        this.currentMode = null
+        this.normalPlaylist = []
+        this.normalCurrentIndex = 0
+    }
+
+    // 볼륨 설정
+    setVolume(volume) {
+        this.volume = Math.max(0, Math.min(1, volume))
+
+        if (this.currentMusic) {
+            this.currentMusic.volume = this.volume
+        }
+    }
+
+    // ===== PRIVATE METHODS =====
+
+    // 즉시 정지 (내부용)
+    _stopImmediate() {
+        if (this.currentMusic) {
+            this.currentMusic.pause()
+            this.currentMusic.currentTime = 0
+            this.currentMusic = null
+        }
+        this.currentMode = null
+        this.normalPlaylist = []
+        this.normalCurrentIndex = 0
+        // targetState는 호출한 곳에서 설정
     }
 
     // 다음 노말모드 트랙 재생 (크로스페이드)
@@ -99,20 +194,6 @@ class MusicManager {
         }
 
         console.log('🎵 New Normal Playlist:', this.normalPlaylist.map(p => p.split('/').pop()))
-    }
-
-    // 하드모드 음악 재생 (3초부터 시작, 크로스페이드로 반복)
-    playHardMusic() {
-        if (!this.enabled) return
-
-        this.currentMode = 'hard'
-
-        this._loadAndPlay(this.musicPaths.hard, {
-            loop: false,
-            fadeIn: 2.0,
-            startTime: this.hardModeStartTime,
-            onEnded: () => this._loopHardMusic()
-        })
     }
 
     // 하드모드 음악 반복 (크로스페이드 1.5초)
@@ -228,9 +309,6 @@ class MusicManager {
 
     // 페이드인 효과
     _fadeIn(audio, duration) {
-        if (this.isFading) return
-
-        this.isFading = true
         const startVolume = 0
         const endVolume = this.volume
         const steps = 60 // 60 steps for smooth fade
@@ -247,7 +325,6 @@ class MusicManager {
             if (currentStep >= steps) {
                 clearInterval(fadeInterval)
                 audio.volume = endVolume
-                this.isFading = false
             }
         }, stepDuration)
     }
@@ -273,62 +350,6 @@ class MusicManager {
                 if (onComplete) onComplete()
             }
         }, stepDuration)
-    }
-
-    // 음악 정지 (페이드아웃)
-    stop(fadeOutDuration = 2.0) {
-        if (this.currentMusic) {
-            this._fadeOut(this.currentMusic, fadeOutDuration, () => {
-                if (this.currentMusic) {
-                    this.currentMusic.pause()
-                    this.currentMusic.currentTime = 0
-                    this.currentMusic = null
-                }
-            })
-        }
-
-        this.currentMode = null
-        this.normalPlaylist = []
-        this.normalCurrentIndex = 0
-    }
-
-    // 음악 일시정지 (즉시)
-    pause() {
-        if (this.currentMusic) {
-            this.currentMusic.pause()
-        }
-    }
-
-    // 음악 재개
-    resume() {
-        if (this.currentMusic) {
-            this.currentMusic.play().catch(err => {
-                console.warn('🎵 Resume blocked:', err)
-            })
-        }
-    }
-
-    // 음악 활성화/비활성화
-    setEnabled(enabled) {
-        this.enabled = enabled
-
-        if (!enabled) {
-            this.stop(0.5)
-        }
-    }
-
-    // 음악 활성화 상태 확인
-    isEnabled() {
-        return this.enabled
-    }
-
-    // 볼륨 설정
-    setVolume(volume) {
-        this.volume = Math.max(0, Math.min(1, volume))
-
-        if (this.currentMusic) {
-            this.currentMusic.volume = this.volume
-        }
     }
 }
 

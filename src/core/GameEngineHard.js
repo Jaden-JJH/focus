@@ -1325,7 +1325,7 @@ export class GameEngineHard {
         this.removeFocusGlow()
 
         // 🎵 배경음악 정지 (페이드아웃 2초)
-        musicManager.stop(2.0)
+        musicManager.stopWithFade(2.0)
 
         // Cleanup current game instance
         if (this.state.currentGameInstance && this.state.currentGameInstance.cleanup) {
@@ -1348,7 +1348,7 @@ export class GameEngineHard {
         this.removeFocusGlow()
 
         // 🎵 배경음악 정지
-        musicManager.stop(0.5)
+        musicManager.stopWithFade(0.5)
 
         if (this.state.currentGameInstance && this.state.currentGameInstance.cleanup) {
             this.state.currentGameInstance.cleanup()

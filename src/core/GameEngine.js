@@ -1167,7 +1167,7 @@ export class GameEngine {
         this.removeFocusGlow()
 
         // 🎵 배경음악 정지 (페이드아웃 2초)
-        musicManager.stop(2.0)
+        musicManager.stopWithFade(2.0)
 
         // Calculate XP
         const earnedXp = LEVELS.calcXpForRound(this.state.round)
@@ -1183,6 +1183,6 @@ export class GameEngine {
         this.removeFocusGlow()
 
         // 🎵 배경음악 정지
-        musicManager.stop(0.5)
+        musicManager.stopWithFade(0.5)
     }
 }
