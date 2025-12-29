@@ -255,55 +255,58 @@ export class GameEngineHard {
         console.log(`🎮 Starting Round ${this.state.round}, Game: ${selectedKey}, isColorSequence: ${isColorSequence}`)
 
         // 3. Setup Game UI with fade animation
-        // 페이드아웃
-        this.container.style.transition = 'opacity 0.2s'
+        // 🎮 페이드아웃 (RAF로 최적화 - CSS transition과 동기화)
+        this.container.style.transition = 'opacity 0.15s' // 200ms → 150ms
         this.container.style.opacity = '0'
 
-        setTimeout(() => {
-            this.container.innerHTML = ''
-
-            const gameConfig = {
-                difficulty: this.state.round,
-                roundTier: roundTier,
-                onCorrect: () => this.handleCorrect(),
-                onWrong: () => this.handleWrong() // 하드모드: 한번 틀리면 끝
-            }
-
-            // ColorSequence의 경우 onReady 콜백 추가
-            if (isColorSequence) {
-                gameConfig.onReady = () => {
-                    console.log('🎵 ColorSequence ready - starting timer')
-                    // 안내가 끝나면 타이머 시작
-                    this.startTimer()
-                }
-            }
-
-            this.state.currentGameInstance = new GameClass(this.container, gameConfig)
-
-            // 4. Render
-            this.state.currentGameInstance.render()
-
-            // 페이드인
+        // 🎮 게임 전환을 RAF로 최적화 (setTimeout 대신)
+        requestAnimationFrame(() => {
             setTimeout(() => {
-                this.container.style.opacity = '1'
-            }, 50)
+                this.container.innerHTML = ''
 
-            // ColorSequence가 아닌 경우에만 바로 타이머 시작
-            if (!isColorSequence) {
-                console.log('⏱️ Starting timer immediately (not ColorSequence)')
-                this.startTimer()
-            } else {
-                console.log('⏸️ Waiting for ColorSequence onReady callback...')
-            }
+                const gameConfig = {
+                    difficulty: this.state.round,
+                    roundTier: roundTier,
+                    onCorrect: () => this.handleCorrect(),
+                    onWrong: () => this.handleWrong() // 하드모드: 한번 틀리면 끝
+                }
 
-            // Update View
-            if (this.onRoundUpdate) {
-                this.onRoundUpdate({
-                    round: this.state.round,
-                    maxTime: this.state.timeLimit
+                // ColorSequence의 경우 onReady 콜백 추가
+                if (isColorSequence) {
+                    gameConfig.onReady = () => {
+                        console.log('🎵 ColorSequence ready - starting timer')
+                        // 안내가 끝나면 타이머 시작
+                        this.startTimer()
+                    }
+                }
+
+                this.state.currentGameInstance = new GameClass(this.container, gameConfig)
+
+                // 4. Render
+                this.state.currentGameInstance.render()
+
+                // 🎮 페이드인 (즉시)
+                requestAnimationFrame(() => {
+                    this.container.style.opacity = '1'
                 })
-            }
-        }, 200)
+
+                // ColorSequence가 아닌 경우에만 바로 타이머 시작
+                if (!isColorSequence) {
+                    console.log('⏱️ Starting timer immediately (not ColorSequence)')
+                    this.startTimer()
+                } else {
+                    console.log('⏸️ Waiting for ColorSequence onReady callback...')
+                }
+
+                // Update View
+                if (this.onRoundUpdate) {
+                    this.onRoundUpdate({
+                        round: this.state.round,
+                        maxTime: this.state.timeLimit
+                    })
+                }
+            }, 150) // 200ms → 150ms
+        })
     }
 
     showIntermission(label, subLabel, callback) {
@@ -551,25 +554,25 @@ export class GameEngineHard {
             this.removeFocusGlow()
         }
 
-        // 🎮 시각 효과 (성능 레벨에 따라 조절)
-        // 저사양 디바이스: 최소한의 효과만
-        if (this.performanceLevel !== 'low') {
-            // 🎮 Geometry Dash Style: 화면 진동 (중급 이상만)
+        // 🎮 시각 효과를 RAF로 지연 (클릭 반응속도 최적화)
+        // 브라우저가 클릭 이벤트를 먼저 처리하게 함
+        requestAnimationFrame(() => {
+            // 🎮 Geometry Dash Style: 화면 진동 (콤보별 강도)
             this.screenShake()
 
-            // 🎮 Geometry Dash Style: 충격파 이펙트 (중급 이상만)
+            // 🎮 Geometry Dash Style: 충격파 이펙트
             this.createShockwave()
-        }
 
-        // FX: Correct - Show visual feedback (모든 레벨)
-        this.showCorrectFeedback()
+            // FX: Correct - Show visual feedback
+            this.showCorrectFeedback()
 
-        // 콤보가 2 이상이면 콤보 표시 (중급 이상만)
-        if (this.state.combo >= 2 && this.performanceLevel !== 'low') {
-            setTimeout(() => {
-                this.showComboFeedback()
-            }, 200)
-        }
+            // 콤보가 2 이상이면 콤보 표시 (체크마크와 겹치지 않게 약간 딜레이)
+            if (this.state.combo >= 2) {
+                setTimeout(() => {
+                    this.showComboFeedback()
+                }, 200)
+            }
+        })
 
         setTimeout(() => {
             this.state.round++
@@ -604,9 +607,9 @@ export class GameEngineHard {
         // 🎮 Geometry Dash Style: 콤보별 파티클 개수 증가 (성능 레벨에 따라 조절)
         let maxParticles = 40
         if (this.performanceLevel === 'low') {
-            maxParticles = 3 // 모바일: 최소 파티클 (95% 감소)
+            maxParticles = 10 // 모바일: 75% 감소
         } else if (this.performanceLevel === 'medium') {
-            maxParticles = 15 // 중간: 62% 감소
+            maxParticles = 20 // 중간: 50% 감소
         }
 
         const particleCount = Math.min(15 + this.state.combo * 2, maxParticles)
@@ -614,31 +617,26 @@ export class GameEngineHard {
             this.createConfetti()
         }
 
-        // 🎮 Geometry Dash Style: 콤보별 배경 플래시 색상 변화 (중급 이상만)
-        if (this.performanceLevel !== 'low') {
-            const originalBg = document.body.style.backgroundColor
-            const originalBgImage = document.body.style.backgroundImage
-            let flashColor = 'rgba(255, 87, 34, 0.3)' // 기본 주황 (1-5 콤보)
+        // 🎮 Geometry Dash Style: 콤보별 배경 플래시 색상 변화 (하드모드 - 붉은 계열)
+        const originalBg = document.body.style.backgroundColor
+        const originalBgImage = document.body.style.backgroundImage
+        let flashColor = 'rgba(255, 87, 34, 0.3)' // 기본 주황 (1-5 콤보)
 
-            if (this.state.combo >= 16) {
-                flashColor = 'rgba(255, 193, 7, 0.4)' // 금색 (16+ 콤보)
-            } else if (this.state.combo >= 11) {
-                flashColor = 'rgba(233, 30, 99, 0.4)' // 핑크 (11-15 콤보)
-            } else if (this.state.combo >= 6) {
-                flashColor = 'rgba(239, 68, 68, 0.3)' // 빨강 (6-10 콤보)
-            }
-
-            // 불꽃 느낌의 그라디언트 효과 강화
-            document.body.style.backgroundImage = `radial-gradient(circle at center, ${flashColor}, transparent)`
-            document.body.style.backgroundColor = flashColor
-
-            setTimeout(() => {
-                document.body.style.backgroundImage = originalBgImage
-                document.body.style.backgroundColor = originalBg
-            }, 500)
+        if (this.state.combo >= 16) {
+            flashColor = 'rgba(255, 193, 7, 0.4)' // 금색 (16+ 콤보)
+        } else if (this.state.combo >= 11) {
+            flashColor = 'rgba(233, 30, 99, 0.4)' // 핑크 (11-15 콤보)
+        } else if (this.state.combo >= 6) {
+            flashColor = 'rgba(239, 68, 68, 0.3)' // 빨강 (6-10 콤보)
         }
 
+        // 불꽃 느낌의 그라디언트 효과 강화
+        document.body.style.backgroundImage = `radial-gradient(circle at center, ${flashColor}, transparent)`
+        document.body.style.backgroundColor = flashColor
+
         setTimeout(() => {
+            document.body.style.backgroundImage = originalBgImage
+            document.body.style.backgroundColor = originalBg
             feedback.remove()
         }, 500)
     }
