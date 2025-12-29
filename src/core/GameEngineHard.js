@@ -4,6 +4,7 @@ import { store } from './store.js'
 import { dataService } from '../services/dataService.js'
 import audioManager from '../utils/audioManager.js'
 import musicManager from '../utils/musicManager.js'
+import { getPerformanceLevel } from '../utils/deviceDetect.js'
 
 // Import games
 // 기존 5개 게임
@@ -51,6 +52,10 @@ export class GameEngineHard {
         }
 
         this.timerId = null
+
+        // 📱 성능 레벨에 따른 설정
+        this.performanceLevel = getPerformanceLevel()
+        console.log(`📱 Performance Level: ${this.performanceLevel}`)
 
         // 하드모드: 기존 5개 중 랜덤 4개 선택
         this.selectedBaseGames = this.selectRandomBaseGames()
@@ -556,8 +561,15 @@ export class GameEngineHard {
         feedback.innerText = '✓'
         document.body.appendChild(feedback)
 
-        // 🎮 Geometry Dash Style: 콤보별 파티클 개수 증가
-        const particleCount = Math.min(15 + this.state.combo * 2, 40)
+        // 🎮 Geometry Dash Style: 콤보별 파티클 개수 증가 (성능 레벨에 따라 조절)
+        let maxParticles = 40
+        if (this.performanceLevel === 'low') {
+            maxParticles = 10 // 모바일: 75% 감소
+        } else if (this.performanceLevel === 'medium') {
+            maxParticles = 20 // 중간: 50% 감소
+        }
+
+        const particleCount = Math.min(15 + this.state.combo * 2, maxParticles)
         for (let i = 0; i < particleCount; i++) {
             this.createConfetti()
         }
@@ -602,6 +614,9 @@ export class GameEngineHard {
         const endX = startX + Math.cos(angle) * distance
         const endY = startY + Math.sin(angle) * distance
 
+        // 📱 성능 최적화: 저사양 디바이스에서는 box-shadow 제거
+        const boxShadow = this.performanceLevel === 'low' ? 'none' : `0 0 ${size * 2}px ${color}`
+
         confetti.style.cssText = `
             position: fixed;
             left: ${startX}px;
@@ -610,14 +625,15 @@ export class GameEngineHard {
             height: ${size}px;
             background-color: ${color};
             border-radius: 50%;
-            box-shadow: 0 0 ${size * 2}px ${color};
+            box-shadow: ${boxShadow};
             z-index: 999;
             pointer-events: none;
+            will-change: transform, opacity;
         `
         document.body.appendChild(confetti)
 
         // 🎮 Geometry Dash Style: 속도 증가 (800ms → 500ms)
-        confetti.animate([
+        const animation = confetti.animate([
             { transform: 'translate(0, 0) rotate(0deg) scale(1)', opacity: 1 },
             { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${Math.random() * 720}deg) scale(0)`, opacity: 0 }
         ], {
@@ -625,7 +641,10 @@ export class GameEngineHard {
             easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
         })
 
-        setTimeout(() => confetti.remove(), 500)
+        // 📱 애니메이션 완료 후 정리
+        animation.onfinish = () => {
+            confetti.remove()
+        }
     }
 
     handleWrong() {

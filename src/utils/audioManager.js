@@ -6,7 +6,13 @@ class AudioManager {
         this.enabled = true;
         this.initialized = false;
         this.defaultVolume = 0.5;
-        this.poolSize = 3; // Number of instances per high-priority sound
+
+        // 📱 모바일 감지 및 성능 최적화
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        this.isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+        // 모바일에서는 풀 크기를 줄여 메모리 절약
+        this.poolSize = this.isMobile ? 2 : 3 // Number of instances per high-priority sound
 
         // Sound file paths with preload priority
         this.soundFiles = {
@@ -155,13 +161,16 @@ class AudioManager {
             audioInstance.volume = sound.volume;
         }
 
-        // Play immediately (fire-and-forget for pooled sounds)
+        // 📱 iOS 최적화: 즉시 재생 시도 (사용자 상호작용 컨텍스트에서만 동작)
         const playPromise = audioInstance.play();
 
         // Handle errors silently
         if (playPromise !== undefined) {
             playPromise.catch(err => {
-                console.warn('Audio play blocked:', soundName);
+                // iOS에서 autoplay 차단은 정상적인 동작
+                if (!this.isIOS) {
+                    console.warn('Audio play blocked:', soundName);
+                }
             });
         }
 
