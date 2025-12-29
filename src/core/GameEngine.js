@@ -445,17 +445,21 @@ export class GameEngine {
             this.removeFocusGlow()
         }
 
-        // 🎮 Geometry Dash Style: 화면 진동 (콤보별 강도)
-        this.screenShake()
+        // 🎮 시각 효과 (성능 레벨에 따라 조절)
+        // 저사양 디바이스: 최소한의 효과만
+        if (this.performanceLevel !== 'low') {
+            // 🎮 Geometry Dash Style: 화면 진동 (중급 이상만)
+            this.screenShake()
 
-        // 🎮 Geometry Dash Style: 충격파 이펙트
-        this.createShockwave()
+            // 🎮 Geometry Dash Style: 충격파 이펙트 (중급 이상만)
+            this.createShockwave()
+        }
 
-        // FX: Correct - Show visual feedback
+        // FX: Correct - Show visual feedback (모든 레벨)
         this.showCorrectFeedback()
 
-        // 콤보가 2 이상이면 콤보 표시 (체크마크와 겹치지 않게 약간 딜레이)
-        if (this.state.combo >= 2) {
+        // 콤보가 2 이상이면 콤보 표시 (중급 이상만)
+        if (this.state.combo >= 2 && this.performanceLevel !== 'low') {
             setTimeout(() => {
                 this.showComboFeedback()
             }, 200)
@@ -494,9 +498,9 @@ export class GameEngine {
         // 🎮 Geometry Dash Style: 콤보별 파티클 개수 증가 (성능 레벨에 따라 조절)
         let maxParticles = 40
         if (this.performanceLevel === 'low') {
-            maxParticles = 10 // 모바일: 75% 감소
+            maxParticles = 3 // 모바일: 최소 파티클 (95% 감소)
         } else if (this.performanceLevel === 'medium') {
-            maxParticles = 20 // 중간: 50% 감소
+            maxParticles = 15 // 중간: 62% 감소
         }
 
         const particleCount = Math.min(15 + this.state.combo * 2, maxParticles)
@@ -504,22 +508,27 @@ export class GameEngine {
             this.createConfetti()
         }
 
-        // 🎮 Geometry Dash Style: 콤보별 배경 플래시 색상 변화
-        const originalBg = document.body.style.backgroundColor
-        let flashColor = 'rgba(76, 175, 80, 0.3)' // 기본 초록 (1-5 콤보)
+        // 🎮 Geometry Dash Style: 콤보별 배경 플래시 색상 변화 (중급 이상만)
+        if (this.performanceLevel !== 'low') {
+            const originalBg = document.body.style.backgroundColor
+            let flashColor = 'rgba(76, 175, 80, 0.3)' // 기본 초록 (1-5 콤보)
 
-        if (this.state.combo >= 16) {
-            flashColor = 'rgba(255, 215, 0, 0.4)' // 금색 (16+ 콤보)
-        } else if (this.state.combo >= 11) {
-            flashColor = 'rgba(156, 39, 176, 0.4)' // 보라 (11-15 콤보)
-        } else if (this.state.combo >= 6) {
-            flashColor = 'rgba(33, 150, 243, 0.3)' // 파랑 (6-10 콤보)
+            if (this.state.combo >= 16) {
+                flashColor = 'rgba(255, 215, 0, 0.4)' // 금색 (16+ 콤보)
+            } else if (this.state.combo >= 11) {
+                flashColor = 'rgba(156, 39, 176, 0.4)' // 보라 (11-15 콤보)
+            } else if (this.state.combo >= 6) {
+                flashColor = 'rgba(33, 150, 243, 0.3)' // 파랑 (6-10 콤보)
+            }
+
+            document.body.style.backgroundColor = flashColor
+
+            setTimeout(() => {
+                document.body.style.backgroundColor = originalBg
+            }, 500)
         }
 
-        document.body.style.backgroundColor = flashColor
-
         setTimeout(() => {
-            document.body.style.backgroundColor = originalBg
             feedback.remove()
         }, 500)
     }
