@@ -1,0 +1,28 @@
+/* 최적화된 폰트 CSS */
+
+/* Pretendard Variable */
+@font-face {
+    font-family: 'Pretendard';
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+    src: url('/font/optimized/PretendardVariable.woff2') format('woff2');
+}
+
+/* Electrical Safety Bold */
+@font-face {
+    font-family: 'Electrical Safety';
+    src: url('/font/optimized/Electrical Safety Bold.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Electrical Safety Regular */
+@font-face {
+    font-family: 'Electrical Safety';
+    src: url('/font/optimized/Electrical Safety Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
