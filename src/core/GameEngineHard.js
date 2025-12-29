@@ -3,6 +3,7 @@ import { CONFIG, LEVELS } from '../config/gameConfig.js'
 import { store } from './store.js'
 import { dataService } from '../services/dataService.js'
 import audioManager from '../utils/audioManager.js'
+import musicManager from '../utils/musicManager.js'
 
 // Import games
 // 기존 5개 게임
@@ -88,6 +89,9 @@ export class GameEngineHard {
 
         // Initialize audio on first user interaction
         audioManager.init()
+
+        // 🎵 배경음악: 하드모드 음악 재생 시작
+        musicManager.playHardMusic()
 
         // Deduct Coin (optimistic update)
         const currentCoins = store.getState().coins
@@ -1320,6 +1324,9 @@ export class GameEngineHard {
         // 게임오버 시 Fever 효과 제거
         this.removeFocusGlow()
 
+        // 🎵 배경음악 정지 (페이드아웃 2초)
+        musicManager.stop(2.0)
+
         // Cleanup current game instance
         if (this.state.currentGameInstance && this.state.currentGameInstance.cleanup) {
             this.state.currentGameInstance.cleanup()
@@ -1339,6 +1346,10 @@ export class GameEngineHard {
     cleanup() {
         clearInterval(this.timerId)
         this.removeFocusGlow()
+
+        // 🎵 배경음악 정지
+        musicManager.stop(0.5)
+
         if (this.state.currentGameInstance && this.state.currentGameInstance.cleanup) {
             this.state.currentGameInstance.cleanup()
         }

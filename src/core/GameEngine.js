@@ -3,6 +3,7 @@ import { CONFIG, LEVELS } from '../config/gameConfig.js'
 import { store } from './store.js'
 import { dataService } from '../services/dataService.js'
 import audioManager from '../utils/audioManager.js'
+import musicManager from '../utils/musicManager.js'
 
 // Import games (later dynamically or via map)
 import { ShapeMatch } from '../games/ShapeMatch.js'
@@ -54,6 +55,9 @@ export class GameEngine {
 
         // Initialize audio on first user interaction
         audioManager.init()
+
+        // 🎵 배경음악: 노말모드 음악 재생 시작
+        musicManager.playNormalMusic()
 
         // Deduct Coin (optimistic update)
         const currentCoins = store.getState().coins
@@ -1162,6 +1166,9 @@ export class GameEngine {
         // 게임오버 시 Fever 효과 제거
         this.removeFocusGlow()
 
+        // 🎵 배경음악 정지 (페이드아웃 2초)
+        musicManager.stop(2.0)
+
         // Calculate XP
         const earnedXp = LEVELS.calcXpForRound(this.state.round)
 
@@ -1174,5 +1181,8 @@ export class GameEngine {
     cleanup() {
         clearInterval(this.timerId)
         this.removeFocusGlow()
+
+        // 🎵 배경음악 정지
+        musicManager.stop(0.5)
     }
 }

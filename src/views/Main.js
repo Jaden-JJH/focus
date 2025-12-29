@@ -3,6 +3,7 @@ import { store } from '../core/store.js'
 import { dataService } from '../services/dataService.js'
 import { LEVELS, LEVEL_DATA } from '../config/gameConfig.js'
 import audioManager from '../utils/audioManager.js'
+import musicManager from '../utils/musicManager.js'
 
 export default class Main {
   constructor(container) {
@@ -17,6 +18,16 @@ export default class Main {
     const soundEnabled = localStorage.getItem('sound_enabled')
     if (soundEnabled !== null) {
       audioManager.setEnabled(soundEnabled === 'true')
+    }
+
+    // 🎵 배경음악 설정 복원 (localStorage) - 최초 1회만
+    const bgmEnabled = localStorage.getItem('bgm_enabled')
+    if (bgmEnabled !== null) {
+      musicManager.setEnabled(bgmEnabled === 'true')
+    } else {
+      // 디폴트는 ON
+      musicManager.setEnabled(true)
+      localStorage.setItem('bgm_enabled', 'true')
     }
 
     // Setup event delegation (runs once, persists forever)
@@ -189,6 +200,33 @@ export default class Main {
         return
       }
 
+      // BGM toggle button
+      if (target.id === 'bgm-toggle-btn') {
+        audioManager.playToggleChange()
+        const currentState = musicManager.isEnabled()
+        const newState = !currentState
+
+        musicManager.setEnabled(newState)
+        localStorage.setItem('bgm_enabled', newState ? 'true' : 'false')
+
+        // Update button text
+        const bgmBtn = document.getElementById('bgm-toggle-btn')
+        const bgmText = document.getElementById('bgm-status-text')
+        if (bgmBtn && bgmText) {
+          bgmText.innerText = newState ? 'ON' : 'OFF'
+          bgmText.style.color = newState ? 'var(--warning)' : 'var(--gray-500)'
+        }
+
+        // If turning ON, restart appropriate music
+        if (newState) {
+          const _state = store.getState()
+          if (_state.user) {
+            musicManager.playMainMusic()
+          }
+        }
+        return
+      }
+
       // Coin share button
       if (target.id === 'coin-share-btn') {
         e.stopPropagation()
@@ -347,6 +385,11 @@ export default class Main {
     if (!this.mainSoundPlayed) {
       audioManager.playMainEnter();
       this.mainSoundPlayed = true;
+    }
+
+    // 🎵 배경음악: 메인 화면 음악 재생 (이미 메인 모드가 아닐 때만)
+    if (musicManager.currentMode !== 'main' && musicManager.isEnabled()) {
+      musicManager.playMainMusic();
     }
 
     // 🔊 1-12: 하드모드 해금 알림 (레벨 5 달성 후 최초 1회)
@@ -583,12 +626,29 @@ export default class Main {
                <span class="nickname" style="line-height: 1;">${user.nickname || 'Unknown'}</span>
              </div>
            </div>
-           ${!user.isGuest ? `
-           <div id="coin-info" class="currency" style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
-             <span style="font-size: 20px; line-height: 1;">🪙</span>
-             <span style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--warning); line-height: 1;">${state.coins}</span>
+           <div style="display: flex; align-items: center; gap: var(--space-3);">
+             <!-- BGM Toggle -->
+             <button id="bgm-toggle-btn" style="
+               display: flex;
+               align-items: center;
+               gap: var(--space-1);
+               background: none;
+               border: 1px solid var(--gray-600);
+               border-radius: var(--radius-md);
+               padding: var(--space-1) var(--space-2);
+               cursor: pointer;
+               transition: all 0.2s;
+             " onmouseover="this.style.borderColor='var(--gray-500)'" onmouseout="this.style.borderColor='var(--gray-600)'">
+               <span style="font-size: var(--text-xs); color: var(--gray-300); font-weight: var(--font-medium); line-height: 1;">BGM</span>
+               <span id="bgm-status-text" style="font-size: var(--text-xs); font-weight: var(--font-bold); line-height: 1; color: ${musicManager.isEnabled() ? 'var(--warning)' : 'var(--gray-500)'};">${musicManager.isEnabled() ? 'ON' : 'OFF'}</span>
+             </button>
+             ${!user.isGuest ? `
+             <div id="coin-info" class="currency" style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
+               <span style="font-size: 20px; line-height: 1;">🪙</span>
+               <span style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--warning); line-height: 1;">${state.coins}</span>
+             </div>
+             ` : ''}
            </div>
-           ` : ''}
         </header>
 
         <!-- Scrollable Content Area -->
@@ -1423,16 +1483,12 @@ export default class Main {
         if (rank) {
           // Percentile display logic
           let percentileText = ''
-          let percentileIcon = ''
           if (percentile <= 10) {
             percentileText = `상위 ${percentile}%`
-            percentileIcon = '🔥'
           } else if (percentile <= 25) {
             percentileText = `상위 ${percentile}%`
-            percentileIcon = '⭐'
           } else if (percentile <= 50) {
             percentileText = `상위 ${percentile}%`
-            percentileIcon = ''
           }
 
           // Adjust grid columns based on percentile existence
@@ -1450,7 +1506,7 @@ export default class Main {
             </div>
             ${percentileText ? `
             <div style="text-align: center;">
-              <div style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--gray-200); line-height: 1.2; margin-bottom: var(--space-1);">${percentileText} ${percentileIcon}</div>
+              <div style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--gray-200); line-height: 1.2; margin-bottom: var(--space-1);">${percentileText}</div>
               <div style="font-size: var(--text-xs); color: var(--gray-400); line-height: 1.2;">백분위</div>
             </div>
             ` : ''}
@@ -1698,6 +1754,9 @@ export default class Main {
   }
 
   destroy() {
+    // 🎵 배경음악 정지 (즉시 정지 - 게임으로 전환 시)
+    musicManager.stop(0);
+
     // Cleanup subscription
     if (this.unsub) {
       this.unsub()
