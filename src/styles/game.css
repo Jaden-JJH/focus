@@ -27,7 +27,9 @@
 .timer-fill {
     height: 100%;
     background: var(--theme-accent);
-    transition: width 0.1s linear, background-color var(--theme-transition);
+    /* 🎮 RAF 최적화: width transition 제거 - JS RAF에서 직접 업데이트 */
+    transition: background-color var(--theme-transition); /* 색상 변화만 transition */
+    will-change: width; /* GPU 힌트 */
 }
 
 .timer-fill.critical {

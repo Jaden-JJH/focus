@@ -51,7 +51,10 @@ export class GameEngineHard {
             combo: 0 // 콤보 카운터
         }
 
-        this.timerId = null
+        // 🎮 RAF-based game loop
+        this.animationId = null
+        this.lastUpdateTime = 0
+        this.lastTimerPercent = 100 // For batched UI updates
 
         // 📱 성능 레벨에 따른 설정
         this.performanceLevel = getPerformanceLevel()
@@ -221,11 +224,14 @@ export class GameEngineHard {
     }
 
     proceedToRound() {
-        // 🔒 라운드 시작 전 타이머 확실히 정리
-        if (this.timerId) {
-            clearInterval(this.timerId)
-            this.timerId = null
+        // 🔒 라운드 시작 전 게임 루프 확실히 정리
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId)
+            this.animationId = null
         }
+
+        // 타이머 퍼센트 초기화
+        this.lastTimerPercent = 100
 
         // 2. Select Game
         const GameClass = this.selectGame()
@@ -454,39 +460,69 @@ export class GameEngineHard {
     }
 
     startTimer() {
-        // 🔒 안전하게 기존 타이머 정리
-        if (this.timerId) {
-            clearInterval(this.timerId)
-            this.timerId = null
+        // 🔒 안전하게 기존 애니메이션 정리
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId)
+            this.animationId = null
         }
 
-        const tickRate = 100 // ms
+        // 🎮 RAF 기반 게임 루프 시작
+        this.lastUpdateTime = performance.now()
+        this.gameLoop(this.lastUpdateTime)
+    }
 
-        this.timerId = setInterval(() => {
-            if (!this.state.isPlaying) {
-                clearInterval(this.timerId)
-                this.timerId = null
-                return
-            }
+    // 🎮 RAF 기반 게임 루프 (60fps)
+    gameLoop(currentTime) {
+        if (!this.state.isPlaying) {
+            this.animationId = null
+            return
+        }
 
-            this.state.timeLeft -= (tickRate / 1000)
+        // Delta time 계산 (초 단위)
+        const deltaTime = (currentTime - this.lastUpdateTime) / 1000
+        this.lastUpdateTime = currentTime
 
-            // Update UI Timer Bar (via callback)
-            if (this.onTimerTick) {
+        // 게임 상태 업데이트
+        this.update(deltaTime)
+
+        // UI 렌더링 (배치 처리)
+        this.render()
+
+        // 다음 프레임 스케줄
+        this.animationId = requestAnimationFrame((time) => this.gameLoop(time))
+    }
+
+    // 🔄 게임 상태 업데이트 (로직만)
+    update(deltaTime) {
+        // 시간 감소
+        this.state.timeLeft -= deltaTime
+
+        // 게임오버 체크
+        if (this.state.timeLeft <= 0) {
+            this.state.timeLeft = 0
+            this.handleGameOver("Time's up")
+        }
+    }
+
+    // 🎨 렌더링 (DOM 업데이트만)
+    render() {
+        // 타이머 UI 업데이트 (변화가 있을 때만)
+        if (this.onTimerTick) {
+            const pct = (this.state.timeLeft / this.state.timeLimit) * 100
+
+            // 0.5% 이상 변화가 있을 때만 업데이트 (성능 최적화)
+            if (Math.abs(pct - this.lastTimerPercent) > 0.5) {
                 this.onTimerTick(this.state.timeLeft, this.state.timeLimit)
+                this.lastTimerPercent = pct
             }
-
-            if (this.state.timeLeft <= 0) {
-                this.handleGameOver("Time's up")
-            }
-        }, tickRate)
+        }
     }
 
     handleCorrect() {
-        // 🔒 안전하게 타이머 정리
-        if (this.timerId) {
-            clearInterval(this.timerId)
-            this.timerId = null
+        // 🔒 안전하게 게임 루프 정리
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId)
+            this.animationId = null
         }
 
         // Play correct sound effect
@@ -1282,7 +1318,7 @@ export class GameEngineHard {
         }, displayDuration)
     }
 
-    // 🎮 Geometry Dash Style: 화면 진동 (Screen Shake)
+    // 🎮 Geometry Dash Style: 화면 진동 (Screen Shake) - RAF 기반
     screenShake() {
         // 콤보별 진동 강도 계산
         let intensity = 3 // 기본 (1-5 콤보)
@@ -1301,21 +1337,31 @@ export class GameEngineHard {
 
         const container = this.container
         const originalTransform = container.style.transform || ''
+        const startTime = performance.now()
 
-        // 랜덤 방향으로 진동
-        const shake = () => {
-            const x = (Math.random() - 0.5) * intensity * 2
-            const y = (Math.random() - 0.5) * intensity * 2
-            container.style.transform = `translate(${x}px, ${y}px)`
+        // RAF 기반 shake 애니메이션
+        const shake = (currentTime) => {
+            const elapsed = currentTime - startTime
+
+            if (elapsed >= duration) {
+                // 애니메이션 완료 - 원상복구
+                container.style.transform = originalTransform
+                return
+            }
+
+            // 시간에 따라 강도 감소 (자연스러운 효과)
+            const progress = elapsed / duration
+            const currentIntensity = intensity * (1 - progress * 0.5) // 50% 감소
+
+            // 랜덤 방향으로 진동 (translate3d로 GPU 가속)
+            const x = (Math.random() - 0.5) * currentIntensity * 2
+            const y = (Math.random() - 0.5) * currentIntensity * 2
+            container.style.transform = `translate3d(${x}px, ${y}px, 0)`
+
+            requestAnimationFrame(shake)
         }
 
-        // 60fps로 진동 (더 부드럽게)
-        const interval = setInterval(shake, 16)
-
-        setTimeout(() => {
-            clearInterval(interval)
-            container.style.transform = originalTransform
-        }, duration)
+        requestAnimationFrame(shake)
     }
 
     // 🎮 Geometry Dash Style: 충격파 이펙트 (Shockwave) - 하드모드 붉은 계열
@@ -1368,10 +1414,10 @@ export class GameEngineHard {
     handleGameOver(reason) {
         this.state.isPlaying = false
 
-        // 🔒 안전하게 타이머 정리
-        if (this.timerId) {
-            clearInterval(this.timerId)
-            this.timerId = null
+        // 🔒 안전하게 게임 루프 정리
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId)
+            this.animationId = null
         }
 
         console.log('Game Over:', reason)
@@ -1399,10 +1445,16 @@ export class GameEngineHard {
     }
 
     cleanup() {
-        // 🔒 안전하게 타이머 정리
-        if (this.timerId) {
-            clearInterval(this.timerId)
-            this.timerId = null
+        // 🔒 안전하게 게임 루프 정리
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId)
+            this.animationId = null
+        }
+
+        // Fever 파티클 interval 정리
+        if (this.feverParticleInterval) {
+            clearInterval(this.feverParticleInterval)
+            this.feverParticleInterval = null
         }
 
         this.removeFocusGlow()
