@@ -877,11 +877,6 @@ export class GameEngineHard {
             document.head.appendChild(style)
         }
 
-        // 10콤보 이상: 집중력의 경지 효과 (은은한 푸른 테두리)
-        if (this.state.combo >= 10) {
-            this.showFocusGlow()
-        }
-
         setTimeout(() => comboText.remove(), 500)
     }
 

@@ -54,7 +54,7 @@ class MusicManager {
 
         audio.play()
             .then(() => {
-                console.log('🎵 Main BGM ON - 재생 성공')
+                console.log('🎵 Main BGM ON - 재생 성공, volume:', audio.volume)
             })
             .catch(err => {
                 console.warn('🎵 BGM play blocked:', err)
@@ -141,9 +141,11 @@ class MusicManager {
     // 볼륨 설정
     setVolume(volume) {
         this.volume = Math.max(0, Math.min(1, volume))
+        console.log(`🎵 Volume changed: ${this.volume}`)
 
         if (this.currentMusic) {
             this.currentMusic.volume = this.volume
+            console.log(`🎵 Current music volume updated: ${this.currentMusic.volume}`)
         }
     }
 
@@ -241,13 +243,14 @@ class MusicManager {
         if (playPromise !== undefined) {
             playPromise
                 .then(() => {
-                    console.log(`🎵 Playing: ${path.split('/').pop()}`)
+                    console.log(`🎵 Playing: ${path.split('/').pop()}, target volume: ${this.volume}`)
 
                     // 페이드인
                     if (fadeIn > 0) {
                         this._fadeIn(audio, fadeIn)
                     } else {
                         audio.volume = this.volume
+                        console.log(`🎵 Volume set to: ${audio.volume}`)
                     }
                 })
                 .catch(err => {
@@ -287,7 +290,7 @@ class MusicManager {
         if (playPromise !== undefined) {
             playPromise
                 .then(() => {
-                    console.log(`🎵 Crossfading to: ${newPath.split('/').pop()}`)
+                    console.log(`🎵 Crossfading to: ${newPath.split('/').pop()}, target volume: ${this.volume}`)
 
                     // 동시에 페이드아웃/인
                     if (oldMusic) {
@@ -315,6 +318,8 @@ class MusicManager {
         const stepDuration = (duration * 1000) / steps
         const volumeIncrement = (endVolume - startVolume) / steps
 
+        console.log(`🎵 Fade in started: 0 → ${endVolume}`)
+
         let currentStep = 0
 
         const fadeInterval = setInterval(() => {
@@ -325,6 +330,7 @@ class MusicManager {
             if (currentStep >= steps) {
                 clearInterval(fadeInterval)
                 audio.volume = endVolume
+                console.log(`🎵 Fade in completed: ${audio.volume}`)
             }
         }, stepDuration)
     }
