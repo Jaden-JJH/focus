@@ -332,12 +332,18 @@ export const dataService = {
         const userIndex = sortedUsers.findIndex(([uid]) => uid === userId)
 
         if (userIndex === -1) {
-            return { rank: null, maxRound: 0 }
+            return { rank: null, maxRound: 0, totalUsers: 0, percentile: 0 }
         }
 
+        const rank = userIndex + 1
+        const totalUsers = sortedUsers.length
+        const percentile = Math.round((rank / totalUsers) * 100)
+
         return {
-            rank: userIndex + 1,
-            maxRound: sortedUsers[userIndex][1]
+            rank,
+            maxRound: sortedUsers[userIndex][1],
+            totalUsers,
+            percentile
         }
     },
 

@@ -1013,6 +1013,188 @@ export class GameEngineHard {
         setTimeout(() => particle.remove(), 500)
     }
 
+    checkNewRecord() {
+        const user = store.getState().user
+        if (!user || user.isGuest) return
+
+        const isHardMode = store.getState().isHardMode || false
+        const currentRound = this.state.round
+
+        // Get max round for current mode
+        const maxRound = isHardMode
+            ? (user.max_round_hard || 0)
+            : (user.max_round_normal || 0)
+
+        // Check if this is a new record
+        if (currentRound > maxRound) {
+            setTimeout(() => {
+                this.showNewRecordBanner(currentRound)
+            }, 700)
+        }
+    }
+
+    showNewRecordBanner(round) {
+        const banner = document.createElement('div')
+        banner.style.cssText = `
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #1e1e1e;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 8px 24px rgba(251, 191, 36, 0.5), 0 0 40px rgba(251, 191, 36, 0.3);
+            z-index: 1001;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        `
+        banner.innerHTML = `
+            <div style="text-align: center;">
+                <div style="font-size: 0.9rem; margin-bottom: 4px;">🏆 NEW RECORD 🏆</div>
+                <div style="font-size: 1.8rem;">${round} 라운드</div>
+            </div>
+        `
+        document.body.appendChild(banner)
+
+        // Slide in animation
+        requestAnimationFrame(() => {
+            banner.style.opacity = '1'
+            banner.style.transform = 'translateX(-50%) translateY(0)'
+        })
+
+        // Extra confetti for new record
+        for (let i = 0; i < 30; i++) {
+            setTimeout(() => {
+                this.createConfetti()
+            }, i * 20)
+        }
+
+        // Slide out and remove
+        setTimeout(() => {
+            banner.style.transform = 'translateX(-50%) translateY(-100px)'
+            banner.style.opacity = '0'
+            setTimeout(() => banner.remove(), 400)
+        }, 2000)
+    }
+
+    showMilestoneEffect(round, type) {
+        const isMajor = type === 'major' // 10, 20, 30...
+        const banner = document.createElement('div')
+
+        if (isMajor) {
+            // Major milestone: 화면 플래시 + 폭죽 효과
+            banner.style.cssText = `
+                position: fixed;
+                top: 30%;
+                left: 50%;
+                transform: translateX(-50%) scale(0.5);
+                background: linear-gradient(135deg, var(--theme-accent) 0%, var(--primary-900) 100%);
+                color: white;
+                padding: 24px 48px;
+                border-radius: 16px;
+                font-size: 2rem;
+                font-weight: bold;
+                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 60px rgba(239, 68, 68, 0.4);
+                z-index: 1001;
+                pointer-events: none;
+                opacity: 0;
+                transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            `
+            banner.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 8px;">🔥</div>
+                    <div style="font-size: 2.5rem; margin-bottom: 4px;">Round ${round}!</div>
+                    <div style="font-size: 1.2rem; opacity: 0.9;">Incredible!</div>
+                </div>
+            `
+
+            // Flash effect
+            const flash = document.createElement('div')
+            flash.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: var(--theme-accent);
+                opacity: 0;
+                z-index: 1000;
+                pointer-events: none;
+                transition: opacity 0.3s;
+            `
+            document.body.appendChild(flash)
+
+            requestAnimationFrame(() => {
+                flash.style.opacity = '0.3'
+                setTimeout(() => {
+                    flash.style.opacity = '0'
+                    setTimeout(() => flash.remove(), 300)
+                }, 200)
+            })
+
+            // Firework confetti (80 particles)
+            for (let i = 0; i < 80; i++) {
+                setTimeout(() => {
+                    this.createConfetti()
+                }, i * 15)
+            }
+        } else {
+            // Minor milestone: "Good Job!" 미니 팝업
+            banner.style.cssText = `
+                position: fixed;
+                top: 35%;
+                left: 50%;
+                transform: translateX(-50%) translateY(30px);
+                background: rgba(239, 68, 68, 0.95);
+                color: white;
+                padding: 16px 32px;
+                border-radius: 12px;
+                font-size: 1.5rem;
+                font-weight: bold;
+                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+                z-index: 1001;
+                pointer-events: none;
+                opacity: 0;
+                transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            `
+            banner.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 1rem; margin-bottom: 4px;">Round ${round}</div>
+                    <div style="font-size: 1.8rem;">Good Job! 🔥</div>
+                </div>
+            `
+
+            // Small confetti burst
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    this.createConfetti()
+                }, i * 25)
+            }
+        }
+
+        document.body.appendChild(banner)
+
+        // Slide in animation
+        requestAnimationFrame(() => {
+            banner.style.opacity = '1'
+            banner.style.transform = 'translateX(-50%) scale(1)'
+        })
+
+        // Slide out and remove
+        const displayDuration = isMajor ? 2000 : 1500
+        setTimeout(() => {
+            banner.style.opacity = '0'
+            banner.style.transform = isMajor
+                ? 'translateX(-50%) scale(1.2)'
+                : 'translateX(-50%) translateY(-30px)'
+            setTimeout(() => banner.remove(), 400)
+        }, displayDuration)
+    }
+
     handleGameOver(reason) {
         this.state.isPlaying = false
         clearInterval(this.timerId)

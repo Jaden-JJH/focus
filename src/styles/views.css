@@ -176,3 +176,37 @@ input:checked + .toggle-slider:before {
     10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
     20%, 40%, 60%, 80% { transform: translateX(10px); }
 }
+
+/* My Rank Card Pulse Animation */
+@keyframes myRankPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(124, 77, 255, 0);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(124, 77, 255, 0.6);
+    }
+}
+
+/* Hard Mode version uses different color via CSS variable */
+body.hard-mode #my-rank-section {
+    animation: myRankPulseHard 2s ease-in-out infinite;
+}
+
+@keyframes myRankPulseHard {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+    }
+}
+
+/* Crown Float Animation for Weekly #1 */
+@keyframes crownFloat {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}

@@ -270,6 +270,11 @@ export default class Result {
                     'mode': isHardMode ? 'hard' : 'normal'
                 });
 
+                // Generate game token
+                const gameToken = crypto.randomUUID()
+                sessionStorage.setItem('game_token', gameToken)
+                sessionStorage.setItem('game_token_time', Date.now().toString())
+
                 // 하드모드 여부에 따라 라우팅
                 const targetPath = isHardMode ? '/game/hard' : '/game'
                 import('../core/router.js').then(r => r.navigateTo(targetPath))
@@ -384,12 +389,39 @@ export default class Result {
 
         if (!rankMovementSection || !rankMovementText || !rankMovementDetail) return
 
+        // Add arrow animation keyframes (once)
+        if (!document.getElementById('rank-arrow-animations')) {
+            const style = document.createElement('style')
+            style.id = 'rank-arrow-animations'
+            style.textContent = `
+                @keyframes arrowUp {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-4px); }
+                }
+                @keyframes arrowDown {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(4px); }
+                }
+                @keyframes badgePulse {
+                    0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+                    50% { transform: scale(1.05); box-shadow: 0 4px 16px rgba(251,191,36,0.4); }
+                }
+                @keyframes slideUpFadeIn {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `
+            document.head.appendChild(style)
+        }
+
         // Calculate rank change
         let message = ''
         let detailMessage = ''
         let backgroundColor = 'rgba(76,175,80,0.1)'
         let borderColor = 'rgba(76,175,80,0.3)'
         let textColor = 'var(--color-success)'
+        let arrow = ''
+        let arrowAnimation = ''
 
         if (!oldRank && newRank) {
             // First time ranking
@@ -400,18 +432,22 @@ export default class Result {
 
             if (rankChange > 0) {
                 // Rank improved
-                message = `📈 ${rankChange}위 상승!`
+                message = `${rankChange}위 상승!`
                 detailMessage = `${oldRank}위 → ${newRank}위 (최고 기록: ${maxRound}R)`
                 backgroundColor = 'rgba(76,175,80,0.1)'
                 borderColor = 'rgba(76,175,80,0.3)'
                 textColor = 'var(--color-success)'
+                arrow = '↑'
+                arrowAnimation = 'arrowUp 1s ease-in-out infinite'
             } else if (rankChange < 0) {
                 // Rank dropped
-                message = `📉 ${Math.abs(rankChange)}위 하락`
+                message = `${Math.abs(rankChange)}위 하락`
                 detailMessage = `${oldRank}위 → ${newRank}위 (최고 기록: ${maxRound}R)`
                 backgroundColor = 'rgba(255,82,82,0.1)'
                 borderColor = 'rgba(255,82,82,0.3)'
                 textColor = 'var(--color-danger)'
+                arrow = '↓'
+                arrowAnimation = 'arrowDown 1s ease-in-out infinite'
             } else {
                 // Rank stayed the same
                 message = '순위 유지'
@@ -419,27 +455,68 @@ export default class Result {
                 backgroundColor = 'rgba(255,215,64,0.1)'
                 borderColor = 'rgba(255,215,64,0.3)'
                 textColor = 'var(--color-warning)'
+                arrow = ''
+                arrowAnimation = 'none'
             }
+        }
 
-            // Special messages for top ranks
-            if (newRank <= 3) {
-                detailMessage += ' 🏆 TOP 3!'
-            } else if (newRank <= 10) {
-                detailMessage += ' ⭐ TOP 10!'
-            }
+        // Create TOP badge if applicable
+        let badgeHTML = ''
+        if (newRank <= 3) {
+            badgeHTML = `
+                <div style="
+                    display: inline-block;
+                    margin-left: 8px;
+                    padding: 4px 12px;
+                    border-radius: 9999px;
+                    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                    color: #1e1e1e;
+                    font-size: 0.75rem;
+                    font-weight: bold;
+                    animation: badgePulse 2s ease-in-out infinite;
+                    box-shadow: 0 2px 8px rgba(251,191,36,0.3);
+                ">🏆 TOP 3</div>
+            `
+        } else if (newRank <= 10) {
+            badgeHTML = `
+                <div style="
+                    display: inline-block;
+                    margin-left: 8px;
+                    padding: 4px 12px;
+                    border-radius: 9999px;
+                    background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+                    color: #1e1e1e;
+                    font-size: 0.75rem;
+                    font-weight: bold;
+                    animation: badgePulse 2s ease-in-out infinite;
+                    box-shadow: 0 2px 8px rgba(224,224,224,0.3);
+                ">⭐ TOP 10</div>
+            `
         }
 
         // Apply styles and show
         if (message) {
             rankMovementSection.style.background = backgroundColor
             rankMovementSection.style.borderColor = borderColor
+            rankMovementSection.style.animation = 'slideUpFadeIn 0.3s ease-out'
+
+            // Update content with arrow and badge
             rankMovementText.style.color = textColor
-            rankMovementText.innerText = message
+            rankMovementText.innerHTML = `
+                <span style="
+                    display: inline-block;
+                    font-size: 1.5rem;
+                    margin-right: 8px;
+                    animation: ${arrowAnimation};
+                    vertical-align: middle;
+                ">${arrow}</span>
+                <span style="vertical-align: middle;">${message}</span>
+                ${badgeHTML}
+            `
             rankMovementDetail.innerText = detailMessage
 
             setTimeout(() => {
                 rankMovementSection.style.display = 'block'
-                rankMovementSection.style.animation = 'fadeIn 0.5s ease-out'
             }, 1000) // Show after a short delay
         }
     }
@@ -594,44 +671,252 @@ export default class Result {
         audioManager.playLevelUp();
 
         const levelInfo = LEVELS.getLevelInfo(level)
+        const isMilestone = level % 10 === 0 // 10, 20, 30, 40, 50, 60 특별 효과
+        const state = store.getState()
+        const isHardMode = state.isHardMode || false
+
+        // Milestone 컬러 테마
+        let primaryColor = 'var(--color-warning)' // 기본 금색
+        let glowColor = 'rgba(255, 215, 64, 0.6)'
+        if (isMilestone) {
+            if (level === 60) {
+                primaryColor = '#000' // 블랙
+                glowColor = 'rgba(0, 0, 0, 0.9)'
+            } else if (level >= 50) {
+                primaryColor = '#fbbf24' // 골드
+                glowColor = 'rgba(251, 191, 36, 0.6)'
+            } else {
+                primaryColor = isHardMode ? '#ef4444' : '#7c4dff' // 테마색
+                glowColor = isHardMode ? 'rgba(239, 68, 68, 0.6)' : 'rgba(124, 77, 255, 0.6)'
+            }
+        }
+
         const overlay = document.createElement('div')
         overlay.style.cssText = `
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 200;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            z-index: 200;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            animation: fadeIn 0.5s;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
         `
         overlay.innerHTML = `
-            <h1 style="font-size: 3rem; color: var(--color-warning); text-shadow: 0 0 20px var(--color-warning); margin-bottom: 20px;">LEVEL UP!</h1>
-            <div style="font-size: 5rem; font-weight: bold; color: white;">${level}</div>
-            <div style="margin-top: 20px; font-size: 1.5rem; color: var(--color-warning); font-weight: bold;">${levelInfo.name}</div>
-            <div style="margin-top: 10px; color: #aaa;">${levelInfo.category}</div>
+            <style>
+                @keyframes levelUpTitle {
+                    0% { transform: scale(0.5); opacity: 0; }
+                    50% { transform: scale(1.1); opacity: 1; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes levelUpNumber {
+                    0% { transform: scale(0.8); opacity: 0; }
+                    60% { transform: scale(1.2); opacity: 1; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes messageSlide {
+                    0% { transform: translateY(20px); opacity: 0; }
+                    100% { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes glow {
+                    0%, 100% { filter: drop-shadow(0 0 10px ${glowColor}); }
+                    50% { filter: drop-shadow(0 0 30px ${glowColor}); }
+                }
+            </style>
+
+            <!-- Flash Effect -->
+            <div id="flash-effect" style="
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: white;
+                opacity: 0;
+                pointer-events: none;
+            "></div>
+
+            <!-- LEVEL UP Title (0.3s) -->
+            <h1 id="level-up-title" style="
+                font-size: 3rem;
+                color: ${primaryColor};
+                text-shadow: 0 0 20px ${glowColor};
+                margin-bottom: 20px;
+                opacity: 0;
+                animation: levelUpTitle 0.5s ease-out 0.3s forwards;
+                ${isMilestone ? 'animation: levelUpTitle 0.5s ease-out 0.3s forwards, glow 2s ease-in-out infinite;' : ''}
+            ">
+                ${isMilestone ? '🎉 LEVEL UP! 🎉' : 'LEVEL UP!'}
+            </h1>
+
+            <!-- Level Image (1.2s) -->
+            <div style="position: relative; margin-bottom: 20px;">
+                <img id="level-image" src="${LEVELS.getLevelImage(level)}" alt="Level ${level}" style="
+                    width: 120px;
+                    height: 120px;
+                    border-radius: 16px;
+                    object-fit: cover;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+                    opacity: 0;
+                    transform: scale(0.8);
+                "/>
+            </div>
+
+            <!-- Level Number (0.8s) -->
+            <div id="level-number" style="
+                font-size: 5rem;
+                font-weight: bold;
+                color: white;
+                opacity: 0;
+            ">1</div>
+
+            <!-- Level Info -->
+            <div id="level-name" style="
+                margin-top: 20px;
+                font-size: 1.5rem;
+                color: ${primaryColor};
+                font-weight: bold;
+                opacity: 0;
+            ">${levelInfo.name}</div>
+            <div id="level-category" style="
+                margin-top: 10px;
+                color: #aaa;
+                opacity: 0;
+            ">${levelInfo.category}</div>
+
+            <!-- Message Sequence (2.5s) -->
+            <div id="message-container" style="
+                margin-top: 30px;
+                font-size: 1.2rem;
+                color: white;
+                text-align: center;
+                opacity: 0;
+            "></div>
         `
         this.container.appendChild(overlay)
 
-        // 🎉 컨페티 효과 (30개 파티클)
-        for (let i = 0; i < 30; i++) {
-            setTimeout(() => {
-                this.createConfetti()
-            }, i * 30) // 약간의 시차를 두고 생성
-        }
+        // Force reflow and fade in
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1'
+        })
 
-        setTimeout(() => {
-            overlay.style.opacity = '0'
-            overlay.style.transition = 'opacity 0.5s'
-            setTimeout(() => overlay.remove(), 500)
-        }, 2000)
+        // Animation Sequence (3 seconds total)
+        const timeline = [
+            // 0.0s: Flash effect
+            { time: 0, fn: () => {
+                const flash = overlay.querySelector('#flash-effect')
+                flash.style.transition = 'opacity 0.2s'
+                flash.style.opacity = '0.3'
+                setTimeout(() => {
+                    flash.style.opacity = '0'
+                }, 200)
+            }},
+
+            // 0.8s: Level number count-up animation
+            { time: 800, fn: () => {
+                const numberEl = overlay.querySelector('#level-number')
+                const startLevel = Math.max(1, level - 1)
+                let current = startLevel
+                numberEl.style.animation = 'levelUpNumber 0.4s ease-out forwards'
+                numberEl.style.opacity = '1'
+
+                // Count up animation
+                const interval = setInterval(() => {
+                    current++
+                    numberEl.innerText = current
+                    if (current >= level) {
+                        clearInterval(interval)
+                    }
+                }, 100)
+            }},
+
+            // 1.2s: Level image scale animation + confetti burst
+            { time: 1200, fn: () => {
+                const imgEl = overlay.querySelector('#level-image')
+                imgEl.style.transition = 'transform 0.6s ease-out, opacity 0.3s'
+                imgEl.style.opacity = '1'
+                imgEl.style.transform = 'scale(1.2)'
+
+                setTimeout(() => {
+                    imgEl.style.transform = 'scale(1)'
+                }, 300)
+
+                // Level name and category fade in
+                const nameEl = overlay.querySelector('#level-name')
+                const catEl = overlay.querySelector('#level-category')
+                nameEl.style.transition = 'opacity 0.3s'
+                catEl.style.transition = 'opacity 0.3s'
+                nameEl.style.opacity = '1'
+                catEl.style.opacity = '1'
+
+                // 🎉 Confetti burst (50 particles for milestone, 30 otherwise)
+                const confettiCount = isMilestone ? 100 : 50
+                for (let i = 0; i < confettiCount; i++) {
+                    setTimeout(() => {
+                        this.createConfetti(isMilestone)
+                    }, i * 20)
+                }
+            }},
+
+            // 2.5s: Congratulation message
+            { time: 2500, fn: () => {
+                const msgEl = overlay.querySelector('#message-container')
+                const messages = [
+                    "Great!",
+                    isMilestone ? "🌟 Milestone Achieved! 🌟" : `You are now ${levelInfo.name}`,
+                    "Keep going!"
+                ]
+
+                let msgIndex = 0
+                msgEl.style.animation = 'messageSlide 0.3s ease-out forwards'
+                msgEl.style.opacity = '1'
+                msgEl.innerText = messages[0]
+
+                // Cycle through messages
+                const msgInterval = setInterval(() => {
+                    msgIndex++
+                    if (msgIndex >= messages.length) {
+                        clearInterval(msgInterval)
+                        return
+                    }
+                    msgEl.style.animation = 'none'
+                    requestAnimationFrame(() => {
+                        msgEl.style.animation = 'messageSlide 0.3s ease-out forwards'
+                        msgEl.innerText = messages[msgIndex]
+                    })
+                }, 800)
+            }},
+
+            // 3.0s: Fade out
+            { time: 3000, fn: () => {
+                overlay.style.opacity = '0'
+                overlay.style.transition = 'opacity 0.5s'
+                setTimeout(() => overlay.remove(), 500)
+            }}
+        ]
+
+        // Execute timeline
+        timeline.forEach(step => {
+            setTimeout(step.fn, step.time)
+        })
     }
 
-    createConfetti() {
+    createConfetti(isMilestone = false) {
         const confetti = document.createElement('div')
-        const colors = ['#ffd740', '#69f0ae', '#7c4dff', '#ff5252', '#00bcd4']
+
+        // Milestone: 특별한 금색/은색 파티클, 더 크고 반짝임
+        const colors = isMilestone
+            ? ['#ffd740', '#fbbf24', '#f59e0b', '#ffffff', '#e0e0e0', '#ffeb3b']
+            : ['#ffd740', '#69f0ae', '#7c4dff', '#ff5252', '#00bcd4']
+
         const color = colors[Math.floor(Math.random() * colors.length)]
-        const size = Math.random() * 10 + 6 // 레벨업은 조금 더 크게
+        const size = isMilestone
+            ? Math.random() * 14 + 8  // 8-22px (larger for milestone)
+            : Math.random() * 10 + 6   // 6-16px (normal)
+
         const startX = Math.random() * window.innerWidth
         const startY = window.innerHeight / 2
-        const endX = startX + (Math.random() - 0.5) * 400
-        const endY = startY + Math.random() * 500
+        const endX = startX + (Math.random() - 0.5) * 600  // Wider spread
+        const endY = startY + Math.random() * 600
+
+        // Random shapes for milestone
+        const shapes = ['50%', '0%'] // circle or square
+        const shape = isMilestone && Math.random() > 0.5 ? shapes[1] : shapes[0]
 
         confetti.style.cssText = `
             position: fixed;
@@ -640,21 +925,23 @@ export default class Result {
             width: ${size}px;
             height: ${size}px;
             background-color: ${color};
-            border-radius: 50%;
+            border-radius: ${shape};
             z-index: 999;
             pointer-events: none;
+            ${isMilestone ? 'box-shadow: 0 0 10px ' + color + ';' : ''}
         `
         document.body.appendChild(confetti)
 
         // Animate using Web Animations API
+        const duration = isMilestone ? 1500 : 1000  // Longer for milestone
         confetti.animate([
             { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
-            { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+            { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(${Math.random() * 1080}deg)`, opacity: 0 }
         ], {
-            duration: 1000, // 레벨업은 조금 더 길게
-            easing: 'ease-out'
+            duration: duration,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'  // Smoother easing
         })
 
-        setTimeout(() => confetti.remove(), 1000)
+        setTimeout(() => confetti.remove(), duration)
     }
 }

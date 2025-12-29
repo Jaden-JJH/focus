@@ -22,6 +22,9 @@ export default class Main {
     // Setup event delegation (runs once, persists forever)
     this.setupEventDelegation()
 
+    // Setup Intersection Observer for scroll animations (runs once)
+    this.setupScrollObserver()
+
     // Subscribe to store updates
     this.unsub = store.subscribe(() => {
       this.render()
@@ -263,6 +266,35 @@ export default class Main {
         if (modal) modal.remove()
         return
       }
+    })
+  }
+
+  setupScrollObserver() {
+    // Intersection Observer for scroll-based fade-up animations
+    const observerOptions = {
+      threshold: 0.2, // Trigger when 20% visible
+      rootMargin: '0px 0px -50px 0px' // Trigger slightly before entering viewport
+    }
+
+    this.scrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible')
+          // Once visible, stop observing to prevent re-triggering
+          this.scrollObserver.unobserve(entry.target)
+        }
+      })
+    }, observerOptions)
+  }
+
+  observeScrollElements() {
+    // Find all elements that should fade up on scroll
+    const elements = document.querySelectorAll('.fade-up-on-scroll')
+    elements.forEach(el => {
+      // Reset state in case of re-render
+      el.classList.remove('is-visible')
+      // Observe the element
+      this.scrollObserver.observe(el)
     })
   }
 
@@ -677,7 +709,7 @@ export default class Main {
 
         <!-- Weekly Activity Card -->
         ${!user.isGuest ? `
-        <div id="weekly-activity-card" class="card-with-shimmer" style="
+        <div id="weekly-activity-card" class="card-with-shimmer fade-up-on-scroll" style="
           background: var(--gray-800);
           border-radius: var(--radius-md);
           padding: var(--space-3);
@@ -713,12 +745,9 @@ export default class Main {
 
            <!-- My Rank Section (Fixed) -->
            ${!user.isGuest ? `
-           <div id="my-rank-section" style="flex-shrink: 0; background: var(--gray-800); border: 1px solid var(--theme-primary); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-2); transition: border-color var(--theme-transition);">
-             <div style="display: flex; justify-content: space-between; align-items: center;">
-               <span style="font-weight: var(--font-bold); font-size: var(--text-base); color: var(--gray-100);">내 랭킹</span>
-               <div id="my-rank-info" style="text-align: right;">
-                 <div style="font-size: var(--text-sm); color: var(--gray-400);">Loading...</div>
-               </div>
+           <div id="my-rank-section" style="flex-shrink: 0; background: var(--gray-800); border: 1px solid var(--theme-primary); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-2); transition: border-color var(--theme-transition); animation: myRankPulse 2s ease-in-out infinite;">
+             <div id="my-rank-info" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); align-items: center;">
+               <div style="font-size: var(--text-sm); color: var(--gray-400); text-align: center;">Loading...</div>
              </div>
            </div>
            ` : ''}
@@ -1291,24 +1320,45 @@ export default class Main {
       }
       document.body.removeChild(textArea)
     }
+
+    // Setup scroll-based fade-up animations for elements
+    this.observeScrollElements()
   }
 
   async loadRanking() {
     const listEl = document.getElementById('rank-list')
-    if (!listEl) return
+    if (!listEl) {
+      console.warn('⚠️ rank-list element not found!')
+      return
+    }
 
     const state = store.getState()
     const user = state.user
     const currentMode = state.isHardMode ? 'hard' : 'normal'
 
-    // Fetch weekly ranking (모드별)
-    const rankings = await dataService.fetchWeeklyRanking(currentMode)
-    if (!rankings || rankings.length === 0) {
-      listEl.innerHTML = `<div style="text-align:center; color: var(--gray-500); font-size: var(--text-sm);">아직 기록이 없습니다</div>`
-    } else {
+    // Show loading state
+    listEl.innerHTML = `<div style="text-align:center; color: var(--gray-400); font-size: var(--text-sm);">로딩 중...</div>`
+
+    try {
+      // Fetch weekly ranking (모드별)
+      const rankings = await dataService.fetchWeeklyRanking(currentMode)
+
+      if (!rankings || rankings.length === 0) {
+        listEl.innerHTML = `<div style="text-align:center; color: var(--gray-500); font-size: var(--text-sm);">아직 기록이 없습니다</div>`
+        return
+      }
+
+      // Render rankings
       listEl.innerHTML = rankings.map((r, idx) => {
         const lv = r.users?.level || 1;
         const isHard = currentMode === 'hard';
+
+        // 순위 배지 색상
+        let rankBadgeBg;
+        if (idx === 0) rankBadgeBg = 'linear-gradient(135deg, #fbbf24, #f59e0b)'; // 금색
+        else if (idx === 1) rankBadgeBg = 'linear-gradient(135deg, #e0e0e0, #bdbdbd)'; // 은색
+        else if (idx === 2) rankBadgeBg = 'linear-gradient(135deg, #cd7f32, #a0522d)'; // 동색
+        else rankBadgeBg = 'var(--gray-700)'; // 회색
 
         // 레벨별 배경색
         let background;
@@ -1334,7 +1384,20 @@ export default class Main {
         return `
               <div class="rank-item" style="display:flex; justify-content:space-between; align-items: center; padding: var(--space-2) 0; border-bottom:1px solid var(--gray-700); opacity: 0; animation: rankItemSlide 0.4s ease-out forwards; animation-delay: ${0.5 + idx * 0.05}s;">
                   <div style="display: flex; align-items: center; gap: var(--space-2);">
-                      <span style="font-size: var(--text-base); color: var(--gray-100);">${idx + 1}. ${r.users?.nickname || 'Anonymous'}</span>
+                      <div style="
+                        width: 28px;
+                        height: 28px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: ${rankBadgeBg};
+                        border-radius: var(--radius-sm);
+                        font-size: var(--text-sm);
+                        font-weight: var(--font-bold);
+                        color: ${idx <= 2 ? '#1a1a1a' : 'white'};
+                        flex-shrink: 0;
+                      ">${idx + 1}</div>
+                      <span style="font-size: var(--text-base); color: var(--gray-100); font-weight: var(--font-medium);">${r.users?.nickname || 'Anonymous'}</span>
                       <span style="
                         font-size: var(--text-xs);
                         padding: var(--space-1) var(--space-2);
@@ -1350,25 +1413,58 @@ export default class Main {
               </div>
           `;
       }).join('')
-    }
 
-    // Fetch my rank (if not guest) (모드별)
+      // Fetch my rank (if not guest) (모드별)
     if (user && !user.isGuest) {
       const myRankInfo = document.getElementById('my-rank-info')
       if (myRankInfo) {
-        const { rank, maxRound } = await dataService.getMyRank(user.id, currentMode)
+        const { rank, maxRound, percentile } = await dataService.getMyRank(user.id, currentMode)
 
         if (rank) {
+          // Percentile display logic
+          let percentileText = ''
+          let percentileIcon = ''
+          if (percentile <= 10) {
+            percentileText = `상위 ${percentile}%`
+            percentileIcon = '🔥'
+          } else if (percentile <= 25) {
+            percentileText = `상위 ${percentile}%`
+            percentileIcon = '⭐'
+          } else if (percentile <= 50) {
+            percentileText = `상위 ${percentile}%`
+            percentileIcon = ''
+          }
+
+          // Adjust grid columns based on percentile existence
+          const gridColumns = percentileText ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+          myRankInfo.style.gridTemplateColumns = gridColumns
+
           myRankInfo.innerHTML = `
-            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--theme-primary); transition: color var(--theme-transition);">#${rank}</div>
-            <div style="font-size: var(--text-sm); color: var(--gray-400);">최고 기록: ${maxRound}R</div>
+            <div style="text-align: center;">
+              <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: white; line-height: 1.2; margin-bottom: var(--space-1);">#${rank}</div>
+              <div style="font-size: var(--text-xs); color: var(--gray-400); line-height: 1.2;">순위</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: white; line-height: 1.2; margin-bottom: var(--space-1);">${maxRound}R</div>
+              <div style="font-size: var(--text-xs); color: var(--gray-400); line-height: 1.2;">최고 기록</div>
+            </div>
+            ${percentileText ? `
+            <div style="text-align: center;">
+              <div style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--gray-200); line-height: 1.2; margin-bottom: var(--space-1);">${percentileText} ${percentileIcon}</div>
+              <div style="font-size: var(--text-xs); color: var(--gray-400); line-height: 1.2;">백분위</div>
+            </div>
+            ` : ''}
           `
         } else {
           myRankInfo.innerHTML = `
-            <div style="font-size: var(--text-sm); color: var(--gray-400);">아직 기록이 없습니다</div>
+            <div style="font-size: var(--text-sm); color: var(--gray-400); width: 100%; text-align: center;">아직 기록이 없습니다</div>
           `
         }
       }
+    }
+    } catch (error) {
+      console.error('❌ Error loading ranking:', error)
+      listEl.innerHTML = `<div style="text-align:center; color: var(--error); font-size: var(--text-sm);">랭킹 로딩 실패. 다시 시도해주세요.</div>`
     }
   }
 
@@ -1378,20 +1474,14 @@ export default class Main {
 
     if (!user || user.isGuest) return
 
-    console.log('📊 Loading weekly activity for user:', user.id)
-
     // Fetch weekly activity data
     const weeklyActivity = await dataService.fetchWeeklyActivity(user.id)
-    console.log('📊 Fetched records:', weeklyActivity.length)
-    console.log('📊 Records:', weeklyActivity)
 
     // Calculate streak
     const streak = dataService.calculateStreak(weeklyActivity)
-    console.log('🔥 Calculated streak:', streak)
 
     // Get chart data
     const chartData = dataService.getWeeklyActivityChart(weeklyActivity)
-    console.log('📈 Chart data:', chartData)
 
     // Update streak badge
     const streakBadge = document.getElementById('streak-badge')
@@ -1612,6 +1702,12 @@ export default class Main {
     if (this.unsub) {
       this.unsub()
       this.unsub = null
+    }
+
+    // Cleanup scroll observer
+    if (this.scrollObserver) {
+      this.scrollObserver.disconnect()
+      this.scrollObserver = null
     }
   }
 }

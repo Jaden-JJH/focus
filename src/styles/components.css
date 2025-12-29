@@ -285,6 +285,27 @@ body.hard-mode .card-glow {
   animation: slideUp var(--duration-base);
 }
 
+/* Fade up on scroll (Intersection Observer) */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.fade-up-on-scroll.is-visible {
+  animation: fadeUp var(--duration-base) cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
 /* Fade in animation */
 @keyframes fadeIn {
   from {
