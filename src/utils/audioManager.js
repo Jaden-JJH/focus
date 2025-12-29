@@ -1,39 +1,41 @@
-// Optimized Audio Manager for game sound effects
+// Optimized Audio Manager for game sound effects with Audio Pool
 class AudioManager {
     constructor() {
         this.sounds = {};
+        this.audioPools = {}; // Pool of pre-created audio instances
         this.enabled = true;
         this.initialized = false;
         this.defaultVolume = 0.5;
+        this.poolSize = 3; // Number of instances per high-priority sound
 
         // Sound file paths with preload priority
         this.soundFiles = {
             // High priority - preload immediately (frequently used)
-            inGameClick: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: 'auto' },
-            buttonClick: { path: '/sounds/1-14_menu_button click.mp3', preload: 'auto' },
-            popupOpen: { path: '/sounds/1-3_popup_open.mp3', preload: 'auto' },
-            popupClose: { path: '/sounds/1-4_popup_close.mp3', preload: 'auto' },
-            correctSound: { path: '/sounds/1-15_correct.mp3', preload: 'auto' },
-            incorrect: { path: '/sounds/1-13_ incorrect.mp3', preload: 'auto' },
+            inGameClick: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: 'auto', pooled: true },
+            buttonClick: { path: '/sounds/1-14_menu_button click.mp3', preload: 'auto', pooled: true },
+            popupOpen: { path: '/sounds/1-3_popup_open.mp3', preload: 'auto', pooled: true },
+            popupClose: { path: '/sounds/1-4_popup_close.mp3', preload: 'auto', pooled: true },
+            correctSound: { path: '/sounds/1-15_correct.mp3', preload: 'auto', pooled: true },
+            incorrect: { path: '/sounds/1-13_ incorrect.mp3', preload: 'auto', pooled: true },
 
             // Medium priority - preload metadata (sometimes used)
-            toggleChange: { path: '/sounds/1-2_toggle.mp3', preload: 'metadata' },
-            mainEnter: { path: '/sounds/1-1_main-refresh.mp3', preload: 'metadata' },
-            phaseEnter: { path: '/sounds/1-6_phasethrough.mp3', preload: 'metadata' },
-            colorGuide: { path: '/sounds/1-8_colorsequenceguide.mp3', preload: 'metadata' },
+            toggleChange: { path: '/sounds/1-2_toggle.mp3', preload: 'metadata', pooled: false },
+            mainEnter: { path: '/sounds/1-1_main-refresh.mp3', preload: 'metadata', pooled: false },
+            phaseEnter: { path: '/sounds/1-6_phasethrough.mp3', preload: 'metadata', pooled: false },
+            colorGuide: { path: '/sounds/1-8_colorsequenceguide.mp3', preload: 'metadata', pooled: false },
 
             // Low priority - lazy load (rarely used)
-            splash: { path: '/sounds/2-a_splash.mp3', preload: 'none' },
-            hardModeIntro: { path: '/sounds/1-5_hardmode.wav', preload: 'none' },
-            gameOverFail: { path: '/sounds/1-9_gameover(fail).mp3', preload: 'none' },
-            gameOverSuccess: { path: '/sounds/1-10_gameover(success).wav', preload: 'none' },
-            levelUp: { path: '/sounds/1-11_levelup.wav', preload: 'none' },
-            hardModeUnlock: { path: '/sounds/1-12_hardmodeopen.mp3', preload: 'none' },
+            splash: { path: '/sounds/2-a_splash.mp3', preload: 'none', pooled: false },
+            hardModeIntro: { path: '/sounds/1-5_hardmode.wav', preload: 'none', pooled: false },
+            gameOverFail: { path: '/sounds/1-9_gameover(fail).mp3', preload: 'none', pooled: false },
+            gameOverSuccess: { path: '/sounds/1-10_gameover(success).wav', preload: 'none', pooled: false },
+            levelUp: { path: '/sounds/1-11_levelup.wav', preload: 'none', pooled: false },
+            hardModeUnlock: { path: '/sounds/1-12_hardmodeopen.mp3', preload: 'none', pooled: false },
 
             // Legacy aliases
-            correct: { path: '/sounds/1-15_correct.mp3', preload: 'auto' },
-            wrong: { path: '/sounds/1-13_ incorrect.mp3', preload: 'auto' },
-            click: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: 'auto' },
+            correct: { path: '/sounds/1-15_correct.mp3', preload: 'auto', pooled: true },
+            wrong: { path: '/sounds/1-13_ incorrect.mp3', preload: 'auto', pooled: true },
+            click: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: 'auto', pooled: true },
         };
     }
 
@@ -41,18 +43,63 @@ class AudioManager {
     async init() {
         if (this.initialized) return;
 
-        console.log('🔊 Initializing AudioManager...');
+        console.log('🔊 Initializing AudioManager with Audio Pool...');
 
-        // Create and preload high-priority sounds
-        const highPrioritySounds = Object.entries(this.soundFiles)
-            .filter(([_, config]) => config.preload === 'auto');
+        // Create pools for high-priority sounds
+        const pooledSounds = Object.entries(this.soundFiles)
+            .filter(([_, config]) => config.pooled);
 
-        for (const [name, config] of highPrioritySounds) {
+        for (const [name, config] of pooledSounds) {
+            this._createAudioPool(name, config);
+        }
+
+        // Create single instances for non-pooled high-priority sounds
+        const nonPooledHighPriority = Object.entries(this.soundFiles)
+            .filter(([_, config]) => config.preload === 'auto' && !config.pooled);
+
+        for (const [name, config] of nonPooledHighPriority) {
             this._createSound(name, config);
         }
 
         this.initialized = true;
-        console.log(`🔊 AudioManager initialized with ${highPrioritySounds.length} high-priority sounds`);
+        console.log(`🔊 AudioManager initialized: ${pooledSounds.length} pooled sounds (${this.poolSize} instances each), ${nonPooledHighPriority.length} non-pooled`);
+    }
+
+    // Create audio pool for frequently used sounds
+    _createAudioPool(soundName, config) {
+        if (this.audioPools[soundName]) return;
+
+        const pool = [];
+        for (let i = 0; i < this.poolSize; i++) {
+            const audio = new Audio(config.path);
+            audio.preload = 'auto';
+            audio.volume = this.defaultVolume;
+            audio.load(); // Force immediate loading
+            pool.push(audio);
+        }
+
+        this.audioPools[soundName] = {
+            instances: pool,
+            nextIndex: 0
+        };
+
+        console.log(`🔊 Created audio pool for "${soundName}" with ${this.poolSize} instances`);
+    }
+
+    // Get next available instance from pool
+    _getPooledInstance(soundName) {
+        const pool = this.audioPools[soundName];
+        if (!pool) return null;
+
+        const instance = pool.instances[pool.nextIndex];
+        pool.nextIndex = (pool.nextIndex + 1) % pool.instances.length;
+
+        // Reset instance for reuse
+        if (instance.currentTime > 0) {
+            instance.currentTime = 0;
+        }
+
+        return instance;
     }
 
     // Create Audio object with specified preload strategy
@@ -87,53 +134,55 @@ class AudioManager {
         return this._createSound(soundName, config);
     }
 
-    // Optimized play method with instant response
+    // Optimized play method with instant response using audio pool
     play(soundName, options = {}) {
         if (!this.enabled) {
             return Promise.resolve();
         }
 
-        return new Promise((resolve) => {
-            try {
-                const sound = this._getOrCreateSound(soundName);
-                if (!sound) {
-                    resolve();
-                    return;
-                }
+        // Try to get from pool first for instant playback
+        let audioInstance = this._getPooledInstance(soundName);
 
-                // Clone for overlapping sounds
-                const clone = sound.cloneNode();
-                clone.volume = sound.volume;
-
-                // Handle duration limit
-                let timeoutId = null;
-                if (options.maxDuration) {
-                    timeoutId = setTimeout(() => {
-                        clone.pause();
-                        clone.currentTime = 0;
-                        resolve();
-                    }, options.maxDuration * 1000);
-                }
-
-                // Cleanup when sound ends
-                clone.addEventListener('ended', () => {
-                    if (timeoutId) clearTimeout(timeoutId);
-                    resolve();
-                }, { once: true });
-
-                // Play immediately - catch errors silently for mobile autoplay restrictions
-                const playPromise = clone.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(err => {
-                        console.warn('Audio play blocked (expected on mobile):', soundName);
-                        if (timeoutId) clearTimeout(timeoutId);
-                        resolve();
-                    });
-                }
-            } catch (error) {
-                console.warn('Error playing sound:', error);
-                resolve();
+        // Fallback to traditional method for non-pooled sounds
+        if (!audioInstance) {
+            const sound = this._getOrCreateSound(soundName);
+            if (!sound) {
+                return Promise.resolve();
             }
+
+            // For non-pooled sounds, still need to clone
+            audioInstance = sound.cloneNode();
+            audioInstance.volume = sound.volume;
+        }
+
+        // Play immediately (fire-and-forget for pooled sounds)
+        const playPromise = audioInstance.play();
+
+        // Handle errors silently
+        if (playPromise !== undefined) {
+            playPromise.catch(err => {
+                console.warn('Audio play blocked:', soundName);
+            });
+        }
+
+        // Return promise for backwards compatibility
+        return new Promise((resolve) => {
+            let timeoutId = null;
+
+            // Handle duration limit
+            if (options.maxDuration) {
+                timeoutId = setTimeout(() => {
+                    audioInstance.pause();
+                    audioInstance.currentTime = 0;
+                    resolve();
+                }, options.maxDuration * 1000);
+            }
+
+            // Cleanup when sound ends
+            audioInstance.addEventListener('ended', () => {
+                if (timeoutId) clearTimeout(timeoutId);
+                resolve();
+            }, { once: true });
         });
     }
 
@@ -261,12 +310,22 @@ class AudioManager {
         return this.enabled;
     }
 
-    // Set volume for all sounds
+    // Set volume for all sounds (including pooled instances)
     setVolume(volume) {
         const clampedVolume = Math.max(0, Math.min(1, volume));
+
+        // Update non-pooled sounds
         Object.values(this.sounds).forEach(sound => {
             sound.volume = clampedVolume;
         });
+
+        // Update all pooled instances
+        Object.values(this.audioPools).forEach(pool => {
+            pool.instances.forEach(instance => {
+                instance.volume = clampedVolume;
+            });
+        });
+
         this.defaultVolume = clampedVolume;
     }
 }
