@@ -788,12 +788,22 @@ export class GameEngine {
         glowBorder.style.setProperty('--neon-color-3', color3)
         document.body.appendChild(glowBorder)
 
-        // 파티클 효과 (주기적으로 생성, 더 빠르게)
-        this.feverParticleInterval = setInterval(() => {
-            if (this.state.combo >= 10) {
-                this.createFeverParticle()
-            }
-        }, 200) // 300ms → 200ms
+        // 📱 파티클 효과 (성능 레벨에 따라 조절)
+        // 저사양 디바이스에서는 Fever 파티클 비활성화 또는 주기 늘리기
+        let particleInterval = 200
+        if (this.performanceLevel === 'low') {
+            particleInterval = 0 // 모바일에서는 Fever 파티클 비활성화
+        } else if (this.performanceLevel === 'medium') {
+            particleInterval = 600 // 중간 디바이스: 느리게
+        }
+
+        if (particleInterval > 0) {
+            this.feverParticleInterval = setInterval(() => {
+                if (this.state.combo >= 10) {
+                    this.createFeverParticle()
+                }
+            }, particleInterval)
+        }
 
         // 10콤보 미만으로 떨어지면 제거하기 위해 참조 저장
         this.focusGlowElements = [glowBorder]
@@ -864,6 +874,7 @@ export class GameEngine {
         const color = colors[Math.floor(Math.random() * colors.length)]
         const size = 4 + Math.random() * 6
 
+        // 📱 성능 최적화: box-shadow 제거 (GPU 부하 큼)
         particle.style.cssText = `
             position: fixed;
             left: ${startX}px;
@@ -874,11 +885,12 @@ export class GameEngine {
             border-radius: 50%;
             z-index: 997;
             pointer-events: none;
-            box-shadow: 0 0 10px ${color};
+            will-change: transform, opacity;
         `
         document.body.appendChild(particle)
 
-        particle.animate([
+        // 📱 애니메이션 완료 후 확실히 정리
+        const animation = particle.animate([
             { transform: 'translate(0, 0) scale(1)', opacity: 1 },
             { transform: `translate(${endX - startX}px, ${endY - startY}px) scale(0)`, opacity: 0 }
         ], {
@@ -886,7 +898,9 @@ export class GameEngine {
             easing: 'ease-out'
         })
 
-        setTimeout(() => particle.remove(), 1500)
+        animation.onfinish = () => {
+            particle.remove()
+        }
     }
 
     createComboParticle(color) {
