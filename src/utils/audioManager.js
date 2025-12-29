@@ -140,6 +140,32 @@ class AudioManager {
         return this._createSound(soundName, config);
     }
 
+    // 🎮 FAST PATH: Fire-and-forget 사운드 재생 (클릭 반응속도 최적화)
+    // 초기 버전의 간단한 구조로 복귀 - 인게임 클릭 사운드용
+    playFast(soundName) {
+        if (!this.enabled) return;
+
+        try {
+            // Pool에서 즉시 가져오기 (체크 로직 최소화)
+            let audioInstance = this._getPooledInstance(soundName);
+
+            if (!audioInstance) {
+                const sound = this._getOrCreateSound(soundName);
+                if (!sound) return;
+
+                audioInstance = sound.cloneNode();
+                audioInstance.volume = sound.volume;
+            }
+
+            // Fire-and-forget: 즉시 재생, Promise 대기 없음
+            audioInstance.play().catch(() => {
+                // iOS autoplay 차단 무시 (정상 동작)
+            });
+        } catch (err) {
+            // 오류 무시 (사용자 경험에 영향 없음)
+        }
+    }
+
     // Optimized play method with instant response using audio pool
     play(soundName, options = {}) {
         if (!this.enabled) {
@@ -214,17 +240,17 @@ class AudioManager {
         });
     }
 
-    // ===== 기존 호환성 메서드 =====
+    // ===== 기존 호환성 메서드 (Fast Path로 최적화) =====
     playCorrect() {
-        return this.play('correct');
+        this.playFast('correct');  // 🎮 Fire-and-forget
     }
 
     playWrong() {
-        return this.play('wrong');
+        this.playFast('wrong');  // 🎮 Fire-and-forget
     }
 
     playClick() {
-        return this.play('click');
+        this.playFast('click');  // 🎮 Fire-and-forget
     }
 
     // ===== 화면 전환 및 UI =====
@@ -257,9 +283,9 @@ class AudioManager {
         return this.play('phaseEnter', { maxDuration: 2 });
     }
 
-    // ===== 인게임 상호작용 =====
+    // ===== 인게임 상호작용 (Fast Path로 최적화) =====
     playInGameClick() {
-        return this.play('inGameClick');
+        this.playFast('inGameClick');  // 🎮 Fire-and-forget
     }
 
     playColorGuide() {
@@ -267,16 +293,16 @@ class AudioManager {
     }
 
     playIncorrect() {
-        return this.play('incorrect');
+        this.playFast('incorrect');  // 🎮 Fire-and-forget
     }
 
     playCorrectSound() {
-        return this.play('correctSound');
+        this.playFast('correctSound');  // 🎮 Fire-and-forget
     }
 
-    // ===== 일반 UI 버튼 =====
+    // ===== 일반 UI 버튼 (Fast Path로 최적화) =====
     playButtonClick() {
-        return this.play('buttonClick');
+        this.playFast('buttonClick');  // 🎮 Fire-and-forget
     }
 
     // ===== 게임 결과 및 보상 =====
