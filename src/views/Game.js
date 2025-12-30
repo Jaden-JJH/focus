@@ -20,9 +20,9 @@ export default class Game {
             return
         }
 
-        // 토큰 만료 체크 (10초 이내 생성된 토큰만 유효)
+        // 토큰 만료 체크 (60초 이내 생성된 토큰만 유효) - 모바일 환경 고려
         const tokenAge = Date.now() - parseInt(tokenTime)
-        if (tokenAge > 10000) {
+        if (tokenAge > 60000) {
             // 토큰 만료 → Main으로 리다이렉트
             console.log('⚠️ Game token expired - redirecting to /main')
             sessionStorage.removeItem('game_token')
