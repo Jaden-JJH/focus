@@ -60,9 +60,89 @@ export class GameEngine {
             shockwaveRemoved: 0,
             rafShakeActive: false,
             handleCorrectCount: 0,
-            intervalIds: new Set()
+            intervalIds: new Set(),
+            lastExecutionTime: 0,
+            maxExecutionTime: 0,
+            avgExecutionTime: 0
         }
         this.shakeRafId = null // screenShake RAF ID 추적
+        this.diagnosticsOverlay = null // 화면 진단 오버레이
+    }
+
+    // 🔍 Phase 1: 화면 진단 오버레이 생성
+    createDiagnosticsOverlay() {
+        if (this.diagnosticsOverlay) return
+
+        this.diagnosticsOverlay = document.createElement('div')
+        this.diagnosticsOverlay.id = 'diagnostics-overlay'
+        this.diagnosticsOverlay.style.cssText = `
+            position: fixed;
+            top: 60px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 8px;
+            border-radius: 4px;
+            z-index: 9999;
+            pointer-events: none;
+            min-width: 200px;
+            line-height: 1.4;
+            border: 1px solid #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        `
+        document.body.appendChild(this.diagnosticsOverlay)
+        this.updateDiagnosticsOverlay()
+    }
+
+    // 🔍 Phase 1: 화면 진단 정보 업데이트
+    updateDiagnosticsOverlay() {
+        if (!this.diagnosticsOverlay) return
+
+        const confettiLeak = this.diagnostics.confettiCreated - this.diagnostics.confettiRemoved
+        const shockwaveLeak = this.diagnostics.shockwaveCreated - this.diagnostics.shockwaveRemoved
+        const totalLeaks = confettiLeak + shockwaveLeak
+
+        // 누수 상태에 따른 색상
+        let statusColor = '#00ff00' // 정상
+        let statusText = 'OK'
+        if (totalLeaks > 10) {
+            statusColor = '#ff0000' // 심각
+            statusText = 'LEAK!'
+        } else if (totalLeaks > 5) {
+            statusColor = '#ffaa00' // 경고
+            statusText = 'WARN'
+        }
+
+        this.diagnosticsOverlay.innerHTML = `
+            <div style="color: ${statusColor}; font-weight: bold; margin-bottom: 4px;">
+                🔍 DIAGNOSTICS [${statusText}]
+            </div>
+            <div style="border-top: 1px solid #333; padding-top: 4px;">
+                Round: <span style="color: #fff">${this.state.round}</span><br>
+                Correct: <span style="color: #fff">${this.diagnostics.handleCorrectCount}</span><br>
+                <br>
+                <span style="color: #888">--- Performance ---</span><br>
+                Last: <span style="color: ${this.diagnostics.lastExecutionTime > 15 ? '#ff0000' : '#fff'}">${this.diagnostics.lastExecutionTime.toFixed(1)}ms</span><br>
+                Max: <span style="color: ${this.diagnostics.maxExecutionTime > 20 ? '#ff0000' : '#fff'}">${this.diagnostics.maxExecutionTime.toFixed(1)}ms</span><br>
+                Avg: <span style="color: #fff">${this.diagnostics.avgExecutionTime.toFixed(1)}ms</span><br>
+                <br>
+                <span style="color: #888">--- Memory Leaks ---</span><br>
+                Confetti: <span style="color: ${confettiLeak > 5 ? '#ff0000' : '#fff'}">${confettiLeak}</span><br>
+                Shockwave: <span style="color: ${shockwaveLeak > 5 ? '#ff0000' : '#fff'}">${shockwaveLeak}</span><br>
+                Intervals: <span style="color: ${this.diagnostics.intervalIds.size > 0 ? '#ffaa00' : '#fff'}">${this.diagnostics.intervalIds.size}</span><br>
+                RAF Shake: <span style="color: ${this.diagnostics.rafShakeActive ? '#ffaa00' : '#fff'}">${this.diagnostics.rafShakeActive ? 'ACTIVE' : 'idle'}</span>
+            </div>
+        `
+    }
+
+    // 🔍 Phase 1: 진단 오버레이 제거
+    removeDiagnosticsOverlay() {
+        if (this.diagnosticsOverlay) {
+            this.diagnosticsOverlay.remove()
+            this.diagnosticsOverlay = null
+        }
     }
 
     async startGame() {
@@ -94,6 +174,9 @@ export class GameEngine {
                 return
             }
         }
+
+        // 🔍 Phase 1: 진단 오버레이 생성
+        this.createDiagnosticsOverlay()
 
         this.nextRound()
     }
@@ -487,7 +570,20 @@ export class GameEngine {
         // 🔍 Phase 1: 실행 시간 측정 종료
         const endTime = performance.now()
         const executionTime = endTime - startTime
+
+        // 통계 업데이트
+        this.diagnostics.lastExecutionTime = executionTime
+        if (executionTime > this.diagnostics.maxExecutionTime) {
+            this.diagnostics.maxExecutionTime = executionTime
+        }
+        this.diagnostics.avgExecutionTime =
+            (this.diagnostics.avgExecutionTime * (this.diagnostics.handleCorrectCount - 1) + executionTime) /
+            this.diagnostics.handleCorrectCount
+
         console.log(`🔍 handleCorrect #${this.diagnostics.handleCorrectCount}: ${executionTime.toFixed(2)}ms | Confetti: ${this.diagnostics.confettiCreated - this.diagnostics.confettiRemoved} active | Shockwave: ${this.diagnostics.shockwaveCreated - this.diagnostics.shockwaveRemoved} active`)
+
+        // 🔍 Phase 1: 화면 오버레이 업데이트
+        this.updateDiagnosticsOverlay()
 
         setTimeout(() => {
             this.state.round++
@@ -1372,5 +1468,10 @@ export class GameEngine {
         console.log(`   Shockwave 누수: ${this.diagnostics.shockwaveCreated - this.diagnostics.shockwaveRemoved}개`)
         console.log(`   Active Intervals: ${this.diagnostics.intervalIds.size}개`)
         console.log(`   Total handleCorrect calls: ${this.diagnostics.handleCorrectCount}회`)
+        console.log(`   Max Execution Time: ${this.diagnostics.maxExecutionTime.toFixed(2)}ms`)
+        console.log(`   Avg Execution Time: ${this.diagnostics.avgExecutionTime.toFixed(2)}ms`)
+
+        // 🔍 Phase 1: 진단 오버레이 제거
+        this.removeDiagnosticsOverlay()
     }
 }
