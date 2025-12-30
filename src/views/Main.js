@@ -5,6 +5,20 @@ import { LEVELS, LEVEL_DATA } from '../config/gameConfig.js'
 import audioManager from '../utils/audioManager.js'
 import musicManager from '../utils/musicManager.js'
 
+// UUID 생성 함수 (Safari 호환)
+function generateUUID() {
+  // crypto.randomUUID()가 지원되면 사용
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  // Fallback: Safari 등 구버전 브라우저 지원
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
 export default class Main {
   constructor(container) {
     this.container = container
@@ -162,7 +176,7 @@ export default class Main {
           }))
 
           // Generate game token
-          const gameToken = crypto.randomUUID()
+          const gameToken = generateUUID()
           sessionStorage.setItem('game_token', gameToken)
           sessionStorage.setItem('game_token_time', Date.now().toString())
 
@@ -182,7 +196,7 @@ export default class Main {
           // Logged in user flow
           if (_state.coins > 0) {
             // Generate game token
-            const gameToken = crypto.randomUUID()
+            const gameToken = generateUUID()
             sessionStorage.setItem('game_token', gameToken)
             sessionStorage.setItem('game_token_time', Date.now().toString())
 
