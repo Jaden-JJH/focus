@@ -160,13 +160,14 @@ export default class Main {
 
           console.log('🔍 Session check:', { sessionUsed, sessionData })
 
-          if (sessionUsed) {
-            // Session used - prompt login
-            console.log('⚠️ Session already used - redirecting to login')
-            alert('체험 플레이가 종료되었습니다. 로그인해주세요.')
-            await authService.signInWithGoogle()
-            return
-          }
+          // 🚧 임시로 세션 체크 비활성화 (테스트용)
+          // if (sessionUsed) {
+          //   // Session used - prompt login
+          //   console.log('⚠️ Session already used - redirecting to login')
+          //   alert('체험 플레이가 종료되었습니다. 로그인해주세요.')
+          //   await authService.signInWithGoogle()
+          //   return
+          // }
 
           // Mark session as used
           console.log('✅ Marking session as used')
