@@ -9,22 +9,30 @@ export default class Game {
     }
 
     async render() {
+        console.log('🎮 Game.render() called')
+
         // 🔒 Token Verification: 정상 플로우(Main → Game)로만 진입 가능
         const token = sessionStorage.getItem('game_token')
         const tokenTime = sessionStorage.getItem('game_token_time')
 
+        console.log('🔍 Token check:', { token: token ? 'exists' : 'missing', tokenTime })
+
         if (!token || !tokenTime) {
             // 토큰 없음 → Main으로 리다이렉트
             console.log('⚠️ Game token missing - redirecting to /main')
+            alert('⚠️ 토큰 없음 - 메인으로 이동합니다')
             navigateTo('/main')
             return
         }
 
         // 토큰 만료 체크 (60초 이내 생성된 토큰만 유효) - 모바일 환경 고려
         const tokenAge = Date.now() - parseInt(tokenTime)
+        console.log('🔍 Token age:', tokenAge, 'ms')
+
         if (tokenAge > 60000) {
             // 토큰 만료 → Main으로 리다이렉트
             console.log('⚠️ Game token expired - redirecting to /main')
+            alert(`⚠️ 토큰 만료 (${tokenAge}ms) - 메인으로 이동합니다`)
             sessionStorage.removeItem('game_token')
             sessionStorage.removeItem('game_token_time')
             navigateTo('/main')
@@ -109,7 +117,14 @@ export default class Game {
         }
 
         // Start
-        engine.startGame()
+        console.log('🎮 Calling engine.startGame()')
+        try {
+            await engine.startGame()
+            console.log('✅ engine.startGame() completed')
+        } catch (error) {
+            console.error('❌ engine.startGame() failed:', error)
+            alert('게임 시작 실패: ' + error.message)
+        }
 
         // Cleanup on view destroy (not implemented in router yet, but good practice)
         this.engine = engine

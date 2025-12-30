@@ -146,6 +146,8 @@ export class GameEngine {
     }
 
     async startGame() {
+        console.log('🎮 GameEngine.startGame() called')
+
         this.state.round = 1
         this.state.score = 0
         this.state.history = []
@@ -161,23 +163,31 @@ export class GameEngine {
 
         // Deduct Coin (optimistic update)
         const currentCoins = store.getState().coins
-        store.setState({ coins: currentCoins - 1 })
-
-        // Sync with server
         const user = store.getState().user
-        if (user && !user.isGuest) {
+
+        console.log('🔍 User check:', { isGuest: user?.isGuest, coins: currentCoins })
+
+        if (!user.isGuest) {
+            store.setState({ coins: currentCoins - 1 })
+
+            // Sync with server
             const success = await dataService.deductCoins(user.id, 1)
             if (!success) {
-                console.error('Failed to deduct coins')
+                console.error('❌ Failed to deduct coins from server')
                 // Rollback optimistic update
                 store.setState({ coins: currentCoins })
+                alert('코인 차감 실패 - 메인으로 돌아갑니다')
                 return
             }
+            console.log('✅ Coins deducted successfully')
+        } else {
+            console.log('👤 Guest user - skipping coin deduction')
         }
 
         // 🔍 Phase 1: 진단 오버레이 생성
         this.createDiagnosticsOverlay()
 
+        console.log('🎮 Starting nextRound()')
         this.nextRound()
     }
 
