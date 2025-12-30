@@ -76,6 +76,14 @@ export class GameEngineHard {
         this.shakeRafId = null // screenShake RAF ID 추적
         this.diagnosticsOverlay = null // 화면 진단 오버레이
 
+        // 🔧 Phase 2: 활성 이펙트 추적 (메모리 누수 방지)
+        this.activeEffects = {
+            confetti: new Set(),
+            shockwave: new Set(),
+            timeouts: new Set(),
+            animations: new Set()
+        }
+
         // 하드모드: 기존 5개 중 랜덤 4개 선택
         this.selectedBaseGames = this.selectRandomBaseGames()
 
@@ -764,6 +772,9 @@ export class GameEngineHard {
 
         const confetti = document.createElement('div')
 
+        // 🔧 Phase 2: 활성 이펙트에 추가
+        this.activeEffects.confetti.add(confetti)
+
         // 🎮 Geometry Dash Style: 네온 색상 팔레트 (하드모드 - 붉은 계열 강조)
         const colors = ['#ff1744', '#ff00ff', '#ffff00', '#ff5252', '#ff6f00', '#ef4444']
         const color = colors[Math.floor(Math.random() * colors.length)]
@@ -804,12 +815,26 @@ export class GameEngineHard {
             easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
         })
 
-        // 📱 애니메이션 완료 후 정리
-        animation.onfinish = () => {
-            // 🔍 Phase 1: 제거 카운팅
-            this.diagnostics.confettiRemoved++
-            confetti.remove()
+        // 🔧 Phase 2: 안전한 제거 함수
+        const removeConfetti = () => {
+            if (confetti.parentNode) {
+                // 🔍 Phase 1: 제거 카운팅
+                this.diagnostics.confettiRemoved++
+                confetti.remove()
+                // 🔧 Phase 2: 활성 이펙트에서 제거
+                this.activeEffects.confetti.delete(confetti)
+            }
         }
+
+        // 🔧 Phase 2: 애니메이션 완료 + Fallback timeout
+        animation.onfinish = removeConfetti
+
+        // Fallback: 애니메이션이 끝나지 않아도 600ms 후 강제 제거
+        const fallbackTimeout = setTimeout(removeConfetti, 600)
+        this.activeEffects.timeouts.add(fallbackTimeout)
+
+        // 애니메이션 객체 추적
+        this.activeEffects.animations.add(animation)
     }
 
     handleWrong() {
@@ -1528,6 +1553,9 @@ export class GameEngineHard {
 
         const shockwave = document.createElement('div')
 
+        // 🔧 Phase 2: 활성 이펙트에 추가
+        this.activeEffects.shockwave.add(shockwave)
+
         // 콤보별 색상 (하드모드 - 붉은 계열)
         let color = '#ff5252' // 빨강 (1-5 콤보)
         if (this.state.combo >= 16) {
@@ -1554,7 +1582,7 @@ export class GameEngineHard {
         document.body.appendChild(shockwave)
 
         // 충격파 확장 애니메이션
-        shockwave.animate([
+        const animation = shockwave.animate([
             {
                 transform: 'translate(-50%, -50%) scale(1)',
                 opacity: 0.8
@@ -1568,11 +1596,26 @@ export class GameEngineHard {
             easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
         })
 
-        setTimeout(() => {
-            // 🔍 Phase 1: 제거 카운팅
-            this.diagnostics.shockwaveRemoved++
-            shockwave.remove()
-        }, 300)
+        // 🔧 Phase 2: 안전한 제거 함수
+        const removeShockwave = () => {
+            if (shockwave.parentNode) {
+                // 🔍 Phase 1: 제거 카운팅
+                this.diagnostics.shockwaveRemoved++
+                shockwave.remove()
+                // 🔧 Phase 2: 활성 이펙트에서 제거
+                this.activeEffects.shockwave.delete(shockwave)
+            }
+        }
+
+        // 🔧 Phase 2: 애니메이션 완료 + Fallback timeout
+        animation.onfinish = removeShockwave
+
+        // Fallback: 애니메이션이 끝나지 않아도 400ms 후 강제 제거
+        const fallbackTimeout = setTimeout(removeShockwave, 400)
+        this.activeEffects.timeouts.add(fallbackTimeout)
+
+        // 애니메이션 객체 추적
+        this.activeEffects.animations.add(animation)
     }
 
     handleGameOver(reason) {
@@ -1629,6 +1672,39 @@ export class GameEngineHard {
         }
 
         this.removeFocusGlow()
+
+        // 🔧 Phase 2: 활성 이펙트 강제 제거
+        // Confetti 강제 제거
+        this.activeEffects.confetti.forEach(element => {
+            if (element.parentNode) {
+                element.remove()
+                this.diagnostics.confettiRemoved++
+            }
+        })
+        this.activeEffects.confetti.clear()
+
+        // Shockwave 강제 제거
+        this.activeEffects.shockwave.forEach(element => {
+            if (element.parentNode) {
+                element.remove()
+                this.diagnostics.shockwaveRemoved++
+            }
+        })
+        this.activeEffects.shockwave.clear()
+
+        // 모든 timeout 정리
+        this.activeEffects.timeouts.forEach(timeoutId => {
+            clearTimeout(timeoutId)
+        })
+        this.activeEffects.timeouts.clear()
+
+        // 모든 animation 취소
+        this.activeEffects.animations.forEach(animation => {
+            if (animation && animation.cancel) {
+                animation.cancel()
+            }
+        })
+        this.activeEffects.animations.clear()
 
         // 🎵 배경음악 정지
         musicManager.stopWithFade(0.5)
