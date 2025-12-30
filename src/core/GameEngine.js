@@ -67,6 +67,18 @@ export class GameEngine {
         }
         this.shakeRafId = null // screenShake RAF ID 추적
         this.diagnosticsOverlay = null // 화면 진단 오버레이
+
+        // 🔧 Phase 2: 활성 이펙트 추적 (메모리 누수 방지)
+        this.activeEffects = {
+            confetti: new Set(),      // 활성 confetti DOM 요소들
+            shockwave: new Set(),     // 활성 shockwave DOM 요소들
+            timeouts: new Set(),      // 활성 setTimeout ID들
+            animations: new Set()     // 활성 Animation 객체들
+        }
+
+        // 🚀 Phase 2.5: 진단 오버레이 업데이트 throttle (성능 최적화)
+        this.diagnosticsUpdatePending = false
+        this.lastDiagnosticsUpdate = 0
     }
 
     // 🔍 Phase 1: 화면 진단 오버레이 생성
@@ -96,8 +108,8 @@ export class GameEngine {
         this.updateDiagnosticsOverlay()
     }
 
-    // 🔍 Phase 1: 화면 진단 정보 업데이트
-    updateDiagnosticsOverlay() {
+    // 🔍 Phase 1: 화면 진단 정보 업데이트 (즉시 실행)
+    updateDiagnosticsOverlayNow() {
         if (!this.diagnosticsOverlay) return
 
         const confettiLeak = this.diagnostics.confettiCreated - this.diagnostics.confettiRemoved
@@ -135,6 +147,30 @@ export class GameEngine {
                 RAF Shake: <span style="color: ${this.diagnostics.rafShakeActive ? '#ffaa00' : '#fff'}">${this.diagnostics.rafShakeActive ? 'ACTIVE' : 'idle'}</span>
             </div>
         `
+    }
+
+    // 🚀 Phase 2.5: Throttled 진단 오버레이 업데이트 (성능 최적화)
+    updateDiagnosticsOverlay() {
+        // 이미 업데이트가 예약되어 있으면 스킵
+        if (this.diagnosticsUpdatePending) return
+
+        // Throttle: 500ms마다 최대 1회 업데이트
+        const now = performance.now()
+        const timeSinceLastUpdate = now - this.lastDiagnosticsUpdate
+
+        if (timeSinceLastUpdate < 500) {
+            // 너무 빠름 - RAF로 지연
+            this.diagnosticsUpdatePending = true
+            requestAnimationFrame(() => {
+                this.diagnosticsUpdatePending = false
+                this.updateDiagnosticsOverlayNow()
+                this.lastDiagnosticsUpdate = performance.now()
+            })
+        } else {
+            // 충분한 시간 경과 - 즉시 업데이트
+            this.updateDiagnosticsOverlayNow()
+            this.lastDiagnosticsUpdate = now
+        }
     }
 
     // 🔍 Phase 1: 진단 오버레이 제거
@@ -664,6 +700,9 @@ export class GameEngine {
 
         const confetti = document.createElement('div')
 
+        // 🔧 Phase 2: 활성 이펙트에 추가
+        this.activeEffects.confetti.add(confetti)
+
         // 🎮 Geometry Dash Style: 네온 색상 팔레트
         const colors = ['#00f5ff', '#ff00ff', '#ffff00', '#00ff88', '#ff1744', '#7c4dff']
         const color = colors[Math.floor(Math.random() * colors.length)]
@@ -704,12 +743,26 @@ export class GameEngine {
             easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)' // 더 자연스러운 easing
         })
 
-        // 📱 애니메이션 완료 후 정리
-        animation.onfinish = () => {
-            // 🔍 Phase 1: 제거 카운팅
-            this.diagnostics.confettiRemoved++
-            confetti.remove()
+        // 🔧 Phase 2: 안전한 제거 함수
+        const removeConfetti = () => {
+            if (confetti.parentNode) {
+                // 🔍 Phase 1: 제거 카운팅
+                this.diagnostics.confettiRemoved++
+                confetti.remove()
+                // 🔧 Phase 2: 활성 이펙트에서 제거
+                this.activeEffects.confetti.delete(confetti)
+            }
         }
+
+        // 🔧 Phase 2: 애니메이션 완료 + Fallback timeout
+        animation.onfinish = removeConfetti
+
+        // Fallback: 애니메이션이 끝나지 않아도 600ms 후 강제 제거
+        const fallbackTimeout = setTimeout(removeConfetti, 600)
+        this.activeEffects.timeouts.add(fallbackTimeout)
+
+        // 애니메이션 객체 추적
+        this.activeEffects.animations.add(animation)
     }
 
     handleWrong() {
@@ -1374,6 +1427,9 @@ export class GameEngine {
 
         const shockwave = document.createElement('div')
 
+        // 🔧 Phase 2: 활성 이펙트에 추가
+        this.activeEffects.shockwave.add(shockwave)
+
         // 콤보별 색상
         let color = '#00f5ff' // 시안 (1-5 콤보)
         if (this.state.combo >= 16) {
@@ -1414,11 +1470,19 @@ export class GameEngine {
             easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
         })
 
-        setTimeout(() => {
-            // 🔍 Phase 1: 제거 카운팅
-            this.diagnostics.shockwaveRemoved++
-            shockwave.remove()
-        }, 300)
+        // 🔧 Phase 2: 안전한 제거
+        const removeShockwave = () => {
+            if (shockwave.parentNode) {
+                // 🔍 Phase 1: 제거 카운팅
+                this.diagnostics.shockwaveRemoved++
+                shockwave.remove()
+                // 🔧 Phase 2: 활성 이펙트에서 제거
+                this.activeEffects.shockwave.delete(shockwave)
+            }
+        }
+
+        const timeout = setTimeout(removeShockwave, 300)
+        this.activeEffects.timeouts.add(timeout)
     }
 
     handleGameOver(reason) {
@@ -1468,6 +1532,43 @@ export class GameEngine {
         }
 
         this.removeFocusGlow()
+
+        // 🔧 Phase 2: 모든 활성 이펙트 강제 정리
+        console.log('🔧 Cleaning up active effects...')
+
+        // Confetti 제거
+        this.activeEffects.confetti.forEach(element => {
+            if (element.parentNode) {
+                element.remove()
+                this.diagnostics.confettiRemoved++
+            }
+        })
+        this.activeEffects.confetti.clear()
+
+        // Shockwave 제거
+        this.activeEffects.shockwave.forEach(element => {
+            if (element.parentNode) {
+                element.remove()
+                this.diagnostics.shockwaveRemoved++
+            }
+        })
+        this.activeEffects.shockwave.clear()
+
+        // Timeouts 정리
+        this.activeEffects.timeouts.forEach(timeoutId => {
+            clearTimeout(timeoutId)
+        })
+        this.activeEffects.timeouts.clear()
+
+        // Animations 취소
+        this.activeEffects.animations.forEach(animation => {
+            try {
+                animation.cancel()
+            } catch (e) {
+                // Animation이 이미 완료된 경우 무시
+            }
+        })
+        this.activeEffects.animations.clear()
 
         // 🎵 배경음악 정지
         musicManager.stopWithFade(0.5)

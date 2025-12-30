@@ -84,6 +84,10 @@ export class GameEngineHard {
             animations: new Set()
         }
 
+        // 🚀 Phase 2.5: 진단 오버레이 업데이트 throttle (성능 최적화)
+        this.diagnosticsUpdatePending = false
+        this.lastDiagnosticsUpdate = 0
+
         // 하드모드: 기존 5개 중 랜덤 4개 선택
         this.selectedBaseGames = this.selectRandomBaseGames()
 
@@ -138,8 +142,8 @@ export class GameEngineHard {
         this.updateDiagnosticsOverlay()
     }
 
-    // 🔍 Phase 1: 화면 진단 정보 업데이트
-    updateDiagnosticsOverlay() {
+    // 🔍 Phase 1: 화면 진단 정보 업데이트 (즉시 실행)
+    updateDiagnosticsOverlayNow() {
         if (!this.diagnosticsOverlay) return
 
         const confettiLeak = this.diagnostics.confettiCreated - this.diagnostics.confettiRemoved
@@ -177,6 +181,30 @@ export class GameEngineHard {
                 RAF Shake: <span style="color: ${this.diagnostics.rafShakeActive ? '#ffaa00' : '#fff'}">${this.diagnostics.rafShakeActive ? 'ACTIVE' : 'idle'}</span>
             </div>
         `
+    }
+
+    // 🚀 Phase 2.5: Throttled 진단 오버레이 업데이트 (성능 최적화)
+    updateDiagnosticsOverlay() {
+        // 이미 업데이트가 예약되어 있으면 스킵
+        if (this.diagnosticsUpdatePending) return
+
+        // Throttle: 500ms마다 최대 1회 업데이트
+        const now = performance.now()
+        const timeSinceLastUpdate = now - this.lastDiagnosticsUpdate
+
+        if (timeSinceLastUpdate < 500) {
+            // 너무 빠름 - RAF로 지연
+            this.diagnosticsUpdatePending = true
+            requestAnimationFrame(() => {
+                this.diagnosticsUpdatePending = false
+                this.updateDiagnosticsOverlayNow()
+                this.lastDiagnosticsUpdate = performance.now()
+            })
+        } else {
+            // 충분한 시간 경과 - 즉시 업데이트
+            this.updateDiagnosticsOverlayNow()
+            this.lastDiagnosticsUpdate = now
+        }
     }
 
     // 🔍 Phase 1: 진단 오버레이 제거
