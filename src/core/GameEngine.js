@@ -51,6 +51,18 @@ export class GameEngine {
         // 📱 성능 레벨에 따른 설정
         this.performanceLevel = getPerformanceLevel()
         console.log(`📱 Performance Level: ${this.performanceLevel}`)
+
+        // 🔍 Phase 1: 진단 카운터
+        this.diagnostics = {
+            confettiCreated: 0,
+            confettiRemoved: 0,
+            shockwaveCreated: 0,
+            shockwaveRemoved: 0,
+            rafShakeActive: false,
+            handleCorrectCount: 0,
+            intervalIds: new Set()
+        }
+        this.shakeRafId = null // screenShake RAF ID 추적
     }
 
     async startGame() {
@@ -416,6 +428,10 @@ export class GameEngine {
     }
 
     handleCorrect() {
+        // 🔍 Phase 1: 실행 시간 측정 시작
+        const startTime = performance.now()
+        this.diagnostics.handleCorrectCount++
+
         // 🔒 안전하게 게임 루프 정리
         if (this.animationId) {
             cancelAnimationFrame(this.animationId)
@@ -467,6 +483,11 @@ export class GameEngine {
                 }, 200)
             }
         })
+
+        // 🔍 Phase 1: 실행 시간 측정 종료
+        const endTime = performance.now()
+        const executionTime = endTime - startTime
+        console.log(`🔍 handleCorrect #${this.diagnostics.handleCorrectCount}: ${executionTime.toFixed(2)}ms | Confetti: ${this.diagnostics.confettiCreated - this.diagnostics.confettiRemoved} active | Shockwave: ${this.diagnostics.shockwaveCreated - this.diagnostics.shockwaveRemoved} active`)
 
         setTimeout(() => {
             this.state.round++
@@ -532,6 +553,9 @@ export class GameEngine {
     }
 
     createConfetti() {
+        // 🔍 Phase 1: 생성 카운팅
+        this.diagnostics.confettiCreated++
+
         const confetti = document.createElement('div')
 
         // 🎮 Geometry Dash Style: 네온 색상 팔레트
@@ -576,6 +600,8 @@ export class GameEngine {
 
         // 📱 애니메이션 완료 후 정리
         animation.onfinish = () => {
+            // 🔍 Phase 1: 제거 카운팅
+            this.diagnostics.confettiRemoved++
             confetti.remove()
         }
     }
@@ -841,11 +867,21 @@ export class GameEngine {
         }
 
         if (particleInterval > 0) {
+            // 🔍 Phase 1: interval 중복 방지
+            if (this.feverParticleInterval) {
+                console.warn('⚠️ feverParticleInterval 중복 생성 방지!')
+                clearInterval(this.feverParticleInterval)
+                this.feverParticleInterval = null
+            }
+
             this.feverParticleInterval = setInterval(() => {
                 if (this.state.combo >= 10) {
                     this.createFeverParticle()
                 }
             }, particleInterval)
+
+            // 🔍 Phase 1: interval 추적
+            this.diagnostics.intervalIds.add(this.feverParticleInterval)
         }
 
         // 10콤보 미만으로 떨어지면 제거하기 위해 참조 저장
@@ -856,6 +892,8 @@ export class GameEngine {
         // 파티클 생성 중지
         if (this.feverParticleInterval) {
             clearInterval(this.feverParticleInterval)
+            // 🔍 Phase 1: interval 추적 제거
+            this.diagnostics.intervalIds.delete(this.feverParticleInterval)
             this.feverParticleInterval = null
         }
 
@@ -1163,6 +1201,18 @@ export class GameEngine {
 
     // 🎮 Geometry Dash Style: 화면 진동 (Screen Shake) - RAF 기반
     screenShake() {
+        // 🔍 Phase 1: RAF 중복 실행 체크
+        if (this.diagnostics.rafShakeActive) {
+            console.warn('⚠️ screenShake RAF 중복 실행 감지!')
+        }
+        this.diagnostics.rafShakeActive = true
+
+        // 기존 shake가 있으면 취소
+        if (this.shakeRafId) {
+            cancelAnimationFrame(this.shakeRafId)
+            this.shakeRafId = null
+        }
+
         // 콤보별 진동 강도 계산
         let intensity = 3 // 기본 (1-5 콤보)
         let duration = 80
@@ -1189,6 +1239,9 @@ export class GameEngine {
             if (elapsed >= duration) {
                 // 애니메이션 완료 - 원상복구
                 container.style.transform = originalTransform
+                // 🔍 Phase 1: RAF 완료 플래그
+                this.diagnostics.rafShakeActive = false
+                this.shakeRafId = null
                 return
             }
 
@@ -1201,14 +1254,18 @@ export class GameEngine {
             const y = (Math.random() - 0.5) * currentIntensity * 2
             container.style.transform = `translate3d(${x}px, ${y}px, 0)`
 
-            requestAnimationFrame(shake)
+            // 🔍 Phase 1: RAF ID 저장
+            this.shakeRafId = requestAnimationFrame(shake)
         }
 
-        requestAnimationFrame(shake)
+        this.shakeRafId = requestAnimationFrame(shake)
     }
 
     // 🎮 Geometry Dash Style: 충격파 이펙트 (Shockwave)
     createShockwave() {
+        // 🔍 Phase 1: 생성 카운팅
+        this.diagnostics.shockwaveCreated++
+
         const shockwave = document.createElement('div')
 
         // 콤보별 색상
@@ -1251,7 +1308,11 @@ export class GameEngine {
             easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
         })
 
-        setTimeout(() => shockwave.remove(), 300)
+        setTimeout(() => {
+            // 🔍 Phase 1: 제거 카운팅
+            this.diagnostics.shockwaveRemoved++
+            shockwave.remove()
+        }, 300)
     }
 
     handleGameOver(reason) {
@@ -1293,9 +1354,23 @@ export class GameEngine {
             this.feverParticleInterval = null
         }
 
+        // 🔍 Phase 1: screenShake RAF 정리
+        if (this.shakeRafId) {
+            cancelAnimationFrame(this.shakeRafId)
+            this.shakeRafId = null
+            this.diagnostics.rafShakeActive = false
+        }
+
         this.removeFocusGlow()
 
         // 🎵 배경음악 정지
         musicManager.stopWithFade(0.5)
+
+        // 🔍 Phase 1: 최종 진단 리포트
+        console.log('🔍 GameEngine Cleanup - 최종 진단:')
+        console.log(`   Confetti 누수: ${this.diagnostics.confettiCreated - this.diagnostics.confettiRemoved}개`)
+        console.log(`   Shockwave 누수: ${this.diagnostics.shockwaveCreated - this.diagnostics.shockwaveRemoved}개`)
+        console.log(`   Active Intervals: ${this.diagnostics.intervalIds.size}개`)
+        console.log(`   Total handleCorrect calls: ${this.diagnostics.handleCorrectCount}회`)
     }
 }
