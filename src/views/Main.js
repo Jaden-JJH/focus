@@ -130,23 +130,32 @@ export default class Main {
 
       // Play button
       if (target.id === 'play-btn') {
+        console.log('🎮 Play button clicked')
         audioManager.playButtonClick()
         const _state = store.getState()
         const user = _state.user
         const isHardMode = _state.isHardMode || false
 
+        console.log('🔍 User state:', { isGuest: user?.isGuest, isHardMode })
+
         // Guest user flow
         if (user?.isGuest) {
+          console.log('👤 Guest user detected')
           const sessionData = localStorage.getItem('guest_session_used')
           const sessionUsed = sessionData ? JSON.parse(sessionData).used : false
 
+          console.log('🔍 Session check:', { sessionUsed, sessionData })
+
           if (sessionUsed) {
             // Session used - prompt login
+            console.log('⚠️ Session already used - redirecting to login')
+            alert('체험 플레이가 종료되었습니다. 로그인해주세요.')
             await authService.signInWithGoogle()
             return
           }
 
           // Mark session as used
+          console.log('✅ Marking session as used')
           localStorage.setItem('guest_session_used', JSON.stringify({
             used: true,
             timestamp: Date.now()
@@ -157,7 +166,18 @@ export default class Main {
           sessionStorage.setItem('game_token', gameToken)
           sessionStorage.setItem('game_token_time', Date.now().toString())
 
-          import('../core/router.js').then(r => r.navigateTo('/game'))
+          console.log('🎫 Game token generated:', { gameToken, time: Date.now() })
+          console.log('🚀 Navigating to /game...')
+
+          try {
+            const router = await import('../core/router.js')
+            console.log('✅ Router module loaded')
+            router.navigateTo('/game')
+            console.log('✅ navigateTo called')
+          } catch (error) {
+            console.error('❌ Router import/navigate failed:', error)
+            alert('라우팅 실패: ' + error.message)
+          }
         } else {
           // Logged in user flow
           if (_state.coins > 0) {
