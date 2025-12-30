@@ -79,6 +79,10 @@ export class GameEngine {
         // 🚀 Phase 2.5: 진단 오버레이 업데이트 throttle (성능 최적화)
         this.diagnosticsUpdatePending = false
         this.lastDiagnosticsUpdate = 0
+
+        // 🚀 Phase 2.6: 연속 클릭 시 이펙트 throttle (성능 최적화)
+        this.lastCorrectTime = 0
+        this.consecutiveCorrectCount = 0
     }
 
     // 🔍 Phase 1: 화면 진단 오버레이 생성
@@ -593,25 +597,62 @@ export class GameEngine {
             this.removeFocusGlow()
         }
 
-        // 🎮 시각 효과를 RAF로 지연 (클릭 반응속도 최적화)
-        // 브라우저가 클릭 이벤트를 먼저 처리하게 함
-        requestAnimationFrame(() => {
-            // 🎮 Geometry Dash Style: 화면 진동 (콤보별 강도)
-            this.screenShake()
+        // 🚀 Phase 2.6: 연속 클릭 감지 (NumberOrder, PatternMemory 등)
+        const now = performance.now()
+        const timeSinceLastCorrect = now - this.lastCorrectTime
+        const isRapidClick = timeSinceLastCorrect < 150 // 150ms 이내 재클릭
 
-            // 🎮 Geometry Dash Style: 충격파 이펙트
-            this.createShockwave()
+        if (isRapidClick) {
+            this.consecutiveCorrectCount++
+        } else {
+            this.consecutiveCorrectCount = 0
+        }
+        this.lastCorrectTime = now
 
-            // FX: Correct - Show visual feedback
-            this.showCorrectFeedback()
+        // 🎮 시각 효과: 연속 클릭 시 간소화 (성능 최적화)
+        // 150ms 이내 연속 클릭 시 → 간단한 피드백만 (소리는 이미 재생됨)
+        // 일반 클릭 시 → 모든 이펙트 재생
+        if (!isRapidClick || this.consecutiveCorrectCount % 3 === 0) {
+            // 일반 클릭 또는 3번째마다 → 전체 이펙트
+            requestAnimationFrame(() => {
+                // 🎮 Geometry Dash Style: 화면 진동 (콤보별 강도)
+                this.screenShake()
 
-            // 콤보가 2 이상이면 콤보 표시 (체크마크와 겹치지 않게 약간 딜레이)
-            if (this.state.combo >= 2) {
-                setTimeout(() => {
-                    this.showComboFeedback()
-                }, 200)
-            }
-        })
+                // 🎮 Geometry Dash Style: 충격파 이펙트
+                this.createShockwave()
+
+                // FX: Correct - Show visual feedback
+                this.showCorrectFeedback()
+
+                // 콤보가 2 이상이면 콤보 표시 (체크마크와 겹치지 않게 약간 딜레이)
+                if (this.state.combo >= 2) {
+                    setTimeout(() => {
+                        this.showComboFeedback()
+                    }, 200)
+                }
+            })
+        } else {
+            // 연속 클릭 → 간소화된 피드백만 (체크마크만)
+            requestAnimationFrame(() => {
+                // 체크마크만 표시 (confetti 없음)
+                const feedback = document.createElement('div')
+                feedback.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%) scale(0.7);
+                    font-size: 3rem;
+                    color: var(--color-success);
+                    z-index: 1000;
+                    animation: correctPulse 0.3s ease-out;
+                    pointer-events: none;
+                    opacity: 0.8;
+                `
+                feedback.innerText = '✓'
+                document.body.appendChild(feedback)
+                setTimeout(() => feedback.remove(), 300)
+            })
+        }
 
         // 🔍 Phase 1: 실행 시간 측정 종료
         const endTime = performance.now()
