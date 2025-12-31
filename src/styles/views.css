@@ -187,7 +187,12 @@ input:checked + .toggle-slider:before {
     }
 }
 
-/* Hard Mode version uses different color via CSS variable */
+/* Default animation for normal mode */
+#my-rank-section {
+    animation: myRankPulse 2s ease-in-out infinite;
+}
+
+/* Hard Mode version uses red color */
 body.hard-mode #my-rank-section {
     animation: myRankPulseHard 2s ease-in-out infinite;
 }

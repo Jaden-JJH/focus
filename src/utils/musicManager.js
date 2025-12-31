@@ -3,8 +3,13 @@ class MusicManager {
     constructor() {
         this.currentMusic = null
         this.currentMode = null // 'main', 'normal', 'hard'
-        this.volume = 0.15 // 15% 볼륨
+        this.volume = 0.05 // 5% 볼륨
         this.targetState = 'stopped' // 'playing' | 'stopped' - 즉시 반영되는 상태
+
+        // Web Audio API (iOS Safari 볼륨 조절을 위해)
+        this.audioContext = null
+        this.gainNode = null
+        this.sourceNode = null
 
         // 노말모드 랜덤 재생 관련
         this.normalPlaylist = []
@@ -28,7 +33,15 @@ class MusicManager {
 
     // 음악 초기화 (사용자 인터랙션 후 호출)
     init() {
-        console.log('🎵 MusicManager initialized')
+        // Web Audio API 초기화 (iOS Safari 볼륨 조절을 위해)
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            this.gainNode = this.audioContext.createGain()
+            this.gainNode.connect(this.audioContext.destination)
+            this.gainNode.gain.value = this.volume
+            console.log('🎵 MusicManager initialized with Web Audio API')
+            console.log('🎵 Initial volume:', this.gainNode.gain.value)
+        }
     }
 
     // ===== PUBLIC API =====
@@ -43,18 +56,27 @@ class MusicManager {
     // 메인 화면 음악 즉시 재생 (BGM 버튼용)
     playMainMusic() {
         console.log('🎵 playMainMusic() 호출됨')
+
+        // Web Audio API 초기화 확인
+        this.init()
+
         this._stopImmediate()
 
         this.targetState = 'playing' // 즉시 상태 업데이트
         console.log('🎵 targetState = playing')
         this.currentMode = 'main'
+
         const audio = new Audio(this.musicPaths.main)
-        audio.volume = this.volume
         audio.loop = true
+
+        // Web Audio API로 볼륨 조절 (iOS Safari 지원)
+        this.sourceNode = this.audioContext.createMediaElementSource(audio)
+        this.sourceNode.connect(this.gainNode)
 
         audio.play()
             .then(() => {
-                console.log('🎵 Main BGM ON - 재생 성공, volume:', audio.volume)
+                console.log('🎵 Main BGM ON - 재생 성공')
+                console.log('🎵 Volume (Web Audio API):', this.gainNode.gain.value)
             })
             .catch(err => {
                 console.warn('🎵 BGM play blocked:', err)
@@ -124,11 +146,19 @@ class MusicManager {
         this.targetState = 'stopped'
 
         if (this.currentMusic) {
-            this._fadeOut(this.currentMusic, fadeOutDuration, () => {
+            this._fadeOutGain(fadeOutDuration, () => {
                 if (this.currentMusic) {
                     this.currentMusic.pause()
                     this.currentMusic.currentTime = 0
                     this.currentMusic = null
+                }
+
+                // Web Audio API sourceNode 정리
+                if (this.sourceNode) {
+                    try {
+                        this.sourceNode.disconnect()
+                    } catch (e) {}
+                    this.sourceNode = null
                 }
             })
         }
@@ -143,9 +173,10 @@ class MusicManager {
         this.volume = Math.max(0, Math.min(1, volume))
         console.log(`🎵 Volume changed: ${this.volume}`)
 
-        if (this.currentMusic) {
-            this.currentMusic.volume = this.volume
-            console.log(`🎵 Current music volume updated: ${this.currentMusic.volume}`)
+        // Web Audio API의 GainNode로 볼륨 조절 (iOS Safari 지원)
+        if (this.gainNode) {
+            this.gainNode.gain.value = this.volume
+            console.log(`🎵 GainNode volume updated: ${this.gainNode.gain.value}`)
         }
     }
 
@@ -158,6 +189,17 @@ class MusicManager {
             this.currentMusic.currentTime = 0
             this.currentMusic = null
         }
+
+        // Web Audio API sourceNode 정리
+        if (this.sourceNode) {
+            try {
+                this.sourceNode.disconnect()
+            } catch (e) {
+                // sourceNode가 이미 disconnect된 경우 무시
+            }
+            this.sourceNode = null
+        }
+
         this.currentMode = null
         this.normalPlaylist = []
         this.normalCurrentIndex = 0
@@ -218,15 +260,23 @@ class MusicManager {
             onEnded = null
         } = options
 
-        // 기존 음악 정지 (페이드아웃 없이)
+        // Web Audio API 초기화 확인
+        this.init()
+
+        // 기존 음악 정리
         if (this.currentMusic) {
             this.currentMusic.pause()
             this.currentMusic.currentTime = 0
         }
 
+        if (this.sourceNode) {
+            try {
+                this.sourceNode.disconnect()
+            } catch (e) {}
+        }
+
         // 새 음악 로드
         const audio = new Audio(path)
-        audio.volume = 0
         audio.currentTime = startTime
 
         if (loop) {
@@ -235,6 +285,17 @@ class MusicManager {
 
         if (onEnded) {
             audio.addEventListener('ended', onEnded, { once: true })
+        }
+
+        // Web Audio API로 볼륨 조절 (iOS Safari 지원)
+        this.sourceNode = this.audioContext.createMediaElementSource(audio)
+        this.sourceNode.connect(this.gainNode)
+
+        // 페이드인을 위해 초기 볼륨 0으로 설정
+        if (fadeIn > 0) {
+            this.gainNode.gain.value = 0
+        } else {
+            this.gainNode.gain.value = this.volume
         }
 
         // 재생 시작
@@ -247,10 +308,9 @@ class MusicManager {
 
                     // 페이드인
                     if (fadeIn > 0) {
-                        this._fadeIn(audio, fadeIn)
+                        this._fadeInGain(fadeIn)
                     } else {
-                        audio.volume = this.volume
-                        console.log(`🎵 Volume set to: ${audio.volume}`)
+                        console.log(`🎵 Volume set to: ${this.gainNode.gain.value}`)
                     }
                 })
                 .catch(err => {
@@ -262,6 +322,7 @@ class MusicManager {
     }
 
     // 크로스페이드 (현재 음악 페이드아웃 + 새 음악 페이드인)
+    // Web Audio API에서는 단일 GainNode를 사용하므로 _loadAndPlay로 대체
     _crossFade(newPath, duration, options = {}) {
         const {
             loop = false,
@@ -269,49 +330,23 @@ class MusicManager {
             onEnded = null
         } = options
 
-        const oldMusic = this.currentMusic
-
-        // 새 음악 로드
-        const newMusic = new Audio(newPath)
-        newMusic.volume = 0
-        newMusic.currentTime = startTime
-
-        if (loop) {
-            newMusic.loop = true
+        // 기존 음악 정지
+        if (this.currentMusic) {
+            this.currentMusic.pause()
+            this.currentMusic.currentTime = 0
         }
 
-        if (onEnded) {
-            newMusic.addEventListener('ended', onEnded, { once: true })
-        }
-
-        // 새 음악 재생 시작
-        const playPromise = newMusic.play()
-
-        if (playPromise !== undefined) {
-            playPromise
-                .then(() => {
-                    console.log(`🎵 Crossfading to: ${newPath.split('/').pop()}, target volume: ${this.volume}`)
-
-                    // 동시에 페이드아웃/인
-                    if (oldMusic) {
-                        this._fadeOut(oldMusic, duration, () => {
-                            oldMusic.pause()
-                            oldMusic.currentTime = 0
-                        })
-                    }
-
-                    this._fadeIn(newMusic, duration)
-                })
-                .catch(err => {
-                    console.warn('🎵 Crossfade blocked:', err)
-                })
-        }
-
-        this.currentMusic = newMusic
+        // 새 음악을 페이드인으로 로드
+        this._loadAndPlay(newPath, {
+            loop: loop,
+            fadeIn: duration,
+            startTime: startTime,
+            onEnded: onEnded
+        })
     }
 
-    // 페이드인 효과
-    _fadeIn(audio, duration) {
+    // 페이드인 효과 (Web Audio API GainNode 사용)
+    _fadeInGain(duration) {
         const startVolume = 0
         const endVolume = this.volume
         const steps = 60 // 60 steps for smooth fade
@@ -325,19 +360,29 @@ class MusicManager {
         const fadeInterval = setInterval(() => {
             currentStep++
             const newVolume = Math.min(startVolume + (volumeIncrement * currentStep), endVolume)
-            audio.volume = newVolume
+
+            if (this.gainNode) {
+                this.gainNode.gain.value = newVolume
+            }
 
             if (currentStep >= steps) {
                 clearInterval(fadeInterval)
-                audio.volume = endVolume
-                console.log(`🎵 Fade in completed: ${audio.volume}`)
+                if (this.gainNode) {
+                    this.gainNode.gain.value = endVolume
+                }
+                console.log(`🎵 Fade in completed: ${endVolume}`)
             }
         }, stepDuration)
     }
 
-    // 페이드아웃 효과
-    _fadeOut(audio, duration, onComplete = null) {
-        const startVolume = audio.volume
+    // 페이드아웃 효과 (Web Audio API GainNode 사용)
+    _fadeOutGain(duration, onComplete = null) {
+        if (!this.gainNode) {
+            if (onComplete) onComplete()
+            return
+        }
+
+        const startVolume = this.gainNode.gain.value
         const endVolume = 0
         const steps = 60
         const stepDuration = (duration * 1000) / steps
@@ -348,11 +393,16 @@ class MusicManager {
         const fadeInterval = setInterval(() => {
             currentStep++
             const newVolume = Math.max(startVolume - (volumeDecrement * currentStep), endVolume)
-            audio.volume = newVolume
+
+            if (this.gainNode) {
+                this.gainNode.gain.value = newVolume
+            }
 
             if (currentStep >= steps) {
                 clearInterval(fadeInterval)
-                audio.volume = endVolume
+                if (this.gainNode) {
+                    this.gainNode.gain.value = endVolume
+                }
                 if (onComplete) onComplete()
             }
         }, stepDuration)

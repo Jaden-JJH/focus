@@ -102,30 +102,46 @@ export class StroopTest {
       </div>
     `
 
-        this.container.querySelectorAll('.option-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                // 🔊 인게임 클릭음
-                audioManager.playInGameClick()
+        // 🚀 이벤트 위임: 컨테이너에 하나의 리스너만 추가 (메모리 누수 방지)
+        this.handleClick = (e) => {
+            const btn = e.target.closest('.option-btn')
+            if (!btn) return
 
-                let isCorrect
+            // 🔊 인게임 클릭음
+            audioManager.playInGameClick()
 
-                if (inverseQuestion) {
-                    // For inverse questions, any answer EXCEPT the correct one is right
-                    isCorrect = btn.dataset.name !== answer
-                } else {
-                    // Normal mode
-                    isCorrect = btn.dataset.name === answer
-                }
+            let isCorrect
 
-                if (isCorrect) {
-                    this.config.onCorrect()
-                } else {
-                    this.config.onWrong()
-                    btn.classList.add('shake')
-                    setTimeout(() => btn.classList.remove('shake'), 500)
-                }
-            })
-        })
+            if (inverseQuestion) {
+                // For inverse questions, any answer EXCEPT the correct one is right
+                isCorrect = btn.dataset.name !== answer
+            } else {
+                // Normal mode
+                isCorrect = btn.dataset.name === answer
+            }
+
+            if (isCorrect) {
+                this.config.onCorrect()
+            } else {
+                this.config.onWrong()
+                btn.classList.add('shake')
+                setTimeout(() => btn.classList.remove('shake'), 500)
+            }
+        }
+
+        // 이벤트 위임: 컨테이너에만 리스너 추가
+        const optionsContainer = this.container.querySelector('.game-options')
+        if (optionsContainer) {
+            optionsContainer.addEventListener('click', this.handleClick)
+        }
+    }
+
+    cleanup() {
+        // 🔧 이벤트 리스너 제거 (메모리 누수 방지)
+        const optionsContainer = this.container.querySelector('.game-options')
+        if (optionsContainer && this.handleClick) {
+            optionsContainer.removeEventListener('click', this.handleClick)
+        }
     }
 
     getRandomItem(arr) {

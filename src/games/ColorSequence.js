@@ -144,11 +144,16 @@ export class ColorSequence {
     enableInput() {
         const tiles = this.container.querySelectorAll('.color-tile')
 
+        if (!tiles || tiles.length === 0) {
+            console.error('ColorSequence: 타일을 찾을 수 없습니다!')
+            return
+        }
+
         tiles.forEach((tile, idx) => {
             tile.style.cursor = 'pointer'
             tile.style.background = '#3a3a3a' // 입력 가능 상태는 약간 밝은 회색
 
-            tile.addEventListener('click', () => {
+            const clickHandler = () => {
                 if (this.isShowing || this.hasFailed) return
 
                 // 🔊 인게임 클릭음
@@ -179,7 +184,9 @@ export class ColorSequence {
                         this.config.onCorrect()
                     }, 300)
                 }
-            })
+            }
+
+            tile.addEventListener('click', clickHandler)
         })
     }
 

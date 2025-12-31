@@ -1,223 +1,157 @@
-// Optimized Audio Manager for game sound effects with Audio Pool
+// 🎮 Web Audio API based Audio Manager for ultra-low latency game sounds
 class AudioManager {
     constructor() {
-        this.sounds = {};
-        this.audioPools = {}; // Pool of pre-created audio instances
         this.enabled = true;
         this.initialized = false;
-        this.defaultVolume = 0.5;
+        this.defaultVolume = 0.3;
 
-        // 📱 모바일 감지 및 성능 최적화
+        // 📱 모바일 감지
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
         this.isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
 
-        // 모바일에서는 풀 크기를 줄여 메모리 절약
-        this.poolSize = this.isMobile ? 2 : 3 // Number of instances per high-priority sound
+        // 🎵 Web Audio API
+        this.audioContext = null;
+        this.audioBuffers = {}; // { soundName: AudioBuffer }
+        this.gainNode = null; // Master volume control
 
-        // Sound file paths with preload priority
+        // Sound file paths
         this.soundFiles = {
             // High priority - preload immediately (frequently used)
-            inGameClick: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: 'auto', pooled: true },
-            buttonClick: { path: '/sounds/1-14_menu_button click.mp3', preload: 'auto', pooled: true },
-            popupOpen: { path: '/sounds/1-3_popup_open.mp3', preload: 'auto', pooled: true },
-            popupClose: { path: '/sounds/1-4_popup_close.mp3', preload: 'auto', pooled: true },
-            correctSound: { path: '/sounds/1-15_correct.mp3', preload: 'auto', pooled: true },
-            incorrect: { path: '/sounds/1-13_ incorrect.mp3', preload: 'auto', pooled: true },
+            inGameClick: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: true },
+            buttonClick: { path: '/sounds/1-14_menu_button click.mp3', preload: true },
+            popupOpen: { path: '/sounds/1-3_popup_open.mp3', preload: true },
+            popupClose: { path: '/sounds/1-4_popup_close.mp3', preload: true },
+            correctSound: { path: '/sounds/1-15_correct.mp3', preload: true },
+            incorrect: { path: '/sounds/1-13_ incorrect.mp3', preload: true },
 
-            // Medium priority - preload metadata (sometimes used)
-            toggleChange: { path: '/sounds/1-2_toggle.mp3', preload: 'metadata', pooled: false },
-            mainEnter: { path: '/sounds/1-1_main-refresh.mp3', preload: 'metadata', pooled: false },
-            phaseEnter: { path: '/sounds/1-6_phasethrough.mp3', preload: 'metadata', pooled: false },
-            colorGuide: { path: '/sounds/1-8_colorsequenceguide.mp3', preload: 'metadata', pooled: false },
+            // Medium priority
+            toggleChange: { path: '/sounds/1-2_toggle.mp3', preload: false },
+            mainEnter: { path: '/sounds/1-1_main-refresh.mp3', preload: false },
+            phaseEnter: { path: '/sounds/1-6_phasethrough.mp3', preload: false },
+            colorGuide: { path: '/sounds/1-8_colorsequenceguide.mp3', preload: false },
 
-            // Low priority - lazy load (rarely used)
-            splash: { path: '/sounds/2-a_splash.mp3', preload: 'none', pooled: false },
-            hardModeIntro: { path: '/sounds/1-5_hardmode.mp3', preload: 'none', pooled: false },
-            gameOverFail: { path: '/sounds/1-9_gameover(fail).mp3', preload: 'none', pooled: false },
-            gameOverSuccess: { path: '/sounds/1-10_gameover(success).mp3', preload: 'none', pooled: false },
-            levelUp: { path: '/sounds/1-11_levelup.mp3', preload: 'none', pooled: false },
-            hardModeUnlock: { path: '/sounds/1-12_hardmodeopen.mp3', preload: 'none', pooled: false },
+            // Low priority - lazy load
+            splash: { path: '/sounds/2-a_splash.mp3', preload: false },
+            hardModeIntro: { path: '/sounds/1-5_hardmode.mp3', preload: false },
+            gameOverFail: { path: '/sounds/1-9_gameover(fail).mp3', preload: false },
+            gameOverSuccess: { path: '/sounds/1-10_gameover(success).mp3', preload: false },
+            levelUp: { path: '/sounds/1-11_levelup.mp3', preload: false },
+            hardModeUnlock: { path: '/sounds/1-12_hardmodeopen.mp3', preload: false },
 
             // Legacy aliases
-            correct: { path: '/sounds/1-15_correct.mp3', preload: 'auto', pooled: true },
-            wrong: { path: '/sounds/1-13_ incorrect.mp3', preload: 'auto', pooled: true },
-            click: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: 'auto', pooled: true },
+            correct: { path: '/sounds/1-15_correct.mp3', preload: true },
+            wrong: { path: '/sounds/1-13_ incorrect.mp3', preload: true },
+            click: { path: '/sounds/1-7_ingame_buttonclick.mp3', preload: true },
         };
     }
 
-    // Initialize audio on first user interaction (for mobile compatibility)
+    // Initialize Web Audio API on first user interaction
     async init() {
         if (this.initialized) return;
 
-        console.log('🔊 Initializing AudioManager with Audio Pool...');
-
-        // Create pools for high-priority sounds
-        const pooledSounds = Object.entries(this.soundFiles)
-            .filter(([_, config]) => config.pooled);
-
-        for (const [name, config] of pooledSounds) {
-            this._createAudioPool(name, config);
-        }
-
-        // Create single instances for non-pooled high-priority sounds
-        const nonPooledHighPriority = Object.entries(this.soundFiles)
-            .filter(([_, config]) => config.preload === 'auto' && !config.pooled);
-
-        for (const [name, config] of nonPooledHighPriority) {
-            this._createSound(name, config);
-        }
-
-        this.initialized = true;
-        console.log(`🔊 AudioManager initialized: ${pooledSounds.length} pooled sounds (${this.poolSize} instances each), ${nonPooledHighPriority.length} non-pooled`);
-    }
-
-    // Create audio pool for frequently used sounds
-    _createAudioPool(soundName, config) {
-        if (this.audioPools[soundName]) return;
-
-        const pool = [];
-        for (let i = 0; i < this.poolSize; i++) {
-            const audio = new Audio(config.path);
-            audio.preload = 'auto';
-            audio.volume = this.defaultVolume;
-            audio.load(); // Force immediate loading
-            pool.push(audio);
-        }
-
-        this.audioPools[soundName] = {
-            instances: pool,
-            nextIndex: 0
-        };
-
-        console.log(`🔊 Created audio pool for "${soundName}" with ${this.poolSize} instances`);
-    }
-
-    // Get next available instance from pool
-    _getPooledInstance(soundName) {
-        const pool = this.audioPools[soundName];
-        if (!pool) return null;
-
-        const instance = pool.instances[pool.nextIndex];
-        pool.nextIndex = (pool.nextIndex + 1) % pool.instances.length;
-
-        // Reset instance for reuse
-        if (instance.currentTime > 0) {
-            instance.currentTime = 0;
-        }
-
-        return instance;
-    }
-
-    // Create Audio object with specified preload strategy
-    _createSound(soundName, config) {
-        if (this.sounds[soundName]) return this.sounds[soundName];
-
-        const audio = new Audio(config.path);
-        audio.preload = config.preload;
-        audio.volume = this.defaultVolume;
-
-        // For auto-preload sounds, trigger loading immediately
-        if (config.preload === 'auto') {
-            audio.load();
-        }
-
-        this.sounds[soundName] = audio;
-        return audio;
-    }
-
-    // Get or create sound on-demand
-    _getOrCreateSound(soundName) {
-        if (this.sounds[soundName]) {
-            return this.sounds[soundName];
-        }
-
-        const config = this.soundFiles[soundName];
-        if (!config) {
-            console.warn(`Sound not found: ${soundName}`);
-            return null;
-        }
-
-        return this._createSound(soundName, config);
-    }
-
-    // 🎮 FAST PATH: Fire-and-forget 사운드 재생 (클릭 반응속도 최적화)
-    // 초기 버전의 간단한 구조로 복귀 - 인게임 클릭 사운드용
-    playFast(soundName) {
-        if (!this.enabled) return;
-
         try {
-            // Pool에서 즉시 가져오기 (체크 로직 최소화)
-            let audioInstance = this._getPooledInstance(soundName);
+            console.log('🎵 Initializing Web Audio API...');
 
-            if (!audioInstance) {
-                const sound = this._getOrCreateSound(soundName);
-                if (!sound) return;
+            // Create AudioContext
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            this.audioContext = new AudioContextClass();
 
-                audioInstance = sound.cloneNode();
-                audioInstance.volume = sound.volume;
-            }
+            // Create master gain node for volume control
+            this.gainNode = this.audioContext.createGain();
+            this.gainNode.gain.value = this.defaultVolume;
+            this.gainNode.connect(this.audioContext.destination);
 
-            // Fire-and-forget: 즉시 재생, Promise 대기 없음
-            audioInstance.play().catch(() => {
-                // iOS autoplay 차단 무시 (정상 동작)
-            });
+            // Preload high-priority sounds
+            const preloadSounds = Object.entries(this.soundFiles)
+                .filter(([_, config]) => config.preload);
+
+            console.log(`🎵 Preloading ${preloadSounds.length} sounds...`);
+
+            await Promise.all(
+                preloadSounds.map(([name, config]) => this._loadSound(name, config.path))
+            );
+
+            this.initialized = true;
+            console.log('🎵 Web Audio API initialized successfully');
         } catch (err) {
-            // 오류 무시 (사용자 경험에 영향 없음)
+            console.error('Failed to initialize Web Audio API:', err);
         }
     }
 
-    // Optimized play method with instant response using audio pool
+    // Load and decode audio file into AudioBuffer
+    async _loadSound(soundName, path) {
+        try {
+            const response = await fetch(path);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+            this.audioBuffers[soundName] = audioBuffer;
+            console.log(`✓ Loaded: ${soundName}`);
+        } catch (err) {
+            console.warn(`Failed to load sound: ${soundName}`, err);
+        }
+    }
+
+    // 🎮 FAST PATH: Ultra-low latency playback using Web Audio API
+    playFast(soundName) {
+        if (!this.enabled || !this.initialized) return;
+
+        const buffer = this.audioBuffers[soundName];
+        if (!buffer) {
+            // Lazy load if not preloaded
+            const config = this.soundFiles[soundName];
+            if (config && !this.audioBuffers[soundName]) {
+                this._loadSound(soundName, config.path);
+            }
+            return;
+        }
+
+        // 🎵 Create AudioBufferSourceNode for instant playback
+        const source = this.audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.gainNode);
+        source.start(0); // Start immediately, non-blocking!
+
+        // Auto-cleanup after playback
+        source.onended = () => {
+            source.disconnect();
+        };
+    }
+
+    // Play with options (for longer sounds)
     play(soundName, options = {}) {
-        if (!this.enabled) {
+        if (!this.enabled || !this.initialized) {
             return Promise.resolve();
         }
 
-        // Try to get from pool first for instant playback
-        let audioInstance = this._getPooledInstance(soundName);
-
-        // Fallback to traditional method for non-pooled sounds
-        if (!audioInstance) {
-            const sound = this._getOrCreateSound(soundName);
-            if (!sound) {
-                return Promise.resolve();
+        const buffer = this.audioBuffers[soundName];
+        if (!buffer) {
+            // Lazy load
+            const config = this.soundFiles[soundName];
+            if (config) {
+                return this._loadSound(soundName, config.path).then(() => {
+                    return this.play(soundName, options);
+                });
             }
-
-            // For non-pooled sounds, still need to clone
-            audioInstance = sound.cloneNode();
-            audioInstance.volume = sound.volume;
+            return Promise.resolve();
         }
 
-        // 📱 iOS 최적화: 즉시 재생 시도 (사용자 상호작용 컨텍스트에서만 동작)
-        const playPromise = audioInstance.play();
+        const source = this.audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.gainNode);
 
-        // Handle errors silently
-        if (playPromise !== undefined) {
-            playPromise.catch(err => {
-                // iOS에서 autoplay 차단은 정상적인 동작
-                if (!this.isIOS) {
-                    console.warn('Audio play blocked:', soundName);
-                }
-            });
+        // Apply maxDuration if specified
+        if (options.maxDuration) {
+            source.start(0, 0, options.maxDuration);
+        } else {
+            source.start(0);
         }
 
-        // Return promise for backwards compatibility
+        // Return promise that resolves when sound ends
         return new Promise((resolve) => {
-            let timeoutId = null;
-
-            // Handle duration limit
-            if (options.maxDuration) {
-                timeoutId = setTimeout(() => {
-                    audioInstance.pause();
-                    audioInstance.currentTime = 0;
-                    resolve();
-                }, options.maxDuration * 1000);
-            }
-
-            // Cleanup when sound ends
-            audioInstance.addEventListener('ended', () => {
-                if (timeoutId) clearTimeout(timeoutId);
+            source.onended = () => {
+                source.disconnect();
                 resolve();
-            }, { once: true });
+            };
         });
     }
 
@@ -232,25 +166,26 @@ class AudioManager {
         }
     }
 
-    // Preload all sounds (call on splash screen or first interaction)
-    preloadAll() {
-        console.log('🔊 Preloading all sounds...');
-        Object.entries(this.soundFiles).forEach(([name, config]) => {
-            this._createSound(name, config);
-        });
+    // Preload all sounds
+    async preloadAll() {
+        console.log('🎵 Preloading all sounds...');
+        const promises = Object.entries(this.soundFiles).map(([name, config]) =>
+            this._loadSound(name, config.path)
+        );
+        await Promise.all(promises);
     }
 
     // ===== 기존 호환성 메서드 (Fast Path로 최적화) =====
     playCorrect() {
-        this.playFast('correct');  // 🎮 Fire-and-forget
+        this.playFast('correct');
     }
 
     playWrong() {
-        this.playFast('wrong');  // 🎮 Fire-and-forget
+        this.playFast('wrong');
     }
 
     playClick() {
-        this.playFast('click');  // 🎮 Fire-and-forget
+        this.playFast('click');
     }
 
     // ===== 화면 전환 및 UI =====
@@ -285,7 +220,7 @@ class AudioManager {
 
     // ===== 인게임 상호작용 (Fast Path로 최적화) =====
     playInGameClick() {
-        this.playFast('inGameClick');  // 🎮 Fire-and-forget
+        this.playFast('inGameClick');
     }
 
     playColorGuide() {
@@ -293,16 +228,16 @@ class AudioManager {
     }
 
     playIncorrect() {
-        this.playFast('incorrect');  // 🎮 Fire-and-forget
+        this.playFast('incorrect');
     }
 
     playCorrectSound() {
-        this.playFast('correctSound');  // 🎮 Fire-and-forget
+        this.playFast('correctSound');
     }
 
     // ===== 일반 UI 버튼 (Fast Path로 최적화) =====
     playButtonClick() {
-        this.playFast('buttonClick');  // 🎮 Fire-and-forget
+        this.playFast('buttonClick');
     }
 
     // ===== 게임 결과 및 보상 =====
@@ -345,23 +280,13 @@ class AudioManager {
         return this.enabled;
     }
 
-    // Set volume for all sounds (including pooled instances)
+    // Set volume (0.0 to 1.0)
     setVolume(volume) {
         const clampedVolume = Math.max(0, Math.min(1, volume));
-
-        // Update non-pooled sounds
-        Object.values(this.sounds).forEach(sound => {
-            sound.volume = clampedVolume;
-        });
-
-        // Update all pooled instances
-        Object.values(this.audioPools).forEach(pool => {
-            pool.instances.forEach(instance => {
-                instance.volume = clampedVolume;
-            });
-        });
-
         this.defaultVolume = clampedVolume;
+        if (this.gainNode) {
+            this.gainNode.gain.value = clampedVolume;
+        }
     }
 }
 

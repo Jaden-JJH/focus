@@ -36,6 +36,9 @@ export default class GameHard {
         sessionStorage.removeItem('game_token_time')
         console.log('✅ Hard mode game token verified - starting game')
 
+        // 🎨 하드모드 테마 적용 (body에 hard-mode 클래스 추가)
+        document.body.classList.add('hard-mode')
+
         this.container.innerHTML = `
       <div class="game-area">
         <div class="game-header">
@@ -118,6 +121,8 @@ export default class GameHard {
     }
 
     destroy() {
+        // 🎨 하드모드 테마는 Result 화면에서 관리 (여기서는 제거하지 않음)
+
         if (this.engine) {
             this.engine.cleanup()
         }

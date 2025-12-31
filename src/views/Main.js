@@ -66,13 +66,12 @@ export default class Main {
   }
 
   setupEventDelegation() {
-    // BGM 버튼 클릭 쿨다운 (연속 클릭 방지)
+    // 클릭 쿨다운 (연속 클릭 방지)
     let bgmLastClickTime = 0
     const BGM_CLICK_COOLDOWN = 300 // 0.3초 쿨다운
 
-    // Use event delegation on document to catch all clicks
-    // This persists even when innerHTML replaces DOM elements
-    document.addEventListener('click', async (e) => {
+    // Store event handler for cleanup
+    this.clickHandler = async (e) => {
       const target = e.target
 
       // Logout button
@@ -144,33 +143,24 @@ export default class Main {
 
       // Play button
       if (target.id === 'play-btn') {
-        console.log('🎮 Play button clicked')
         audioManager.playButtonClick()
         const _state = store.getState()
         const user = _state.user
         const isHardMode = _state.isHardMode || false
 
-        console.log('🔍 User state:', { isGuest: user?.isGuest, isHardMode })
-
         // Guest user flow
         if (user?.isGuest) {
-          console.log('👤 Guest user detected')
           const sessionData = localStorage.getItem('guest_session_used')
           const sessionUsed = sessionData ? JSON.parse(sessionData).used : false
 
-          console.log('🔍 Session check:', { sessionUsed, sessionData })
-
           // 🚧 임시로 세션 체크 비활성화 (테스트용)
           // if (sessionUsed) {
-          //   // Session used - prompt login
-          //   console.log('⚠️ Session already used - redirecting to login')
           //   alert('체험 플레이가 종료되었습니다. 로그인해주세요.')
           //   await authService.signInWithGoogle()
           //   return
           // }
 
           // Mark session as used
-          console.log('✅ Marking session as used')
           localStorage.setItem('guest_session_used', JSON.stringify({
             used: true,
             timestamp: Date.now()
@@ -181,16 +171,11 @@ export default class Main {
           sessionStorage.setItem('game_token', gameToken)
           sessionStorage.setItem('game_token_time', Date.now().toString())
 
-          console.log('🎫 Game token generated:', { gameToken, time: Date.now() })
-          console.log('🚀 Navigating to /game...')
-
           try {
             const router = await import('../core/router.js')
-            console.log('✅ Router module loaded')
             router.navigateTo('/game')
-            console.log('✅ navigateTo called')
           } catch (error) {
-            console.error('❌ Router import/navigate failed:', error)
+            console.error('Router navigation failed:', error)
             alert('라우팅 실패: ' + error.message)
           }
         } else {
@@ -370,7 +355,10 @@ export default class Main {
         if (modal) modal.remove()
         return
       }
-    })
+    }
+
+    // Add event listener to document
+    document.addEventListener('click', this.clickHandler)
   }
 
   setupScrollObserver() {
@@ -488,7 +476,6 @@ export default class Main {
     // So if !user, we probably should go to Splash.
     if (!user) {
       // 🔒 비로그인 사용자 자동 리다이렉트
-      console.log('⚠️ No user session - redirecting to splash')
       import('../core/router.js').then(r => r.navigateTo('/'))
       return
     }
@@ -872,7 +859,7 @@ export default class Main {
 
            <!-- My Rank Section (Fixed) -->
            ${!user.isGuest ? `
-           <div id="my-rank-section" style="flex-shrink: 0; background: var(--gray-800); border: 1px solid var(--theme-primary); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-2); transition: border-color var(--theme-transition); animation: myRankPulse 2s ease-in-out infinite;">
+           <div id="my-rank-section" style="flex-shrink: 0; background: var(--gray-800); border: 1px solid var(--theme-primary); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-2); transition: border-color var(--theme-transition);">
              <div id="my-rank-info" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); align-items: center;">
                <div style="font-size: var(--text-sm); color: var(--gray-400); text-align: center;">Loading...</div>
              </div>
@@ -1823,6 +1810,12 @@ export default class Main {
   destroy() {
     // 🎵 배경음악 정지 (즉시 정지 - 게임으로 전환 시)
     musicManager.stopMusic()
+
+    // Cleanup event listener
+    if (this.clickHandler) {
+      document.removeEventListener('click', this.clickHandler)
+      this.clickHandler = null
+    }
 
     // Cleanup subscription
     if (this.unsub) {

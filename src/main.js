@@ -12,6 +12,9 @@ async function init() {
     return
   }
 
+  // 🔊 Initialize AudioManager early to preload audio pools
+  await audioManager.init()
+
   // Initialize Router
   initRouter(app)
 
@@ -20,7 +23,6 @@ async function init() {
   const refCode = urlParams.get('ref')
   if (refCode) {
     localStorage.setItem('referral_code', refCode)
-    console.log('Referral code detected:', refCode)
   }
 
   // 1. Deterministic Session Check on Init
@@ -46,8 +48,6 @@ async function init() {
         localStorage.removeItem('referral_code')
       }
       if (user) {
-        console.log('Session restored:', user.nickname)
-
         // 📊 Analytics: Set User ID, Level & Nickname for GA4
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({
@@ -86,14 +86,11 @@ async function init() {
   document.addEventListener('visibilitychange', async () => {
     if (!document.hidden) {
       // Page became visible again (user returned to app)
-      console.log('Page visible - checking session...')
       try {
         const currentUser = await authService.getUser()
         if (currentUser) {
           const user = await dataService.fetchUserData(currentUser.id)
           if (user) {
-            console.log('Session still valid:', user.nickname)
-
             // 📊 Analytics: Update User ID, Level & Nickname for GA4
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({

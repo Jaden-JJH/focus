@@ -37,6 +37,13 @@ export default class Result {
         const { round, xp, initialRank, isHardMode } = state
         const user = store.getState().user
 
+        // 🎨 하드모드 테마 유지 (결과 화면에서도 빨간색 유지)
+        if (isHardMode) {
+            document.body.classList.add('hard-mode')
+        } else {
+            document.body.classList.remove('hard-mode')
+        }
+
         // 🔊 1-9/1-10: GameOver 성공/실패 효과음
         if (user && round && !user.isGuest) {
             const mode = isHardMode ? 'hard' : 'normal';
