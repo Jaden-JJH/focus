@@ -1016,32 +1016,44 @@ export default class Result {
                 background: white; opacity: 0; pointer-events: none;
             "></div>
 
-            <div style="font-size: 5rem; opacity: 0; animation: slideUp 0.5s ease-out 0.3s forwards;">🏆</div>
-
-            <h1 style="
-                font-size: 2.5rem;
-                color: ${primaryColor};
-                text-shadow: 0 0 20px ${glowColor};
-                margin: 20px 0;
-                opacity: 0;
-                animation: slideUp 0.5s ease-out 0.5s forwards, recordPulse 2s ease-in-out infinite;
-            ">NEW ROUND RECORD!</h1>
-
             <div style="
-                font-size: 4rem;
-                font-weight: bold;
-                color: white;
-                opacity: 0;
-                animation: slideUp 0.5s ease-out 0.8s forwards;
-            ">Round ${round}</div>
+                padding: 0 20px;
+                display: flex; flex-direction: column; align-items: center;
+                max-width: 90vw;
+            ">
+                <div style="
+                    font-size: clamp(3rem, 10vw, 5rem);
+                    opacity: 0;
+                    animation: slideUp 0.5s ease-out 0.3s forwards;
+                ">🏆</div>
 
-            <div id="record-message" style="
-                margin-top: 30px;
-                font-size: 1.5rem;
-                color: ${primaryColor};
-                text-align: center;
-                opacity: 0;
-            "></div>
+                <h1 style="
+                    font-size: clamp(1.5rem, 6vw, 2.5rem);
+                    color: ${primaryColor};
+                    text-shadow: 0 0 20px ${glowColor};
+                    margin: 20px 0;
+                    opacity: 0;
+                    animation: slideUp 0.5s ease-out 0.5s forwards, recordPulse 2s ease-in-out infinite;
+                    text-align: center;
+                    word-break: keep-all;
+                ">NEW ROUND RECORD!</h1>
+
+                <div style="
+                    font-size: clamp(2.5rem, 8vw, 4rem);
+                    font-weight: bold;
+                    color: white;
+                    opacity: 0;
+                    animation: slideUp 0.5s ease-out 0.8s forwards;
+                ">Round ${round}</div>
+
+                <div id="record-message" style="
+                    margin-top: 30px;
+                    font-size: clamp(1rem, 4vw, 1.5rem);
+                    color: ${primaryColor};
+                    text-align: center;
+                    opacity: 0;
+                "></div>
+            </div>
         `
         this.container.appendChild(overlay)
 
@@ -1113,32 +1125,44 @@ export default class Result {
                 background: white; opacity: 0; pointer-events: none;
             "></div>
 
-            <div style="font-size: 5rem; opacity: 0; animation: slideUp 0.5s ease-out 0.3s forwards;">🔥</div>
-
-            <h1 style="
-                font-size: 2.5rem;
-                color: ${primaryColor};
-                text-shadow: 0 0 20px ${glowColor};
-                margin: 20px 0;
-                opacity: 0;
-                animation: slideUp 0.5s ease-out 0.5s forwards, comboPulse 2s ease-in-out infinite;
-            ">MAX COMBO RECORD!</h1>
-
             <div style="
-                font-size: 4rem;
-                font-weight: bold;
-                color: white;
-                opacity: 0;
-                animation: slideUp 0.5s ease-out 0.8s forwards;
-            ">${combo} Combo</div>
+                padding: 0 20px;
+                display: flex; flex-direction: column; align-items: center;
+                max-width: 90vw;
+            ">
+                <div style="
+                    font-size: clamp(3rem, 10vw, 5rem);
+                    opacity: 0;
+                    animation: slideUp 0.5s ease-out 0.3s forwards;
+                ">🔥</div>
 
-            <div id="combo-message" style="
-                margin-top: 30px;
-                font-size: 1.5rem;
-                color: ${primaryColor};
-                text-align: center;
-                opacity: 0;
-            "></div>
+                <h1 style="
+                    font-size: clamp(1.5rem, 6vw, 2.5rem);
+                    color: ${primaryColor};
+                    text-shadow: 0 0 20px ${glowColor};
+                    margin: 20px 0;
+                    opacity: 0;
+                    animation: slideUp 0.5s ease-out 0.5s forwards, comboPulse 2s ease-in-out infinite;
+                    text-align: center;
+                    word-break: keep-all;
+                ">MAX COMBO RECORD!</h1>
+
+                <div style="
+                    font-size: clamp(2.5rem, 8vw, 4rem);
+                    font-weight: bold;
+                    color: white;
+                    opacity: 0;
+                    animation: slideUp 0.5s ease-out 0.8s forwards;
+                ">${combo} Combo</div>
+
+                <div id="combo-message" style="
+                    margin-top: 30px;
+                    font-size: clamp(1rem, 4vw, 1.5rem);
+                    color: ${primaryColor};
+                    text-align: center;
+                    opacity: 0;
+                "></div>
+            </div>
         `
         this.container.appendChild(overlay)
 
