@@ -1854,6 +1854,12 @@ export default class Main {
 
   async showUserInfoPopup(userId) {
     try {
+      // 기존 팝업이 있으면 먼저 제거
+      const existingBackdrop = document.getElementById('user-info-backdrop')
+      if (existingBackdrop) {
+        existingBackdrop.remove()
+      }
+
       // 🔊 팝업 오픈 사운드
       audioManager.playPopupOpen()
 
@@ -1998,9 +2004,15 @@ export default class Main {
         backdrop.style.opacity = '1'
       })
 
+      // 모달 내부 클릭 시 이벤트 버블링 차단
+      const modal = backdrop.querySelector('.modal')
+      modal.addEventListener('click', (e) => {
+        e.stopPropagation()
+      })
+
       // 닫기 이벤트
       const closeBtn = backdrop.querySelector('#close-user-info')
-      closeBtn.addEventListener('click', () => {
+      closeBtn.addEventListener('click', (e) => {
         audioManager.playPopupClose() // 🔊 팝업 닫기 사운드
         backdrop.style.opacity = '0'
         setTimeout(() => backdrop.remove(), 300)
@@ -2008,11 +2020,9 @@ export default class Main {
 
       // 백드롭 클릭으로 닫기
       backdrop.addEventListener('click', (e) => {
-        if (e.target === backdrop) {
-          audioManager.playPopupClose() // 🔊 팝업 닫기 사운드
-          backdrop.style.opacity = '0'
-          setTimeout(() => backdrop.remove(), 300)
-        }
+        audioManager.playPopupClose() // 🔊 팝업 닫기 사운드
+        backdrop.style.opacity = '0'
+        setTimeout(() => backdrop.remove(), 300)
       })
     } catch (error) {
       console.error('유저 정보 팝업 오류:', error)
