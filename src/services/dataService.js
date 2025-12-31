@@ -32,7 +32,8 @@ export const dataService = {
             user: data,
             coins: totalCoins,
             level: data.level,
-            totalXp: data.total_xp
+            totalXp: data.total_xp,
+            maxCombo: data.max_combo || 0
         })
 
         return data
@@ -189,7 +190,7 @@ export const dataService = {
         return false
     },
 
-    async saveGameRecord(userId, round, xp, mode = 'normal') {
+    async saveGameRecord(userId, round, xp, mode = 'normal', maxCombo = 0) {
         // 🔒 Security: xp_earned 값은 서버 Trigger에서 재계산됩니다.
         // 클라이언트에서 전달한 xp 값은 무시되고, calculate_xp_for_round() 함수로 재계산됩니다.
         // 이는 게임 결과 조작을 방지하기 위한 보안 조치입니다.
@@ -201,7 +202,8 @@ export const dataService = {
                 user_id: userId,
                 max_round: round,
                 xp_earned: xp,  // ← 이 값은 무시되고 서버에서 재계산됨
-                mode: mode
+                mode: mode,
+                max_combo: maxCombo
             })
 
         if (error) {
@@ -213,7 +215,7 @@ export const dataService = {
         // Fetch latest first to be safe
         const { data: user, error: userError } = await supabase
             .from('users')
-            .select('total_xp, level')
+            .select('total_xp, level, max_combo')
             .eq('id', userId)
             .single()
 
@@ -239,20 +241,34 @@ export const dataService = {
             }
         }
 
+        // Check if new max combo record
+        const currentMaxCombo = user.max_combo || 0
+        const needsComboUpdate = maxCombo > currentMaxCombo
+
+        const updateData = {
+            total_xp: newTotalXp,
+            level: newLevel
+        }
+
+        if (needsComboUpdate) {
+            updateData.max_combo = maxCombo
+        }
+
         const { error: updateError } = await supabase
             .from('users')
-            .update({
-                total_xp: newTotalXp,
-                level: newLevel
-            })
+            .update(updateData)
             .eq('id', userId)
 
         if (!updateError) {
             // Update local store
-            store.setState({
+            const storeUpdate = {
                 totalXp: newTotalXp,
                 level: newLevel
-            })
+            }
+            if (needsComboUpdate) {
+                storeUpdate.maxCombo = maxCombo
+            }
+            store.setState(storeUpdate)
         }
     },
 
@@ -466,5 +482,49 @@ export const dataService = {
         }
 
         return chart
+    },
+
+    async fetchUserStats(userId) {
+        try {
+            // 게임 기록 조회
+            const { data: records, error: recordsError } = await supabase
+                .from('game_records')
+                .select('played_at')
+                .eq('user_id', userId)
+
+            if (recordsError) {
+                console.error('Error fetching game records:', recordsError)
+                return null
+            }
+
+            // 총 플레이 일수 계산 (중복 제거)
+            const uniqueDays = new Set(
+                records.map(r => new Date(r.played_at).toISOString().split('T')[0])
+            )
+
+            // 유저 정보 조회
+            const { data: user, error: userError } = await supabase
+                .from('users')
+                .select('nickname, level, max_combo, total_xp')
+                .eq('id', userId)
+                .single()
+
+            if (userError) {
+                console.error('Error fetching user data:', userError)
+                return null
+            }
+
+            return {
+                nickname: user.nickname,
+                level: user.level,
+                totalXp: user.total_xp || 0,
+                maxCombo: user.max_combo || 0,
+                totalPlayCount: records.length,
+                totalPlayDays: uniqueDays.size
+            }
+        } catch (error) {
+            console.error('Error in fetchUserStats:', error)
+            return null
+        }
     }
 }

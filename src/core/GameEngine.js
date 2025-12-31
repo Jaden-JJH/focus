@@ -40,7 +40,8 @@ export class GameEngine {
             history: [], // Last N games to check constraints
             startTime: null, // Track game start time for focus duration
             totalFocusTime: 0, // Total time spent focusing
-            combo: 0 // 콤보 카운터
+            combo: 0, // 콤보 카운터
+            maxCombo: 0 // 최대 콤보 기록
         }
 
         // 🎮 RAF-based game loop
@@ -753,6 +754,10 @@ export class GameEngine {
 
         if (timePercent >= requiredPercent) {
             this.state.combo++  // 기준 달성: 콤보 증가
+            // 최대 콤보 갱신
+            if (this.state.combo > this.state.maxCombo) {
+                this.state.maxCombo = this.state.combo
+            }
         } else {
             this.state.combo = 0  // 기준 미달: 콤보 리셋
         }
@@ -1715,7 +1720,8 @@ export class GameEngine {
 
         this.onGameOver({
             round: this.state.round,
-            xp: earnedXp
+            xp: earnedXp,
+            maxCombo: this.state.maxCombo
         })
     }
 

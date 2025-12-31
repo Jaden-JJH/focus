@@ -34,7 +34,7 @@ export default class Result {
 
     async render() {
         const state = history.state || {} // Router pushState data
-        const { round, xp, initialRank, isHardMode } = state
+        const { round, xp, initialRank, isHardMode, maxCombo } = state
         const user = store.getState().user
 
         // 🎨 하드모드 테마 유지 (결과 화면에서도 빨간색 유지)
@@ -74,10 +74,20 @@ export default class Result {
         <div class="main-content-scroll">
         <!-- Result Card with unified width -->
         <div class="result-card" style="width: 100%; max-width: 400px; margin: 8px auto 16px; padding: 12px 16px; box-sizing: border-box;">
-            <div class="result-row" style="margin-bottom: 6px; font-size: 0.95rem;">
-                <span>라운드</span>
-                <span class="value">${round || 0}</span>
+            <!-- 2열 레이아웃: 라운드 & 최대 콤보 -->
+            <div style="display: flex; gap: 16px; margin-bottom: 6px;">
+                <div class="result-row" style="flex: 1; margin: 0; font-size: 0.95rem;">
+                    <span>라운드</span>
+                    <span class="value">${round || 0}</span>
+                </div>
+                <div class="result-row" style="flex: 1; margin: 0; font-size: 0.95rem;">
+                    <span>최대 콤보</span>
+                    <span class="value" style="color: ${(maxCombo || 0) >= 10 ? '#fbbf24' : 'inherit'}">
+                        ${maxCombo || 0}
+                    </span>
+                </div>
             </div>
+            <!-- 경험치 (한 줄) -->
             <div class="result-row" style="margin-bottom: 6px; font-size: 0.95rem;">
                 <span>경험치</span>
                 <span class="value">+${xp || 0} XP</span>
@@ -359,16 +369,19 @@ export default class Result {
         if (user && round && !user.isGuest) {
             const oldLevel = user.level
             const oldTotalXp = user.total_xp || 0
+            const oldMaxCombo = user.max_combo || 0
             const mode = isHardMode ? 'hard' : 'normal'
+            const oldMaxRound = mode === 'hard' ? (user.max_round_hard || 0) : (user.max_round_normal || 0)
 
             try {
                 // 🔒 Security: xp 값은 참고용이며, 실제로는 서버에서 재계산됩니다.
                 // Supabase Trigger가 max_round 기반으로 정확한 XP를 계산합니다.
-                await dataService.saveGameRecord(user.id, round, xp, mode)
+                await dataService.saveGameRecord(user.id, round, xp, mode, maxCombo || 0)
 
                 const newUser = store.getState().user
                 const newLevel = newUser.level
                 const newTotalXp = newUser.total_xp || 0
+                const newMaxCombo = newUser.max_combo || 0
 
                 // Animate XP Progress Bar
                 this.animateXpProgress(oldTotalXp, newTotalXp, oldLevel, newLevel, xp)
@@ -377,11 +390,26 @@ export default class Result {
                 const newRankData = await dataService.getMyRank(user.id, mode)
                 this.showRankMovement(initialRank, newRankData.rank, newRankData.maxRound)
 
-                // Show Level Up if applicable
-                if (newLevel > oldLevel) {
-                    setTimeout(() => {
-                        this.showLevelUp(newLevel)
-                    }, 1800) // Show after XP animation completes
+                // 신기록 체크
+                const didLevelUp = newLevel > oldLevel
+                const didBreakRoundRecord = round > oldMaxRound
+                const didBreakComboRecord = (maxCombo || 0) > oldMaxCombo && (maxCombo || 0) > 0
+
+                // 순차 팝업 타이밍 (레벨업 → 라운드 신기록 → 콤보 신기록)
+                let delay = 1800  // XP 애니메이션 후
+
+                if (didLevelUp) {
+                    setTimeout(() => this.showLevelUp(newLevel), delay)
+                    delay += 3500  // 레벨업 팝업 3초 + 여유 0.5초
+                }
+
+                if (didBreakRoundRecord) {
+                    setTimeout(() => this.showMaxRoundRecord(round, mode), delay)
+                    delay += 3500
+                }
+
+                if (didBreakComboRecord) {
+                    setTimeout(() => this.showMaxComboRecord(maxCombo), delay)
                 }
             } catch (e) {
                 console.error("Failed to save record", e)
@@ -950,5 +978,199 @@ export default class Result {
         })
 
         setTimeout(() => confetti.remove(), duration)
+    }
+
+    showMaxRoundRecord(round, mode) {
+        // 🔊 라운드 신기록 효과음
+        audioManager.playLevelUp();
+
+        const state = store.getState()
+        const isHardMode = state.isHardMode || false
+        const primaryColor = '#fbbf24' // 금색
+        const glowColor = 'rgba(251, 191, 36, 0.6)'
+
+        const overlay = document.createElement('div')
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        `
+        overlay.innerHTML = `
+            <style>
+                @keyframes recordPulse {
+                    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px ${glowColor}); }
+                    50% { transform: scale(1.05); filter: drop-shadow(0 0 30px ${glowColor}); }
+                }
+                @keyframes slideUp {
+                    0% { transform: translateY(20px); opacity: 0; }
+                    100% { transform: translateY(0); opacity: 1; }
+                }
+            </style>
+
+            <div id="flash-effect" style="
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: white; opacity: 0; pointer-events: none;
+            "></div>
+
+            <div style="font-size: 5rem; opacity: 0; animation: slideUp 0.5s ease-out 0.3s forwards;">🏆</div>
+
+            <h1 style="
+                font-size: 2.5rem;
+                color: ${primaryColor};
+                text-shadow: 0 0 20px ${glowColor};
+                margin: 20px 0;
+                opacity: 0;
+                animation: slideUp 0.5s ease-out 0.5s forwards, recordPulse 2s ease-in-out infinite;
+            ">NEW ROUND RECORD!</h1>
+
+            <div style="
+                font-size: 4rem;
+                font-weight: bold;
+                color: white;
+                opacity: 0;
+                animation: slideUp 0.5s ease-out 0.8s forwards;
+            ">Round ${round}</div>
+
+            <div id="record-message" style="
+                margin-top: 30px;
+                font-size: 1.5rem;
+                color: ${primaryColor};
+                text-align: center;
+                opacity: 0;
+            "></div>
+        `
+        this.container.appendChild(overlay)
+
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1'
+        })
+
+        const timeline = [
+            { time: 0, fn: () => {
+                const flash = overlay.querySelector('#flash-effect')
+                flash.style.transition = 'opacity 0.2s'
+                flash.style.opacity = '0.3'
+                setTimeout(() => flash.style.opacity = '0', 200)
+            }},
+            { time: 1200, fn: () => {
+                for (let i = 0; i < 100; i++) {
+                    setTimeout(() => this.createConfetti(true), i * 20)
+                }
+            }},
+            { time: 2000, fn: () => {
+                const msgEl = overlay.querySelector('#record-message')
+                msgEl.style.animation = 'slideUp 0.3s ease-out forwards'
+                msgEl.style.opacity = '1'
+                msgEl.innerText = '축하합니다! 🎉'
+            }},
+            { time: 3000, fn: () => {
+                overlay.style.opacity = '0'
+                overlay.style.transition = 'opacity 0.5s'
+                setTimeout(() => overlay.remove(), 500)
+            }}
+        ]
+
+        timeline.forEach(step => setTimeout(step.fn, step.time))
+    }
+
+    showMaxComboRecord(combo) {
+        // 🔊 콤보 신기록 효과음
+        audioManager.playLevelUp();
+
+        const state = store.getState()
+        const isHardMode = state.isHardMode || false
+        const primaryColor = isHardMode ? '#ef4444' : '#7c4dff'
+        const glowColor = isHardMode ? 'rgba(239, 68, 68, 0.6)' : 'rgba(124, 77, 255, 0.6)'
+
+        const overlay = document.createElement('div')
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        `
+        overlay.innerHTML = `
+            <style>
+                @keyframes comboPulse {
+                    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px ${glowColor}); }
+                    50% { transform: scale(1.05); filter: drop-shadow(0 0 30px ${glowColor}); }
+                }
+                @keyframes slideUp {
+                    0% { transform: translateY(20px); opacity: 0; }
+                    100% { transform: translateY(0); opacity: 1; }
+                }
+            </style>
+
+            <div id="flash-effect" style="
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: white; opacity: 0; pointer-events: none;
+            "></div>
+
+            <div style="font-size: 5rem; opacity: 0; animation: slideUp 0.5s ease-out 0.3s forwards;">🔥</div>
+
+            <h1 style="
+                font-size: 2.5rem;
+                color: ${primaryColor};
+                text-shadow: 0 0 20px ${glowColor};
+                margin: 20px 0;
+                opacity: 0;
+                animation: slideUp 0.5s ease-out 0.5s forwards, comboPulse 2s ease-in-out infinite;
+            ">MAX COMBO RECORD!</h1>
+
+            <div style="
+                font-size: 4rem;
+                font-weight: bold;
+                color: white;
+                opacity: 0;
+                animation: slideUp 0.5s ease-out 0.8s forwards;
+            ">${combo} Combo</div>
+
+            <div id="combo-message" style="
+                margin-top: 30px;
+                font-size: 1.5rem;
+                color: ${primaryColor};
+                text-align: center;
+                opacity: 0;
+            "></div>
+        `
+        this.container.appendChild(overlay)
+
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1'
+        })
+
+        const timeline = [
+            { time: 0, fn: () => {
+                const flash = overlay.querySelector('#flash-effect')
+                flash.style.transition = 'opacity 0.2s'
+                flash.style.opacity = '0.3'
+                setTimeout(() => flash.style.opacity = '0', 200)
+            }},
+            { time: 1200, fn: () => {
+                for (let i = 0; i < 100; i++) {
+                    setTimeout(() => this.createConfetti(false), i * 20)
+                }
+            }},
+            { time: 2000, fn: () => {
+                const msgEl = overlay.querySelector('#combo-message')
+                msgEl.style.animation = 'slideUp 0.3s ease-out forwards'
+                msgEl.style.opacity = '1'
+                msgEl.innerText = '완벽합니다! 🎊'
+            }},
+            { time: 3000, fn: () => {
+                overlay.style.opacity = '0'
+                overlay.style.transition = 'opacity 0.5s'
+                setTimeout(() => overlay.remove(), 500)
+            }}
+        ]
+
+        timeline.forEach(step => setTimeout(step.fn, step.time))
     }
 }

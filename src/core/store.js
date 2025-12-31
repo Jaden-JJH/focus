@@ -10,6 +10,7 @@ class Store {
             level: 0,
             dailyCoins: 0,
             weeklyMaxRound: 0,
+            maxCombo: 0, // 최대 콤보 기록
             isLoading: true, // Start loading immediately
             isHardMode: false // 하드모드 토글 상태
         }

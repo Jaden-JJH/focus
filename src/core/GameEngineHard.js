@@ -48,7 +48,8 @@ export class GameEngineHard {
             history: [],
             startTime: null,
             totalFocusTime: 0,
-            combo: 0 // 콤보 카운터
+            combo: 0, // 콤보 카운터
+            maxCombo: 0 // 최대 콤보 기록
         }
 
         // 🎮 RAF-based game loop
@@ -866,6 +867,10 @@ export class GameEngineHard {
 
         if (timePercent >= requiredPercent) {
             this.state.combo++  // 기준 달성: 콤보 증가
+            // 최대 콤보 갱신
+            if (this.state.combo > this.state.maxCombo) {
+                this.state.maxCombo = this.state.combo
+            }
         } else {
             this.state.combo = 0  // 기준 미달: 콤보 리셋
         }
@@ -1900,6 +1905,7 @@ export class GameEngineHard {
         this.onGameOver({
             round: this.state.round,
             xp: earnedXp,
+            maxCombo: this.state.maxCombo,
             isHardMode: true // 하드모드 표시
         })
     }

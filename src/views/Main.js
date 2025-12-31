@@ -1496,7 +1496,7 @@ export default class Main {
         else if (lv === 61) animation = isHard ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
 
         return `
-              <div class="rank-item" style="display:flex; justify-content:space-between; align-items: center; padding: var(--space-2) 0; border-bottom:1px solid var(--gray-700); opacity: 0; animation: rankItemSlide 0.4s ease-out forwards; animation-delay: ${0.5 + idx * 0.05}s;">
+              <div class="rank-item" data-user-id="${r.user_id}" style="display:flex; justify-content:space-between; align-items: center; padding: var(--space-2) 0; border-bottom:1px solid var(--gray-700); opacity: 0; animation: rankItemSlide 0.4s ease-out forwards; animation-delay: ${0.5 + idx * 0.05}s; cursor: pointer; transition: background 0.2s;">
                   <div style="display: flex; align-items: center; gap: var(--space-2);">
                       <div style="
                         width: 28px;
@@ -1527,6 +1527,28 @@ export default class Main {
               </div>
           `;
       }).join('')
+
+      // 랭킹 아이템 클릭 이벤트 추가
+      setTimeout(() => {
+        const rankItems = listEl.querySelectorAll('.rank-item')
+        rankItems.forEach(item => {
+          item.addEventListener('click', async (e) => {
+            e.stopPropagation()
+            audioManager.playButtonClick() // 🔊 클릭 사운드
+            const userId = item.getAttribute('data-user-id')
+            if (userId) {
+              await this.showUserInfoPopup(userId)
+            }
+          })
+          // 호버 효과
+          item.addEventListener('mouseenter', () => {
+            item.style.background = 'rgba(255,255,255,0.05)'
+          })
+          item.addEventListener('mouseleave', () => {
+            item.style.background = 'transparent'
+          })
+        })
+      }, 600) // 애니메이션 후 이벤트 추가
 
       // Fetch my rank (if not guest) (모드별)
     if (user && !user.isGuest) {
@@ -1827,6 +1849,173 @@ export default class Main {
     if (this.scrollObserver) {
       this.scrollObserver.disconnect()
       this.scrollObserver = null
+    }
+  }
+
+  async showUserInfoPopup(userId) {
+    try {
+      // 🔊 팝업 오픈 사운드
+      audioManager.playPopupOpen()
+
+      // 유저 정보 가져오기
+      const stats = await dataService.fetchUserStats(userId)
+      if (!stats) {
+        console.error('유저 정보를 불러올 수 없습니다')
+        return
+      }
+
+      // 레벨 정보 가져오기
+      const levelInfo = LEVELS.getLevelInfo(stats.level)
+      const state = store.getState()
+      const isHardMode = state.isHardMode || false
+
+      // 레벨 배지 스타일 (Result.js 패턴)
+      let badgeGradient
+      if (stats.level < 10) badgeGradient = isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)'
+      else if (stats.level < 40) badgeGradient = isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)'
+      else if (stats.level < 50) badgeGradient = isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #9d6fff 0%, #7c4dff 50%, #6a3de8 100%)'
+      else if (stats.level < 60) badgeGradient = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+      else if (stats.level === 60) badgeGradient = 'linear-gradient(135deg, #1e1e1e 0%, #0a0a0a 100%)'
+      else badgeGradient = 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)'
+
+      let badgeColor = 'white'
+      if (stats.level >= 50 && stats.level < 60) badgeColor = '#1e1e1e'
+      if (stats.level === 61) badgeColor = isHardMode ? '#ef4444' : '#7c4dff'
+
+      // 모달 생성
+      const backdrop = document.createElement('div')
+      backdrop.id = 'user-info-backdrop'
+      backdrop.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s;
+      `
+
+      backdrop.innerHTML = `
+        <div class="modal" style="
+          background: var(--gray-800);
+          border-radius: var(--radius-lg);
+          padding: var(--space-6);
+          max-width: 400px;
+          width: 90%;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+          position: relative;
+        ">
+          <!-- 레벨 이미지 -->
+          <div style="text-align: center; margin-bottom: var(--space-4);">
+            <img src="${LEVELS.getLevelImage(stats.level)}" alt="Level ${stats.level}" style="
+              width: 120px;
+              height: 120px;
+              border-radius: 16px;
+              object-fit: cover;
+              box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            "/>
+          </div>
+
+          <!-- 레벨 뱃지 -->
+          <div style="text-align: center; margin-bottom: var(--space-2);">
+            <span style="
+              display: inline-block;
+              padding: var(--space-1) var(--space-3);
+              background: ${badgeGradient};
+              color: ${badgeColor};
+              border-radius: var(--radius-full);
+              font-weight: var(--font-bold);
+              font-size: var(--text-base);
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            ">Lv. ${stats.level}</span>
+          </div>
+
+          <!-- 레벨명/카테고리 -->
+          <div style="text-align: center; margin-bottom: var(--space-1);">
+            <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--gray-100);">
+              ${levelInfo.name}
+            </div>
+          </div>
+          <div style="text-align: center; margin-bottom: var(--space-4);">
+            <div style="font-size: var(--text-sm); color: var(--gray-400);">
+              ${levelInfo.category}
+            </div>
+          </div>
+
+          <!-- 레벨 구간 -->
+          <div style="text-align: center; margin-bottom: var(--space-6); padding-bottom: var(--space-6); border-bottom: 1px solid var(--gray-700);">
+            <div style="font-size: var(--text-sm); color: var(--gray-400);">
+              레벨 ${levelInfo.range[0]}-${levelInfo.range[1]}
+            </div>
+          </div>
+
+          <!-- 통계 -->
+          <div style="margin-bottom: var(--space-4);">
+            <div class="result-row" style="display: flex; justify-content: space-between; margin-bottom: var(--space-3); font-size: var(--text-base);">
+              <span style="color: var(--gray-400);">닉네임</span>
+              <span style="color: var(--gray-100); font-weight: var(--font-medium);">${stats.nickname}</span>
+            </div>
+            <div class="result-row" style="display: flex; justify-content: space-between; margin-bottom: var(--space-3); font-size: var(--text-base);">
+              <span style="color: var(--gray-400);">총 플레이 일수</span>
+              <span style="color: var(--gray-100); font-weight: var(--font-medium);">${stats.totalPlayDays}일</span>
+            </div>
+            <div class="result-row" style="display: flex; justify-content: space-between; margin-bottom: var(--space-3); font-size: var(--text-base);">
+              <span style="color: var(--gray-400);">총 플레이 횟수</span>
+              <span style="color: var(--gray-100); font-weight: var(--font-medium);">${stats.totalPlayCount}회</span>
+            </div>
+            <div class="result-row" style="display: flex; justify-content: space-between; font-size: var(--text-base);">
+              <span style="color: var(--gray-400);">최대 콤보</span>
+              <span style="color: #fbbf24; font-weight: var(--font-bold);">${stats.maxCombo}</span>
+            </div>
+          </div>
+
+          <!-- 닫기 버튼 -->
+          <button id="close-user-info" style="
+            width: 100%;
+            padding: var(--space-3);
+            background: var(--gray-700);
+            color: var(--gray-100);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--text-base);
+            font-weight: var(--font-medium);
+            cursor: pointer;
+            transition: background 0.2s;
+          ">닫기</button>
+        </div>
+      `
+
+      document.body.appendChild(backdrop)
+
+      // 페이드 인
+      requestAnimationFrame(() => {
+        backdrop.style.opacity = '1'
+      })
+
+      // 닫기 이벤트
+      const closeBtn = backdrop.querySelector('#close-user-info')
+      closeBtn.addEventListener('click', () => {
+        audioManager.playPopupClose() // 🔊 팝업 닫기 사운드
+        backdrop.style.opacity = '0'
+        setTimeout(() => backdrop.remove(), 300)
+      })
+
+      // 백드롭 클릭으로 닫기
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          audioManager.playPopupClose() // 🔊 팝업 닫기 사운드
+          backdrop.style.opacity = '0'
+          setTimeout(() => backdrop.remove(), 300)
+        }
+      })
+    } catch (error) {
+      console.error('유저 정보 팝업 오류:', error)
     }
   }
 }
