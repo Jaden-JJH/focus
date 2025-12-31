@@ -2004,25 +2004,28 @@ export default class Main {
         backdrop.style.opacity = '1'
       })
 
-      // 모달 내부 클릭 시 이벤트 버블링 차단
-      const modal = backdrop.querySelector('.modal')
-      modal.addEventListener('click', (e) => {
-        e.stopPropagation()
-      })
+      // 닫기 함수 (중복 방지)
+      const closePopup = () => {
+        if (backdrop.dataset.closing) return // 이미 닫는 중이면 무시
+        backdrop.dataset.closing = 'true'
 
-      // 닫기 이벤트
-      const closeBtn = backdrop.querySelector('#close-user-info')
-      closeBtn.addEventListener('click', (e) => {
-        audioManager.playPopupClose() // 🔊 팝업 닫기 사운드
+        audioManager.playPopupClose()
         backdrop.style.opacity = '0'
         setTimeout(() => backdrop.remove(), 300)
+      }
+
+      // 닫기 버튼
+      const closeBtn = backdrop.querySelector('#close-user-info')
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        closePopup()
       })
 
       // 백드롭 클릭으로 닫기
       backdrop.addEventListener('click', (e) => {
-        audioManager.playPopupClose() // 🔊 팝업 닫기 사운드
-        backdrop.style.opacity = '0'
-        setTimeout(() => backdrop.remove(), 300)
+        if (e.target === backdrop) {
+          closePopup()
+        }
       })
     } catch (error) {
       console.error('유저 정보 팝업 오류:', error)
