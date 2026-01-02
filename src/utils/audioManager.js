@@ -47,14 +47,32 @@ class AudioManager {
 
     // Initialize Web Audio API on first user interaction
     async init() {
-        if (this.initialized) return;
+        if (this.initialized) {
+            // iOS: AudioContext가 suspended 상태일 수 있음
+            if (this.audioContext && this.audioContext.state === 'suspended') {
+                console.log('🎵 AudioContext suspended - resuming...');
+                try {
+                    await this.audioContext.resume();
+                    console.log('🎵 AudioContext resumed ✓');
+                } catch (err) {
+                    console.warn('🎵 AudioContext resume failed:', err);
+                }
+            }
+            return;
+        }
 
         try {
-            console.log('🎵 Initializing Web Audio API...');
+            console.log('🎵 Initializing audioManager Web Audio API...');
 
             // Create AudioContext
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             this.audioContext = new AudioContextClass();
+
+            // iOS: AudioContext 초기화 직후 resume 시도
+            if (this.audioContext.state === 'suspended') {
+                console.log('🎵 AudioContext suspended - resuming...');
+                await this.audioContext.resume();
+            }
 
             // Create master gain node for volume control
             this.gainNode = this.audioContext.createGain();
@@ -72,7 +90,7 @@ class AudioManager {
             );
 
             this.initialized = true;
-            console.log('🎵 Web Audio API initialized successfully');
+            console.log('🎵 audioManager Web Audio API initialized ✓');
         } catch (err) {
             console.error('Failed to initialize Web Audio API:', err);
         }

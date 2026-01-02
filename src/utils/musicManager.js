@@ -125,6 +125,19 @@ class MusicManager {
 
     // 노말모드 음악 재생 (랜덤 순서)
     playNormalMusic() {
+        console.log('🎵 playNormalMusic() 호출됨')
+
+        // 사용자 BGM 설정 확인 (localStorage)
+        const bgmEnabled = localStorage.getItem('bgm_enabled') === 'true'
+        if (!bgmEnabled) {
+            console.log('🎵 BGM OFF 상태 - 노말 음악 재생 건너뜀')
+            this.targetState = 'stopped'
+            return
+        }
+
+        // Web Audio API 초기화 및 resume 확인
+        this.init()
+
         this.targetState = 'playing'
         this.currentMode = 'normal'
 
@@ -146,6 +159,19 @@ class MusicManager {
 
     // 하드모드 음악 재생 (3초부터 시작, 크로스페이드로 반복)
     playHardMusic() {
+        console.log('🎵 playHardMusic() 호출됨')
+
+        // 사용자 BGM 설정 확인 (localStorage)
+        const bgmEnabled = localStorage.getItem('bgm_enabled') === 'true'
+        if (!bgmEnabled) {
+            console.log('🎵 BGM OFF 상태 - 하드 음악 재생 건너뜀')
+            this.targetState = 'stopped'
+            return
+        }
+
+        // Web Audio API 초기화 및 resume 확인
+        this.init()
+
         this.targetState = 'playing'
         this.currentMode = 'hard'
 
@@ -310,14 +336,19 @@ class MusicManager {
         }
 
         // Web Audio API로 볼륨 조절 (iOS Safari 지원)
-        this.sourceNode = this.audioContext.createMediaElementSource(audio)
-        this.sourceNode.connect(this.gainNode)
+        try {
+            this.sourceNode = this.audioContext.createMediaElementSource(audio)
+            this.sourceNode.connect(this.gainNode)
 
-        // 페이드인을 위해 초기 볼륨 0으로 설정
-        if (fadeIn > 0) {
-            this.gainNode.gain.value = 0
-        } else {
-            this.gainNode.gain.value = this.volume
+            // 페이드인을 위해 초기 볼륨 0으로 설정
+            if (fadeIn > 0) {
+                this.gainNode.gain.value = 0
+            } else {
+                this.gainNode.gain.value = this.volume
+            }
+        } catch (err) {
+            console.warn('🎵 MediaElementSource 생성 실패:', err)
+            // Web Audio API 실패 시에도 기본 Audio 재생 시도
         }
 
         // 재생 시작
@@ -326,17 +357,19 @@ class MusicManager {
         if (playPromise !== undefined) {
             playPromise
                 .then(() => {
-                    console.log(`🎵 Playing: ${path.split('/').pop()}, target volume: ${this.volume}`)
+                    console.log(`🎵 재생 성공: ${path.split('/').pop()} ✓`)
 
                     // 페이드인
-                    if (fadeIn > 0) {
+                    if (fadeIn > 0 && this.gainNode) {
                         this._fadeInGain(fadeIn)
-                    } else {
-                        console.log(`🎵 Volume set to: ${this.gainNode.gain.value}`)
+                    } else if (this.gainNode) {
+                        console.log(`🎵 Volume: ${this.gainNode.gain.value}`)
                     }
                 })
                 .catch(err => {
-                    console.warn('🎵 Music play blocked:', err)
+                    console.warn('🎵 음악 재생 차단됨 (브라우저 정책):', err.message)
+                    console.log('🎵 다음 사용자 인터랙션 시 재시도됩니다')
+                    // targetState는 유지 - 사용자 의도 존중
                 })
         }
 

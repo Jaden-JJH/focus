@@ -346,10 +346,11 @@ export class GameEngine {
         this.state.startTime = Date.now()
         this.state.totalFocusTime = 0
 
-        // Initialize audio on first user interaction
+        // Initialize audio on first user interaction (iOS 대응)
         audioManager.init()
+        musicManager.init() // iOS: AudioContext resume 보장
 
-        // 🎵 배경음악: 노말모드 음악 재생 시작
+        // 🎵 배경음악: 노말모드 음악 재생 시작 (localStorage 자동 확인)
         musicManager.playNormalMusic()
 
         // Deduct Coin (optimistic update)
