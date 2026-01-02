@@ -32,7 +32,7 @@ class MusicManager {
     }
 
     // 음악 초기화 (사용자 인터랙션 후 호출)
-    init() {
+    async init() {
         // Web Audio API 초기화 (iOS Safari 볼륨 조절을 위해)
         if (!this.audioContext) {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
@@ -42,13 +42,14 @@ class MusicManager {
             console.log('🎵 musicManager initialized ✓')
         }
 
-        // iOS: AudioContext suspended는 첫 사용자 제스처 시 자동 해결됨
-        // resume() 시도하지 않음 (autoplay policy 위반)
+        // ⚠️ iOS Fix: AudioContext가 suspended 상태면 항상 resume 시도
         if (this.audioContext && this.audioContext.state === 'suspended') {
-            // 조용히 resume 시도 (실패해도 괜찮음)
-            this.audioContext.resume().catch(() => {
-                // autoplay policy로 인한 에러는 무시
-            })
+            try {
+                await this.audioContext.resume()
+                console.log('🎵 musicManager AudioContext resumed ✓')
+            } catch (err) {
+                console.warn('🎵 musicManager AudioContext resume failed:', err.message)
+            }
         }
     }
 
@@ -62,11 +63,21 @@ class MusicManager {
     }
 
     // 메인 화면 음악 즉시 재생 (BGM 버튼용)
-    playMainMusic() {
+    async playMainMusic() {
         console.log('🎵 playMainMusic() 호출됨')
 
-        // Web Audio API 초기화 확인
-        this.init()
+        // Web Audio API 초기화 및 resume 확인
+        await this.init()
+
+        // ⚠️ iOS Fix: AudioContext가 suspended 상태면 resume 시도
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            try {
+                await this.audioContext.resume()
+                console.log('🎵 AudioContext resumed in playMainMusic() ✓')
+            } catch (err) {
+                console.warn('🎵 AudioContext resume failed in playMainMusic():', err.message)
+            }
+        }
 
         // 기존 음악 즉시 정지 및 정리
         this._stopImmediate()
@@ -123,7 +134,7 @@ class MusicManager {
     }
 
     // 노말모드 음악 재생 (랜덤 순서)
-    playNormalMusic() {
+    async playNormalMusic() {
         console.log('🎵 playNormalMusic() 호출됨')
 
         // 사용자 BGM 설정 확인 (localStorage)
@@ -135,7 +146,7 @@ class MusicManager {
         }
 
         // Web Audio API 초기화 및 resume 확인
-        this.init()
+        await this.init()
 
         this.targetState = 'playing'
         this.currentMode = 'normal'
@@ -148,7 +159,7 @@ class MusicManager {
 
         const currentTrack = this.normalPlaylist[this.normalCurrentIndex]
 
-        this._loadAndPlay(currentTrack, {
+        await this._loadAndPlay(currentTrack, {
             loop: false,
             fadeIn: 2.0,
             startTime: 0,
@@ -157,7 +168,7 @@ class MusicManager {
     }
 
     // 하드모드 음악 재생 (3초부터 시작, 크로스페이드로 반복)
-    playHardMusic() {
+    async playHardMusic() {
         console.log('🎵 playHardMusic() 호출됨')
 
         // 사용자 BGM 설정 확인 (localStorage)
@@ -169,12 +180,12 @@ class MusicManager {
         }
 
         // Web Audio API 초기화 및 resume 확인
-        this.init()
+        await this.init()
 
         this.targetState = 'playing'
         this.currentMode = 'hard'
 
-        this._loadAndPlay(this.musicPaths.hard, {
+        await this._loadAndPlay(this.musicPaths.hard, {
             loop: false,
             fadeIn: 2.0,
             startTime: this.hardModeStartTime,
@@ -299,7 +310,7 @@ class MusicManager {
     }
 
     // 음악 로드 및 재생
-    _loadAndPlay(path, options = {}) {
+    async _loadAndPlay(path, options = {}) {
         const {
             loop = false,
             fadeIn = 0,
@@ -307,8 +318,18 @@ class MusicManager {
             onEnded = null
         } = options
 
-        // Web Audio API 초기화 확인
-        this.init()
+        // Web Audio API 초기화 및 resume 확인
+        await this.init()
+
+        // ⚠️ iOS Fix: AudioContext가 suspended 상태면 resume 시도
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            try {
+                await this.audioContext.resume()
+                console.log('🎵 AudioContext resumed in _loadAndPlay() ✓')
+            } catch (err) {
+                console.warn('🎵 AudioContext resume failed in _loadAndPlay():', err.message)
+            }
+        }
 
         // 기존 음악 정리
         if (this.currentMusic) {

@@ -47,14 +47,15 @@ class AudioManager {
 
     // Initialize Web Audio API on first user interaction
     async init() {
+        // ⚠️ iOS Fix: 이미 초기화되어도 AudioContext가 suspended 상태면 resume 시도
         if (this.initialized) {
-            // iOS: AudioContext가 suspended 상태일 수 있음 (조용히 resume 시도)
             if (this.audioContext && this.audioContext.state === 'suspended') {
                 try {
                     await this.audioContext.resume();
-                    console.log('🎵 AudioContext resumed ✓');
+                    console.log('🎵 AudioContext resumed (already initialized) ✓');
                 } catch (err) {
                     // autoplay policy로 인한 에러는 무시 (사용자 제스처 필요)
+                    console.warn('🎵 AudioContext resume failed:', err.message);
                 }
             }
             return;
@@ -109,6 +110,22 @@ class AudioManager {
     playFast(soundName) {
         if (!this.enabled || !this.initialized) return;
 
+        // ⚠️ iOS Fix: AudioContext가 suspended 상태면 resume 시도
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume().then(() => {
+                console.log('🎵 AudioContext resumed in playFast() ✓');
+                this._playFastInternal(soundName);
+            }).catch(err => {
+                console.warn('🎵 AudioContext resume failed in playFast():', err.message);
+            });
+            return;
+        }
+
+        this._playFastInternal(soundName);
+    }
+
+    // Internal fast playback (after resume check)
+    _playFastInternal(soundName) {
         const buffer = this.audioBuffers[soundName];
         if (!buffer) {
             // Lazy load if not preloaded
@@ -132,9 +149,20 @@ class AudioManager {
     }
 
     // Play with options (for longer sounds)
-    play(soundName, options = {}) {
+    async play(soundName, options = {}) {
         if (!this.enabled || !this.initialized) {
             return Promise.resolve();
+        }
+
+        // ⚠️ iOS Fix: AudioContext가 suspended 상태면 resume 시도
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            try {
+                await this.audioContext.resume();
+                console.log('🎵 AudioContext resumed in play() ✓');
+            } catch (err) {
+                console.warn('🎵 AudioContext resume failed in play():', err.message);
+                return Promise.resolve();
+            }
         }
 
         const buffer = this.audioBuffers[soundName];
@@ -142,9 +170,8 @@ class AudioManager {
             // Lazy load
             const config = this.soundFiles[soundName];
             if (config) {
-                return this._loadSound(soundName, config.path).then(() => {
-                    return this.play(soundName, options);
-                });
+                await this._loadSound(soundName, config.path);
+                return this.play(soundName, options);
             }
             return Promise.resolve();
         }
