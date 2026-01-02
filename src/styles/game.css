@@ -51,10 +51,20 @@
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.7);
+    color: white;
     white-space: nowrap;
     min-width: 80px;
     text-align: right;
+    animation: roundGlow 3s ease-in-out infinite;
+}
+
+@keyframes roundGlow {
+    0%, 100% {
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+    50% {
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+    }
 }
 
 /* Shape Match */

@@ -62,7 +62,7 @@ export class ShapeMatch {
         // Render UI
         this.container.innerHTML = `
       <div class="game-instruction">
-         Find: <span style="color:${targetColor}">${targetShape}</span>
+         목표: <span style="color:${targetColor}">${targetShape}</span>
       </div>
       <div class="game-grid" style="grid-template-columns: repeat(${gridSize}, 1fr)">
          ${items.map((item, idx) => `

@@ -1189,8 +1189,6 @@ export class GameEngine {
             `
             document.head.appendChild(style)
         }
-
-        setTimeout(() => comboText.remove(), 500)
     }
 
     showFocusGlow() {

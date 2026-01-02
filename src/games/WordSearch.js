@@ -65,7 +65,7 @@ export class WordSearch {
         // Render
         this.container.innerHTML = `
       <div class="game-instruction">
-         Find: <span style="color:var(--color-accent-light)">${targetWord}</span>
+         목표: <span style="color:var(--color-accent-light)">${targetWord}</span>
       </div>
       <div class="game-grid" style="grid-template-columns: repeat(${gridSize}, 1fr)">
          ${grid.flat().map((char, idx) => `

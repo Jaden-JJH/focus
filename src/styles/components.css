@@ -885,3 +885,29 @@ body.hard-mode .card-glow {
 .isolate {
   isolation: isolate;
 }
+
+/* ================================
+   KEYBOARD ACCESSIBILITY
+   ================================ */
+
+/* Keyboard focus styles for accessibility */
+button:focus-visible,
+.toggle-switch:focus-visible,
+.grid-item:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
+  transition: outline-color var(--theme-transition);
+}
+
+/* Hard mode focus color */
+body.hard-mode button:focus-visible,
+body.hard-mode .toggle-switch:focus-visible,
+body.hard-mode .grid-item:focus-visible {
+  outline-color: var(--error);
+}
+
+/* Focus state with hover effect for buttons */
+button:focus-visible:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-md);
+}

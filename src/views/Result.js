@@ -2,34 +2,11 @@ import { dataService } from '../services/dataService.js'
 import { store } from '../core/store.js'
 import { LEVELS, LEVEL_DATA } from '../config/gameConfig.js'
 import audioManager from '../utils/audioManager.js'
+import { createLevelBadge } from '../utils/levelBadgeHelper.js'
 
 export default class Result {
     constructor(container) {
         this.container = container
-    }
-
-    // Helper functions for level badge styling (from Main.js pattern)
-    getLevelBadgeGradient(level, isHardMode) {
-        if (level < 10) return isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
-        if (level < 30) return isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
-        if (level < 40) return isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #9d6fff 0%, #7c4dff 50%, #6a3de8 100%)';
-        if (level < 50) return isHardMode ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
-        if (level < 60) return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
-        if (level === 60) return 'linear-gradient(135deg, #1e1e1e 0%, #0a0a0a 100%)';
-        return 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)';
-    }
-
-    getLevelBadgeColor(level, isHardMode) {
-        if (level >= 50 && level < 60) return '#1e1e1e';
-        if (level === 61) return isHardMode ? '#ef4444' : '#7c4dff';
-        return 'white';
-    }
-
-    getLevelBadgeAnimation(level, isHardMode) {
-        if (level < 10) return 'none';
-        if (level < 40) return isHardMode ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
-        if (level < 61) return 'pulseGold 2s ease-in-out infinite';
-        return isHardMode ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
     }
 
     async render() {
@@ -76,11 +53,11 @@ export default class Result {
         <div class="result-card" style="width: 100%; max-width: 400px; margin: 8px auto 16px; padding: 12px 16px; box-sizing: border-box;">
             <!-- 2열 레이아웃: 라운드 & 최대 콤보 -->
             <div style="display: flex; gap: 16px; margin-bottom: 6px;">
-                <div class="result-row" style="flex: 1; margin: 0; font-size: 0.95rem;">
+                <div class="result-row" style="flex: 1; margin: 0; font-size: 1rem;">
                     <span>라운드</span>
                     <span class="value">${round || 0}</span>
                 </div>
-                <div class="result-row" style="flex: 1; margin: 0; font-size: 0.95rem;">
+                <div class="result-row" style="flex: 1; margin: 0; font-size: 1rem;">
                     <span>최대 콤보</span>
                     <span class="value" style="color: ${(maxCombo || 0) >= 10 ? '#fbbf24' : 'inherit'}">
                         ${maxCombo || 0}
@@ -88,13 +65,13 @@ export default class Result {
                 </div>
             </div>
             <!-- 경험치 (한 줄) -->
-            <div class="result-row" style="margin-bottom: 6px; font-size: 0.95rem;">
+            <div class="result-row" style="margin-bottom: 6px; font-size: 1rem;">
                 <span>경험치</span>
                 <span class="value">+${xp || 0} XP</span>
             </div>
             ${isHardMode ? `
             <div style="margin-top: var(--space-2); text-align: center; font-size: var(--text-sm); color: var(--error); font-weight: var(--font-bold);">
-                🔥 하드모드 보너스 (x3)
+                🔥 하드모드 보너스 (x1.5)
             </div>
             ` : ''}
         </div>
@@ -139,23 +116,7 @@ export default class Result {
                   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 "
               />
-              <div id="level-badge" style="
-                position: absolute;
-                bottom: -10px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: ${this.getLevelBadgeGradient(initialLevel, isHardMode)};
-                color: ${this.getLevelBadgeColor(initialLevel, isHardMode)};
-                padding: 4px 12px;
-                border-radius: 9999px;
-                font-size: 0.8rem;
-                font-weight: bold;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                animation: ${this.getLevelBadgeAnimation(initialLevel, isHardMode)};
-                white-space: nowrap;
-              ">
-                Lv. ${initialLevel}
-              </div>
+              ${createLevelBadge(initialLevel, isHardMode).replace('<div style="', '<div id="level-badge" style="')}
             </div>
 
             <!-- Level Info -->
@@ -237,15 +198,19 @@ export default class Result {
         <!-- Fixed Action Area -->
         <div class="action-area action-area-fixed" style="max-width: 400px; margin: 0 auto;">
            ${user && user.isGuest ? `
-           <div style="width: 100%; padding: 16px; background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; margin-bottom: 16px; text-align: center;">
-             <div style="font-size: 0.95rem; color: #ffc107; margin-bottom: 8px;">🎮 체험 플레이 완료!</div>
-             <div style="font-size: 0.85rem; color: #aaa;">로그인하고 무제한으로 플레이하세요</div>
+           <div style="background: linear-gradient(135deg, rgba(124, 77, 255, 0.1), rgba(124, 77, 255, 0.05)); border: 1px solid rgba(124, 77, 255, 0.3); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-3); text-align: center; width: 100%; box-sizing: border-box;">
+             <div style="font-size: var(--text-base); font-weight: var(--font-medium); color: var(--gray-100); margin-bottom: 4px;">
+               🎮 체험 플레이 완료!
+             </div>
+             <div style="font-size: var(--text-sm); color: var(--gray-300);">
+               로그인하고 무제한으로 플레이하세요
+             </div>
            </div>
            ` : ''}
 
            <div style="display: flex; gap: 10px; width: 100%;">
-             <button id="retry-btn" class="btn-primary" style="flex: 4; min-height: 48px;">다시 시도</button>
-             <button id="share-btn" style="flex: 1; min-height: 48px; background: #2a2a2a; border: 1px solid #ffc107; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+             <button id="retry-btn" class="btn-primary" aria-label="다시 시도" style="flex: 4; min-height: 48px;">다시 시도</button>
+             <button id="share-btn" aria-label="공유하기" style="flex: 1; min-height: 48px; background: #2a2a2a; border: 1px solid #ffc107; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
                <img src="/share.svg" alt="공유" style="width: 20px; height: 20px; filter: brightness(0) saturate(100%) invert(82%) sepia(58%) saturate(497%) hue-rotate(359deg) brightness(103%) contrast(101%);">
              </button>
            </div>
@@ -256,7 +221,7 @@ export default class Result {
            </div>
            ` : ''}
 
-           <button id="home-btn" style="margin-top: 8px; color: #888; background: transparent; border: none; cursor: pointer; padding: 8px;">메인으로</button>
+           <button id="home-btn" aria-label="메인으로 돌아가기" style="margin-top: 8px; color: #888; background: transparent; border: none; cursor: pointer; padding: 8px;">메인으로</button>
         </div>
         <!-- End of Fixed Action Area -->
       </div>
@@ -601,9 +566,32 @@ export default class Result {
         // Stage 3: Level transition (0.2s)
         if (levelBadge) {
             levelBadge.innerText = `Lv. ${newLevel}`
-            levelBadge.style.background = this.getLevelBadgeGradient(newLevel, isHardMode)
-            levelBadge.style.color = this.getLevelBadgeColor(newLevel, isHardMode)
-            levelBadge.style.animation = this.getLevelBadgeAnimation(newLevel, isHardMode)
+
+            // Level badge gradient
+            if (newLevel >= 50 && newLevel <= 59) {
+                levelBadge.style.background = 'linear-gradient(135deg, #fbbf24, #f59e0b)'
+                levelBadge.style.color = '#000'
+                levelBadge.style.animation = 'pulseGold 2s ease-in-out infinite'
+            } else if (newLevel === 60) {
+                levelBadge.style.background = '#000'
+                levelBadge.style.color = '#fbbf24'
+                levelBadge.style.animation = 'pulseGold 2s ease-in-out infinite'
+            } else if (newLevel >= 61) {
+                levelBadge.style.background = 'linear-gradient(135deg, #fff, #e0e0e0)'
+                levelBadge.style.color = '#000'
+                levelBadge.style.animation = isHardMode ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite'
+            } else {
+                const primaryColor = isHardMode ? '#ef4444' : '#7c4dff'
+                const secondaryColor = isHardMode ? '#dc2626' : '#6a3de8'
+                levelBadge.style.background = `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+                levelBadge.style.color = 'white'
+
+                if (newLevel < 10) {
+                    levelBadge.style.animation = 'none'
+                } else {
+                    levelBadge.style.animation = isHardMode ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite'
+                }
+            }
         }
         if (levelImage) levelImage.src = LEVELS.getLevelImage(newLevel)
         if (levelName) levelName.innerText = LEVELS.getLevelInfo(newLevel).name
@@ -1037,7 +1025,7 @@ export default class Result {
                     animation: slideUp 0.5s ease-out 0.5s forwards, recordPulse 2s ease-in-out infinite;
                     text-align: center;
                     word-break: keep-all;
-                ">NEW ROUND RECORD!</h1>
+                ">라운드 신기록!</h1>
 
                 <div style="
                     font-size: clamp(2.5rem, 8vw, 4rem);
@@ -1146,7 +1134,7 @@ export default class Result {
                     animation: slideUp 0.5s ease-out 0.5s forwards, comboPulse 2s ease-in-out infinite;
                     text-align: center;
                     word-break: keep-all;
-                ">MAX COMBO RECORD!</h1>
+                ">최대 콤보 기록!</h1>
 
                 <div style="
                     font-size: clamp(2.5rem, 8vw, 4rem);

@@ -4,6 +4,7 @@ import { dataService } from '../services/dataService.js'
 import { LEVELS, LEVEL_DATA } from '../config/gameConfig.js'
 import audioManager from '../utils/audioManager.js'
 import musicManager from '../utils/musicManager.js'
+import { createLevelBadge } from '../utils/levelBadgeHelper.js'
 
 // UUID 생성 함수 (Safari 호환)
 function generateUUID() {
@@ -488,8 +489,9 @@ export default class Main {
     // 1. Loading State
     if (state.isLoading) {
       this.container.innerHTML = `
-            <div style="flex:1; display:flex; justify-content:center; align-items:center; color:#888;">
-                Loading session...
+            <div id="session-loading" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px; color: var(--gray-400);">
+              <div class="img-loading" style="width: 40px; height: 40px;"></div>
+              <p style="margin: 0; font-size: var(--text-sm);">세션을 불러오는 중...</p>
             </div>
         `
       return
@@ -708,7 +710,7 @@ export default class Main {
            </div>
            <div style="display: flex; align-items: center; gap: var(--space-3);">
              <!-- BGM Toggle -->
-             <button id="bgm-toggle-btn" style="
+             <button id="bgm-toggle-btn" aria-label="배경음악 토글" style="
                display: flex;
                align-items: center;
                gap: var(--space-1);
@@ -729,7 +731,7 @@ export default class Main {
                })()}</span>
              </button>
              ${!user.isGuest ? `
-             <div id="coin-info" class="currency" style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
+             <div id="coin-info" class="currency" role="button" aria-label="코인 정보 보기" style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
                <span style="font-size: 20px; line-height: 1;">🪙</span>
                <span style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--warning); line-height: 1;">${state.coins}</span>
              </div>
@@ -742,12 +744,10 @@ export default class Main {
 
         <!-- XP Progress Card -->
         ${!user.isGuest ? `
-        <div class="card-with-shimmer" style="
-          background: var(--gray-800);
-          border-radius: var(--radius-md);
-          padding: var(--space-4);
+        <div class="card card-with-shimmer" style="
           margin-bottom: var(--space-4);
           flex-shrink: 0;
+          max-width: none;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         ">
           <!-- Header: Title & View All Button -->
@@ -785,45 +785,7 @@ export default class Main {
                   return isHard ? 'imagePulseHard 3s ease-in-out infinite' : 'imagePulse 3s ease-in-out infinite';
                 })()};
               " />
-              <div style="
-                position: absolute;
-                bottom: -12px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: ${(() => {
-                  const lv = state.level;
-                  const isHard = state.isHardMode;
-                  if (lv < 10) return isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
-                  if (lv < 30) return isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
-                  if (lv < 40) return isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #9d6fff 0%, #7c4dff 50%, #6a3de8 100%)';
-                  if (lv < 50) return isHard ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #7c4dff 0%, #6a3de8 100%)';
-                  if (lv < 60) return 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)';
-                  if (lv === 60) return 'linear-gradient(135deg, #1e1e1e 0%, #0a0a0a 100%)';
-                  return 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)';
-                })()};
-                color: ${(() => {
-                  const lv = state.level;
-                  const isHard = state.isHardMode;
-                  if (lv >= 50 && lv < 60) return '#1e1e1e';
-                  if (lv === 61) return isHard ? '#ef4444' : '#7c4dff';
-                  return 'white';
-                })()};
-                padding: var(--space-1) var(--space-3);
-                border-radius: var(--radius-full);
-                font-size: var(--text-sm);
-                font-weight: var(--font-bold);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-                animation: ${(() => {
-                  const lv = state.level;
-                  const isHard = state.isHardMode;
-                  if (lv < 10) return 'none';
-                  if (lv < 40) return isHard ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
-                  if (lv < 61) return 'pulseGold 2s ease-in-out infinite';
-                  return isHard ? 'pulseHard 2s ease-in-out infinite' : 'pulse 2s ease-in-out infinite';
-                })()};
-              ">
-                Lv ${state.level}
-              </div>
+              ${createLevelBadge(state.level, state.isHardMode)}
             </div>
             <div style="font-size: var(--text-lg); color: white; font-weight: var(--font-bold); margin-top: var(--space-1);">
               ${state.level === 0 ? '주의력 결핍' : LEVELS.getLevelInfo(state.level).name}
@@ -840,12 +802,12 @@ export default class Main {
 
           <!-- Progress Text (Symmetrical Layout) -->
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: var(--text-xs); color: var(--gray-300);">${(() => {
+            <span style="font-size: var(--text-sm); color: var(--gray-300);">${(() => {
               const { current, max } = LEVELS.calcXpProgress(state.totalXp, state.level)
               const remaining = max - current
               return `Lv.${state.level + 1}까지 ${remaining} XP`
             })()}</span>
-            <span style="font-size: var(--text-xs); color: var(--warning); font-weight: var(--font-bold);">${(() => {
+            <span style="font-size: var(--text-sm); color: var(--warning); font-weight: var(--font-bold);">${(() => {
               const { percent } = LEVELS.calcXpProgress(state.totalXp, state.level)
               return `${percent}%`
             })()}</span>
@@ -855,12 +817,11 @@ export default class Main {
 
         <!-- Weekly Activity Card -->
         ${!user.isGuest ? `
-        <div id="weekly-activity-card" class="card-with-shimmer fade-up-on-scroll" style="
-          background: var(--gray-800);
-          border-radius: var(--radius-md);
+        <div id="weekly-activity-card" class="card card-with-shimmer fade-up-on-scroll" style="
           padding: var(--space-3);
           margin-bottom: var(--space-4);
           flex-shrink: 0;
+          max-width: none;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         ">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
@@ -883,7 +844,7 @@ export default class Main {
         <!-- Ranking Section -->
         <section class="rank-section" style="flex: 1; display: flex; flex-direction: column; margin-bottom: var(--space-1); min-height: 0; overflow: hidden; opacity: 0; animation: rankFadeIn 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards; animation-delay: 0.4s;">
            <div style="flex-shrink: 0; padding: var(--space-1) 0; display: flex; justify-content: space-between; align-items: center;">
-             <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--gray-100);">Weekly Ranking</h3>
+             <h3 style="font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--gray-100);">주간 랭킹</h3>
              ${state.isHardMode ? `
              <span style="background: var(--error); color: white; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: var(--font-bold);">하드모드</span>
              ` : ''}
@@ -893,7 +854,10 @@ export default class Main {
            ${!user.isGuest ? `
            <div id="my-rank-section" style="flex-shrink: 0; background: var(--gray-800); border: 1px solid var(--theme-primary); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-2); transition: border-color var(--theme-transition);">
              <div id="my-rank-info" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); align-items: center;">
-               <div style="font-size: var(--text-sm); color: var(--gray-400); text-align: center;">Loading...</div>
+               <div style="display: flex; align-items: center; justify-content: center; gap: 8px; grid-column: 1 / -1;">
+                 <div class="img-loading" style="width: 16px; height: 16px;"></div>
+                 <span style="font-size: var(--text-sm); color: var(--gray-400);">랭킹 불러오는 중...</span>
+               </div>
              </div>
            </div>
            ` : ''}
@@ -939,7 +903,7 @@ export default class Main {
                 </button>
                 <span style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">하드모드</span>
                 <label class="toggle-switch toggle-hard">
-                  <input type="checkbox" id="hard-mode-toggle" ${state.isHardMode ? 'checked' : ''}>
+                  <input type="checkbox" id="hard-mode-toggle" aria-label="하드모드 전환" ${state.isHardMode ? 'checked' : ''}>
                   <span class="toggle-slider"></span>
                 </label>
                 <span style="font-size: var(--text-xs); color: ${state.isHardMode ? 'white' : 'var(--gray-400)'}; font-weight: var(--font-bold); min-width: 28px;">${state.isHardMode ? 'ON' : 'OFF'}</span>
@@ -959,7 +923,7 @@ export default class Main {
               ">
                 <span style="font-size: var(--text-sm); color: var(--gray-100); font-weight: var(--font-medium);">효과음</span>
                 <label class="toggle-switch toggle-sound-${state.isHardMode ? 'hard' : 'normal'}">
-                  <input type="checkbox" id="sound-toggle" ${audioManager.isEnabled() ? 'checked' : ''}>
+                  <input type="checkbox" id="sound-toggle" aria-label="효과음 전환" ${audioManager.isEnabled() ? 'checked' : ''}>
                   <span class="toggle-slider"></span>
                 </label>
                 <span id="sound-status" style="font-size: var(--text-xs); color: ${audioManager.isEnabled() ? 'white' : 'var(--gray-400)'}; font-weight: var(--font-bold); min-width: 28px;">${audioManager.isEnabled() ? 'ON' : 'OFF'}</span>
@@ -967,7 +931,7 @@ export default class Main {
             </div>
 
             <div style="display: flex; gap: var(--space-2); width: 100%;">
-              <button id="play-btn" class="btn-primary" style="flex: 4; min-height: 48px; font-size: var(--text-lg);" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
+              <button id="play-btn" class="btn-primary" aria-label="게임 시작" style="flex: 4; min-height: 48px; font-size: var(--text-lg);" ${state.coins <= 0 && !user.isGuest ? 'disabled' : ''}>
                  ${user.isGuest
                     ? ((() => {
                         const sessionData = localStorage.getItem('guest_session_used')
@@ -977,10 +941,25 @@ export default class Main {
                     : (state.coins > 0 ? '게임 시작' : '코인 부족')
                   }
               </button>
-              <button id="share-btn" style="flex: 1; min-height: 48px; background: var(--gray-700); border: 1px solid var(--gray-600); border-radius: var(--radius-lg); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: var(--transition-fast);">
+              <button id="share-btn" aria-label="공유하기" style="flex: 1; min-height: 48px; background: var(--gray-700); border: 1px solid var(--gray-600); border-radius: var(--radius-lg); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: var(--transition-fast);">
                 <img src="/share.svg" alt="공유" class="icon icon-md" />
               </button>
             </div>
+
+            ${!user.isGuest && state.coins <= 0 ? `
+            <div style="display: flex; flex-direction: column; gap: 8px; align-items: center; margin-top: 8px;">
+              <span style="font-size: var(--text-sm); color: var(--error); font-weight: var(--font-medium);">
+                🪙 코인을 모두 사용했어요!
+              </span>
+              <button
+                id="show-coin-info-hint"
+                style="font-size: var(--text-xs); color: var(--theme-primary); background: none; border: none; cursor: pointer; text-decoration: underline;"
+                aria-label="코인 획득 방법 보기"
+              >
+                코인 획득 방법 보기 →
+              </button>
+            </div>
+            ` : ''}
 
             ${user.isGuest && state.coins <= 0 ? `<button id="login-redirect-btn" style="margin-top:16px; text-decoration:underline;">로그인하고 계속하기</button>` : ''}
         </div>
@@ -1353,6 +1332,17 @@ export default class Main {
           }
         })
       }
+
+      // Coin info hint button handler
+      const coinInfoHint = document.getElementById('show-coin-info-hint')
+      if (coinInfoHint) {
+        coinInfoHint.addEventListener('click', () => {
+          // 코인 정보 모달 열기
+          if (coinInfo) {
+            coinInfo.click()
+          }
+        })
+      }
     }
 
     const loginBtn = document.getElementById('login-redirect-btn')
@@ -1559,7 +1549,7 @@ export default class Main {
                         animation: ${animation};
                       ">Lv. ${lv}</span>
                   </div>
-                  <span style="margin-right: var(--space-4); font-size: var(--text-base); font-weight: var(--font-medium); color: var(--gray-300);">${r.max_round}R</span>
+                  <span style="margin-right: var(--space-4); font-size: var(--text-base); font-weight: var(--font-medium); color: var(--gray-300);">${r.max_round}라운드</span>
               </div>
           `;
       }).join('')
@@ -1593,12 +1583,12 @@ export default class Main {
               <div style="font-size: var(--text-xs); color: var(--gray-400); line-height: 1.2;">순위</div>
             </div>
             <div style="text-align: center;">
-              <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: white; line-height: 1.2; margin-bottom: var(--space-1);">${maxRound}R</div>
+              <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: white; line-height: 1.2; margin-bottom: var(--space-1);">${maxRound}라운드</div>
               <div style="font-size: var(--text-xs); color: var(--gray-400); line-height: 1.2;">최고 기록</div>
             </div>
             ${percentileText ? `
             <div style="text-align: center;">
-              <div style="font-size: var(--text-base); font-weight: var(--font-bold); color: var(--gray-200); line-height: 1.2; margin-bottom: var(--space-1);">${percentileText}</div>
+              <div style="font-size: var(--text-lg); font-weight: var(--font-bold); color: white; line-height: 1.2; margin-bottom: var(--space-1);">${percentileText}</div>
               <div style="font-size: var(--text-xs); color: var(--gray-400); line-height: 1.2;">백분위</div>
             </div>
             ` : ''}
