@@ -465,8 +465,8 @@ export default class Main {
       this.mainSoundPlayed = true;
     }
 
-    // 🎵 배경음악: 메인 화면 음악 재생 (최초 1회만, shouldPlayBGM이 true일 때만)
-    if (!this.mainMusicStarted && this.shouldPlayBGM) {
+    // 🎵 배경음악: 메인 화면 음악 재생 (재생 중이 아닐 때, shouldPlayBGM이 true일 때)
+    if (this.shouldPlayBGM && !musicManager.isPlaying()) {
       musicManager.playMainMusic()
       this.mainMusicStarted = true
     }
