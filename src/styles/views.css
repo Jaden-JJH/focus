@@ -215,3 +215,8 @@ body.hard-mode #my-rank-section {
         transform: translateY(-4px);
     }
 }
+
+/* Ranking Item Hover Effect */
+.rank-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}

@@ -42,6 +42,15 @@ class MusicManager {
             console.log('🎵 MusicManager initialized with Web Audio API')
             console.log('🎵 Initial volume:', this.gainNode.gain.value)
         }
+
+        // iOS Safari: AudioContext가 suspended 상태일 수 있음
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume().then(() => {
+                console.log('🎵 AudioContext resumed (was suspended)')
+            }).catch(err => {
+                console.warn('🎵 AudioContext resume failed:', err)
+            })
+        }
     }
 
     // ===== PUBLIC API =====
@@ -60,28 +69,35 @@ class MusicManager {
         // Web Audio API 초기화 확인
         this.init()
 
+        // 기존 음악 즉시 정지 및 정리
         this._stopImmediate()
 
-        this.targetState = 'playing' // 즉시 상태 업데이트
-        console.log('🎵 targetState = playing')
+        // 사용자 의도 상태 업데이트 (재생 실패해도 유지)
+        this.targetState = 'playing'
+        console.log('🎵 targetState = playing (사용자 의도)')
         this.currentMode = 'main'
 
         const audio = new Audio(this.musicPaths.main)
         audio.loop = true
 
         // Web Audio API로 볼륨 조절 (iOS Safari 지원)
-        this.sourceNode = this.audioContext.createMediaElementSource(audio)
-        this.sourceNode.connect(this.gainNode)
+        try {
+            this.sourceNode = this.audioContext.createMediaElementSource(audio)
+            this.sourceNode.connect(this.gainNode)
+        } catch (err) {
+            console.warn('🎵 MediaElementSource 생성 실패:', err)
+            // 재생 시도는 계속 진행 (Audio 객체만으로도 재생 가능)
+        }
 
         audio.play()
             .then(() => {
-                console.log('🎵 Main BGM ON - 재생 성공')
-                console.log('🎵 Volume (Web Audio API):', this.gainNode.gain.value)
+                console.log('🎵 Main BGM 재생 성공 ✓')
+                console.log('🎵 Volume:', this.gainNode ? this.gainNode.gain.value : audio.volume)
             })
             .catch(err => {
-                console.warn('🎵 BGM play blocked:', err)
-                this.targetState = 'stopped' // 재생 실패 시 상태 복구
-                console.log('🎵 재생 실패 - targetState = stopped')
+                console.warn('🎵 BGM autoplay 차단됨 (브라우저 정책):', err.message)
+                console.log('🎵 사용자가 다시 인터랙션하면 재생 시도됩니다')
+                // targetState는 'playing' 유지 - 사용자 의도 존중
             })
 
         this.currentMusic = audio
@@ -184,9 +200,15 @@ class MusicManager {
 
     // 즉시 정지 (내부용)
     _stopImmediate() {
+        // 기존 Audio 객체 정리
         if (this.currentMusic) {
-            this.currentMusic.pause()
-            this.currentMusic.currentTime = 0
+            try {
+                this.currentMusic.pause()
+                this.currentMusic.currentTime = 0
+                this.currentMusic.src = '' // 리소스 해제
+            } catch (e) {
+                console.warn('🎵 Audio 정리 중 오류:', e)
+            }
             this.currentMusic = null
         }
 

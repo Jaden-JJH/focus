@@ -248,31 +248,32 @@ export default class Main {
         // 효과음
         audioManager.playButtonClick()
 
-        // 현재 재생 상태 확인
-        const isCurrentlyPlaying = musicManager.isPlaying()
-        console.log('🎵 BGM 현재 상태:', isCurrentlyPlaying ? 'PLAYING' : 'STOPPED')
+        // 현재 사용자 설정 확인 (localStorage가 유일한 진실)
+        const currentBgmEnabled = localStorage.getItem('bgm_enabled') === 'true'
+        const newBgmEnabled = !currentBgmEnabled
 
-        // UI 즉시 업데이트
-        const bgmText = document.getElementById('bgm-status-text')
-        if (bgmText) {
-          bgmText.innerText = isCurrentlyPlaying ? 'OFF' : 'ON'
-          bgmText.style.color = isCurrentlyPlaying ? 'var(--gray-500)' : 'var(--warning)'
-        }
+        console.log('🎵 BGM 토글:', currentBgmEnabled ? 'ON → OFF' : 'OFF → ON')
 
-        // 음악 즉시 재생/정지 토글
-        if (isCurrentlyPlaying) {
-          console.log('🎵 BGM 정지 실행')
-          musicManager.stopMusic()
-          localStorage.setItem('bgm_enabled', 'false')
-        } else {
-          console.log('🎵 BGM 재생 실행')
+        // 1. localStorage 먼저 업데이트 (사용자 의도 저장)
+        localStorage.setItem('bgm_enabled', newBgmEnabled ? 'true' : 'false')
+
+        // 2. UI 즉시 동기화
+        this.updateBGMUI()
+
+        // 3. 음악 재생/정지 (실패해도 UI는 사용자 의도를 표시)
+        if (newBgmEnabled) {
+          console.log('🎵 BGM 재생 시작')
           musicManager.playMainMusic()
-          localStorage.setItem('bgm_enabled', 'true')
+        } else {
+          console.log('🎵 BGM 정지')
+          musicManager.stopMusic()
         }
 
-        // 상태 재확인 (디버깅용)
+        // 상태 확인 (디버깅용)
         setTimeout(() => {
-          console.log('🎵 BGM 변경 후 상태:', musicManager.isPlaying() ? 'PLAYING' : 'STOPPED')
+          const finalState = localStorage.getItem('bgm_enabled') === 'true'
+          console.log('🎵 최종 상태 - localStorage:', finalState ? 'ON' : 'OFF',
+                      '/ musicManager:', musicManager.isPlaying() ? 'PLAYING' : 'STOPPED')
         }, 100)
 
         return
@@ -355,6 +356,17 @@ export default class Main {
         if (modal) modal.remove()
         return
       }
+
+      // Ranking item click (프로필 팝업)
+      const rankItem = target.closest('.rank-item')
+      if (rankItem) {
+        audioManager.playButtonClick()
+        const userId = rankItem.getAttribute('data-user-id')
+        if (userId) {
+          await this.showUserInfoPopup(userId)
+        }
+        return
+      }
     }
 
     // Add event listener to document
@@ -429,6 +441,18 @@ export default class Main {
       const img = new Image()
       img.src = LEVELS.getLevelImage(i)
     }
+  }
+
+  // BGM UI 상태 동기화 (localStorage 기반)
+  updateBGMUI() {
+    const bgmText = document.getElementById('bgm-status-text')
+    if (!bgmText) return
+
+    // localStorage가 유일한 진실의 원천
+    const bgmEnabled = localStorage.getItem('bgm_enabled') === 'true'
+
+    bgmText.innerText = bgmEnabled ? 'ON' : 'OFF'
+    bgmText.style.color = bgmEnabled ? 'var(--warning)' : 'var(--gray-500)'
   }
 
   async render() {
@@ -694,7 +718,13 @@ export default class Main {
                transition: all 0.2s;
              " onmouseover="this.style.borderColor='var(--gray-500)'" onmouseout="this.style.borderColor='var(--gray-600)'">
                <span style="font-size: var(--text-xs); color: var(--gray-300); font-weight: var(--font-medium); line-height: 1;">BGM</span>
-               <span id="bgm-status-text" style="font-size: var(--text-xs); font-weight: var(--font-bold); line-height: 1; color: ${musicManager.isPlaying() ? 'var(--warning)' : 'var(--gray-500)'};">${musicManager.isPlaying() ? 'ON' : 'OFF'}</span>
+               <span id="bgm-status-text" style="font-size: var(--text-xs); font-weight: var(--font-bold); line-height: 1; color: ${(() => {
+                 const bgmEnabled = localStorage.getItem('bgm_enabled') === 'true'
+                 return bgmEnabled ? 'var(--warning)' : 'var(--gray-500)'
+               })()};">${(() => {
+                 const bgmEnabled = localStorage.getItem('bgm_enabled') === 'true'
+                 return bgmEnabled ? 'ON' : 'OFF'
+               })()}</span>
              </button>
              ${!user.isGuest ? `
              <div id="coin-info" class="currency" style="display: flex; align-items: center; gap: var(--space-1); cursor: pointer;">
@@ -1437,6 +1467,10 @@ export default class Main {
 
     // Setup scroll-based fade-up animations for elements
     this.observeScrollElements()
+
+    // 🎵 BGM UI 상태 동기화 (localStorage 기반)
+    // render() 호출로 HTML이 재생성되어도 사용자 설정 유지
+    this.updateBGMUI()
   }
 
   async loadRanking() {
@@ -1528,27 +1562,7 @@ export default class Main {
           `;
       }).join('')
 
-      // 랭킹 아이템 클릭 이벤트 추가
-      setTimeout(() => {
-        const rankItems = listEl.querySelectorAll('.rank-item')
-        rankItems.forEach(item => {
-          item.addEventListener('click', async (e) => {
-            e.stopPropagation()
-            audioManager.playButtonClick() // 🔊 클릭 사운드
-            const userId = item.getAttribute('data-user-id')
-            if (userId) {
-              await this.showUserInfoPopup(userId)
-            }
-          })
-          // 호버 효과
-          item.addEventListener('mouseenter', () => {
-            item.style.background = 'rgba(255,255,255,0.05)'
-          })
-          item.addEventListener('mouseleave', () => {
-            item.style.background = 'transparent'
-          })
-        })
-      }, 600) // 애니메이션 후 이벤트 추가
+      // 랭킹 아이템 클릭 이벤트는 setupEventDelegation()에서 처리
 
       // Fetch my rank (if not guest) (모드별)
     if (user && !user.isGuest) {
