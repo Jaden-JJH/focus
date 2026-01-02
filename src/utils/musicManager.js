@@ -91,6 +91,8 @@ class MusicManager {
         try {
             this.sourceNode = this.audioContext.createMediaElementSource(audio)
             this.sourceNode.connect(this.gainNode)
+            // ⚠️ FIX: 페이드아웃 후 GainNode 볼륨 복구
+            this.gainNode.gain.value = this.volume
         } catch (err) {
             console.warn('🎵 MediaElementSource 생성 실패:', err)
             // 재생 시도는 계속 진행 (Audio 객체만으로도 재생 가능)
