@@ -48,14 +48,13 @@ class AudioManager {
     // Initialize Web Audio API on first user interaction
     async init() {
         if (this.initialized) {
-            // iOS: AudioContext가 suspended 상태일 수 있음
+            // iOS: AudioContext가 suspended 상태일 수 있음 (조용히 resume 시도)
             if (this.audioContext && this.audioContext.state === 'suspended') {
-                console.log('🎵 AudioContext suspended - resuming...');
                 try {
                     await this.audioContext.resume();
                     console.log('🎵 AudioContext resumed ✓');
                 } catch (err) {
-                    console.warn('🎵 AudioContext resume failed:', err);
+                    // autoplay policy로 인한 에러는 무시 (사용자 제스처 필요)
                 }
             }
             return;
@@ -68,16 +67,13 @@ class AudioManager {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             this.audioContext = new AudioContextClass();
 
-            // iOS: AudioContext 초기화 직후 resume 시도
-            if (this.audioContext.state === 'suspended') {
-                console.log('🎵 AudioContext suspended - resuming...');
-                await this.audioContext.resume();
-            }
-
             // Create master gain node for volume control
             this.gainNode = this.audioContext.createGain();
             this.gainNode.gain.value = this.defaultVolume;
             this.gainNode.connect(this.audioContext.destination);
+
+            // iOS: AudioContext suspended는 첫 사용자 제스처 시 자동 해결됨
+            // resume() 시도하지 않음 (autoplay policy 위반)
 
             // Preload high-priority sounds
             const preloadSounds = Object.entries(this.soundFiles)
@@ -90,7 +86,7 @@ class AudioManager {
             );
 
             this.initialized = true;
-            console.log('🎵 audioManager Web Audio API initialized ✓');
+            console.log('🎵 audioManager initialized ✓');
         } catch (err) {
             console.error('Failed to initialize Web Audio API:', err);
         }

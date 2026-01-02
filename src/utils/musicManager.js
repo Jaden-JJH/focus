@@ -39,16 +39,15 @@ class MusicManager {
             this.gainNode = this.audioContext.createGain()
             this.gainNode.connect(this.audioContext.destination)
             this.gainNode.gain.value = this.volume
-            console.log('🎵 MusicManager initialized with Web Audio API')
-            console.log('🎵 Initial volume:', this.gainNode.gain.value)
+            console.log('🎵 musicManager initialized ✓')
         }
 
-        // iOS Safari: AudioContext가 suspended 상태일 수 있음
+        // iOS: AudioContext suspended는 첫 사용자 제스처 시 자동 해결됨
+        // resume() 시도하지 않음 (autoplay policy 위반)
         if (this.audioContext && this.audioContext.state === 'suspended') {
-            this.audioContext.resume().then(() => {
-                console.log('🎵 AudioContext resumed (was suspended)')
-            }).catch(err => {
-                console.warn('🎵 AudioContext resume failed:', err)
+            // 조용히 resume 시도 (실패해도 괜찮음)
+            this.audioContext.resume().catch(() => {
+                // autoplay policy로 인한 에러는 무시
             })
         }
     }
