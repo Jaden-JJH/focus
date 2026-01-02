@@ -82,9 +82,6 @@ class MusicManager {
         // 기존 음악 즉시 정지 및 정리
         this._stopImmediate()
 
-        // 사용자 의도 상태 업데이트 (재생 실패해도 유지)
-        this.targetState = 'playing'
-        console.log('🎵 targetState = playing (사용자 의도)')
         this.currentMode = 'main'
 
         const audio = new Audio(this.musicPaths.main)
@@ -101,13 +98,17 @@ class MusicManager {
 
         audio.play()
             .then(() => {
+                // ✅ 재생 성공 후에만 상태 업데이트
+                this.targetState = 'playing'
                 console.log('🎵 Main BGM 재생 성공 ✓')
+                console.log('🎵 targetState = playing')
                 console.log('🎵 Volume:', this.gainNode ? this.gainNode.gain.value : audio.volume)
             })
             .catch(err => {
+                // ❌ 재생 실패 시 stopped 상태 유지
+                this.targetState = 'stopped'
                 console.warn('🎵 BGM autoplay 차단됨 (브라우저 정책):', err.message)
-                console.log('🎵 사용자가 다시 인터랙션하면 재생 시도됩니다')
-                // targetState는 'playing' 유지 - 사용자 의도 존중
+                console.log('🎵 targetState = stopped (재생 실패)')
             })
 
         this.currentMusic = audio
@@ -148,7 +149,6 @@ class MusicManager {
         // Web Audio API 초기화 및 resume 확인
         await this.init()
 
-        this.targetState = 'playing'
         this.currentMode = 'normal'
 
         // 첫 재생이거나 플레이리스트가 끝난 경우 새로운 랜덤 순서 생성
@@ -159,6 +159,7 @@ class MusicManager {
 
         const currentTrack = this.normalPlaylist[this.normalCurrentIndex]
 
+        // ✅ _loadAndPlay가 재생 성공 시 targetState 설정
         await this._loadAndPlay(currentTrack, {
             loop: false,
             fadeIn: 2.0,
@@ -182,9 +183,9 @@ class MusicManager {
         // Web Audio API 초기화 및 resume 확인
         await this.init()
 
-        this.targetState = 'playing'
         this.currentMode = 'hard'
 
+        // ✅ _loadAndPlay가 재생 성공 시 targetState 설정
         await this._loadAndPlay(this.musicPaths.hard, {
             loop: false,
             fadeIn: 2.0,
@@ -377,7 +378,10 @@ class MusicManager {
         if (playPromise !== undefined) {
             playPromise
                 .then(() => {
+                    // ✅ 재생 성공 후에만 상태 업데이트
+                    this.targetState = 'playing'
                     console.log(`🎵 재생 성공: ${path.split('/').pop()} ✓`)
+                    console.log('🎵 targetState = playing')
 
                     // 페이드인
                     if (fadeIn > 0 && this.gainNode) {
@@ -387,9 +391,10 @@ class MusicManager {
                     }
                 })
                 .catch(err => {
+                    // ❌ 재생 실패 시 stopped 상태 유지
+                    this.targetState = 'stopped'
                     console.warn('🎵 음악 재생 차단됨 (브라우저 정책):', err.message)
-                    console.log('🎵 다음 사용자 인터랙션 시 재시도됩니다')
-                    // targetState는 유지 - 사용자 의도 존중
+                    console.log('🎵 targetState = stopped (재생 실패)')
                 })
         }
 

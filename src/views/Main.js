@@ -466,7 +466,9 @@ export default class Main {
     }
 
     // 🎵 배경음악: 메인 화면 음악 재생 (재생 중이 아닐 때, shouldPlayBGM이 true일 때)
+    console.log('🎵 [Main.render] shouldPlayBGM:', this.shouldPlayBGM, 'isPlaying:', musicManager.isPlaying());
     if (this.shouldPlayBGM && !musicManager.isPlaying()) {
+      console.log('🎵 [Main.render] Starting BGM...');
       musicManager.playMainMusic()
       this.mainMusicStarted = true
     }
