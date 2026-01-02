@@ -34,7 +34,7 @@ export default class Result {
 
     async render() {
         const state = history.state || {} // Router pushState data
-        const { round, xp, initialRank, isHardMode, maxCombo } = state
+        const { round, xp, initialRank, initialMaxRound, isHardMode, maxCombo } = state
         const user = store.getState().user
 
         // 🎨 하드모드 테마 유지 (결과 화면에서도 빨간색 유지)
@@ -371,7 +371,8 @@ export default class Result {
             const oldTotalXp = user.total_xp || 0
             const oldMaxCombo = user.max_combo || 0
             const mode = isHardMode ? 'hard' : 'normal'
-            const oldMaxRound = mode === 'hard' ? (user.max_round_hard || 0) : (user.max_round_normal || 0)
+            // 🎯 Use initialMaxRound from game_records (fetched before game started)
+            const oldMaxRound = initialMaxRound || 0
 
             try {
                 // 🔒 Security: xp 값은 참고용이며, 실제로는 서버에서 재계산됩니다.

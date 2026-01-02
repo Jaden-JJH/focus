@@ -51,9 +51,11 @@ export default class Game {
         // Get current rank before game starts (for rank movement tracking)
         const user = store.getState().user
         let initialRank = null
+        let initialMaxRound = 0
         if (user && !user.isGuest) {
-            const rankData = await dataService.getMyRank(user.id)
+            const rankData = await dataService.getMyRank(user.id, 'normal')
             initialRank = rankData.rank
+            initialMaxRound = rankData.maxRound || 0
         }
 
         // Initialize Engine
@@ -69,8 +71,9 @@ export default class Game {
                 'level': store.getState().level
             });
 
-            // Add initial rank to result for rank movement tracking
+            // Add initial rank and max round to result for rank movement tracking
             result.initialRank = initialRank
+            result.initialMaxRound = initialMaxRound
             // Navigate to Result with state
             navigateTo('/result', result)
         })

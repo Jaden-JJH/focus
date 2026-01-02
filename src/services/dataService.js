@@ -215,7 +215,7 @@ export const dataService = {
         // Fetch latest first to be safe
         const { data: user, error: userError } = await supabase
             .from('users')
-            .select('total_xp, level, max_combo')
+            .select('total_xp, level, max_combo, max_round_normal, max_round_hard')
             .eq('id', userId)
             .single()
 
@@ -245,6 +245,10 @@ export const dataService = {
         const currentMaxCombo = user.max_combo || 0
         const needsComboUpdate = maxCombo > currentMaxCombo
 
+        // 🎯 Check if new max round record
+        const currentMaxRound = mode === 'hard' ? (user.max_round_hard || 0) : (user.max_round_normal || 0)
+        const needsRoundUpdate = round > currentMaxRound
+
         const updateData = {
             total_xp: newTotalXp,
             level: newLevel
@@ -252,6 +256,15 @@ export const dataService = {
 
         if (needsComboUpdate) {
             updateData.max_combo = maxCombo
+        }
+
+        // 🎯 Update max_round only if it's a new record
+        if (needsRoundUpdate) {
+            if (mode === 'hard') {
+                updateData.max_round_hard = round
+            } else {
+                updateData.max_round_normal = round
+            }
         }
 
         const { error: updateError } = await supabase
@@ -268,6 +281,27 @@ export const dataService = {
             if (needsComboUpdate) {
                 storeUpdate.maxCombo = maxCombo
             }
+
+            // 🎯 Update user object in store with new max_round
+            const currentUser = store.getState().user
+            if (currentUser) {
+                const updatedUser = { ...currentUser }
+                if (needsRoundUpdate) {
+                    if (mode === 'hard') {
+                        updatedUser.max_round_hard = round
+                    } else {
+                        updatedUser.max_round_normal = round
+                    }
+                }
+                // Also update other fields
+                updatedUser.total_xp = newTotalXp
+                updatedUser.level = newLevel
+                if (needsComboUpdate) {
+                    updatedUser.max_combo = maxCombo
+                }
+                storeUpdate.user = updatedUser
+            }
+
             store.setState(storeUpdate)
         }
     },

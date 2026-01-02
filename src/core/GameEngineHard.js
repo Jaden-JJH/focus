@@ -14,9 +14,11 @@ import { NumberOrder } from '../games/NumberOrder.js'
 import { StroopTest } from '../games/StroopTest.js'
 import { PatternMemory } from '../games/PatternMemory.js'
 
-// 하드모드 전용 게임 2개
-import { ReactionTime } from '../games/ReactionTime.js'
+// 하드모드 전용 게임
 import { ColorSequence } from '../games/ColorSequence.js'
+import { WhackAMole } from '../games/WhackAMole.js'
+import { ArrowDirection } from '../games/ArrowDirection.js'
+import { TimingClick } from '../games/TimingClick.js'
 
 // 하드모드: 새로운 2개는 무조건 포함 + 기존 5개 중 랜덤 4개 = 총 6개
 const BASE_GAMES = {
@@ -28,8 +30,10 @@ const BASE_GAMES = {
 }
 
 const HARD_EXCLUSIVE_GAMES = {
-    'reaction_time': ReactionTime,
-    'color_sequence': ColorSequence
+    'color_sequence': ColorSequence,
+    'whack_a_mole': WhackAMole,
+    'arrow_direction': ArrowDirection,
+    'timing_click': TimingClick
 }
 
 export class GameEngineHard {

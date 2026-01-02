@@ -93,9 +93,22 @@ export class StroopTest {
       <div style="font-size: 3rem; font-weight: bold; color: ${colorItem.code}; text-align: center; margin: 30px;">
           ${textItem.name}
       </div>
-      <div class="game-options" style="display: grid; grid-template-columns: ${gridCols}; gap: 10px;">
+      <div class="game-options" style="display: grid; grid-template-columns: ${gridCols}; gap: 16px;">
          ${colors.map(c => `
-            <button class="btn-primary option-btn" data-name="${c.name}" style="background-color: #333; border: 2px solid ${c.code}; color: white;">
+            <button class="btn-primary option-btn stroop-btn" data-name="${c.name}" data-color="${c.code}" style="
+               background: linear-gradient(135deg, ${c.code}15, ${c.code}25);
+               border: 3px solid ${c.code};
+               color: white;
+               font-size: 1.5rem;
+               padding: 28px 24px;
+               font-weight: 600;
+               text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+               border-radius: 12px;
+               min-height: 80px;
+               display: flex;
+               align-items: center;
+               justify-content: center;
+            ">
                ${c.name}
             </button>
          `).join('')}
