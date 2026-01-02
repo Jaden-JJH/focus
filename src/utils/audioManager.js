@@ -1,4 +1,5 @@
-// 🎮 Web Audio API based Audio Manager for ultra-low latency game sounds
+// 🎮 HTML5 Audio based Audio Manager with Lazy Loading
+// iOS-compatible, stable, and performant
 class AudioManager {
     constructor() {
         this.enabled = true;
@@ -6,13 +7,12 @@ class AudioManager {
         this.defaultVolume = 0.3;
 
         // 📱 모바일 감지
-        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        this.isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        this.isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-        // 🎵 Web Audio API
-        this.audioContext = null;
-        this.audioBuffers = {}; // { soundName: AudioBuffer }
-        this.gainNode = null; // Master volume control
+        // 🎵 HTML5 Audio objects (Lazy loaded)
+        this.sounds = {}; // { soundName: Audio }
+        this.activeSounds = []; // Track active sounds for cleanup
 
         // Sound file paths
         this.soundFiles = {
@@ -45,158 +45,135 @@ class AudioManager {
         };
     }
 
-    // Initialize Web Audio API on first user interaction
-    async init() {
-        // ⚠️ iOS Fix: 이미 초기화되어도 AudioContext가 suspended 상태면 resume 시도
+    // Initialize audio manager on first user interaction
+    init() {
         if (this.initialized) {
-            if (this.audioContext && this.audioContext.state === 'suspended') {
-                try {
-                    await this.audioContext.resume();
-                    console.log('🎵 AudioContext resumed (already initialized) ✓');
-                } catch (err) {
-                    // autoplay policy로 인한 에러는 무시 (사용자 제스처 필요)
-                    console.warn('🎵 AudioContext resume failed:', err.message);
-                }
-            }
             return;
         }
 
-        try {
-            console.log('🎵 Initializing audioManager Web Audio API...');
+        console.log('🎵 Initializing audioManager (HTML5 Audio + Lazy Loading)...');
 
-            // Create AudioContext
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            this.audioContext = new AudioContextClass();
+        // Preload high-priority sounds
+        const preloadSounds = Object.entries(this.soundFiles)
+            .filter(([_, config]) => config.preload);
 
-            // Create master gain node for volume control
-            this.gainNode = this.audioContext.createGain();
-            this.gainNode.gain.value = this.defaultVolume;
-            this.gainNode.connect(this.audioContext.destination);
+        console.log(`🎵 Preloading ${preloadSounds.length} sounds...`);
 
-            // iOS: AudioContext suspended는 첫 사용자 제스처 시 자동 해결됨
-            // resume() 시도하지 않음 (autoplay policy 위반)
+        preloadSounds.forEach(([name, config]) => {
+            this._getOrCreateSound(name);
+        });
 
-            // Preload high-priority sounds
-            const preloadSounds = Object.entries(this.soundFiles)
-                .filter(([_, config]) => config.preload);
-
-            console.log(`🎵 Preloading ${preloadSounds.length} sounds...`);
-
-            await Promise.all(
-                preloadSounds.map(([name, config]) => this._loadSound(name, config.path))
-            );
-
-            this.initialized = true;
-            console.log('🎵 audioManager initialized ✓');
-        } catch (err) {
-            console.error('Failed to initialize Web Audio API:', err);
-        }
+        this.initialized = true;
+        console.log('🎵 audioManager initialized ✓');
     }
 
-    // Load and decode audio file into AudioBuffer
-    async _loadSound(soundName, path) {
-        try {
-            const response = await fetch(path);
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-            this.audioBuffers[soundName] = audioBuffer;
-            console.log(`✓ Loaded: ${soundName}`);
-        } catch (err) {
-            console.warn(`Failed to load sound: ${soundName}`, err);
-        }
-    }
-
-    // 🎮 FAST PATH: Ultra-low latency playback using Web Audio API
-    playFast(soundName) {
-        if (!this.enabled || !this.initialized) return;
-
-        // ⚠️ iOS Fix: AudioContext가 suspended 상태면 resume 시도
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            this.audioContext.resume().then(() => {
-                console.log('🎵 AudioContext resumed in playFast() ✓');
-                this._playFastInternal(soundName);
-            }).catch(err => {
-                console.warn('🎵 AudioContext resume failed in playFast():', err.message);
-            });
-            return;
-        }
-
-        this._playFastInternal(soundName);
-    }
-
-    // Internal fast playback (after resume check)
-    _playFastInternal(soundName) {
-        const buffer = this.audioBuffers[soundName];
-        if (!buffer) {
-            // Lazy load if not preloaded
+    // Lazy load: Create Audio object only when first needed
+    _getOrCreateSound(soundName) {
+        if (!this.sounds[soundName]) {
             const config = this.soundFiles[soundName];
-            if (config && !this.audioBuffers[soundName]) {
-                this._loadSound(soundName, config.path);
+            if (!config) {
+                console.warn(`Sound not found: ${soundName}`);
+                return null;
             }
-            return;
+
+            const audio = new Audio(config.path);
+            audio.preload = 'auto';
+            audio.volume = this.defaultVolume;
+            this.sounds[soundName] = audio;
+            console.log(`✓ Loaded: ${soundName}`);
         }
+        return this.sounds[soundName];
+    }
 
-        // 🎵 Create AudioBufferSourceNode for instant playback
-        const source = this.audioContext.createBufferSource();
-        source.buffer = buffer;
-        source.connect(this.gainNode);
-        source.start(0); // Start immediately, non-blocking!
+    // 🎮 FAST PATH: Instant playback for game sounds (non-blocking)
+    playFast(soundName) {
+        if (!this.enabled) return;
 
-        // Auto-cleanup after playback
-        source.onended = () => {
-            source.disconnect();
-        };
+        try {
+            const sound = this._getOrCreateSound(soundName);
+            if (!sound) return;
+
+            // Clone the audio to allow overlapping sounds
+            const clone = sound.cloneNode();
+            clone.volume = this.defaultVolume;
+
+            // Track active sound for cleanup
+            this.activeSounds.push(clone);
+
+            clone.play().catch(err => {
+                console.warn('Audio play failed:', err.message);
+            });
+
+            // Auto-cleanup after playback
+            clone.addEventListener('ended', () => {
+                this._removeActiveSound(clone);
+            }, { once: true });
+        } catch (error) {
+            console.warn('Error playing sound:', error);
+        }
     }
 
     // Play with options (for longer sounds)
-    async play(soundName, options = {}) {
-        if (!this.enabled || !this.initialized) {
+    play(soundName, options = {}) {
+        if (!this.enabled) {
             return Promise.resolve();
         }
 
-        // ⚠️ iOS Fix: AudioContext가 suspended 상태면 resume 시도
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            try {
-                await this.audioContext.resume();
-                console.log('🎵 AudioContext resumed in play() ✓');
-            } catch (err) {
-                console.warn('🎵 AudioContext resume failed in play():', err.message);
-                return Promise.resolve();
-            }
-        }
-
-        const buffer = this.audioBuffers[soundName];
-        if (!buffer) {
-            // Lazy load
-            const config = this.soundFiles[soundName];
-            if (config) {
-                await this._loadSound(soundName, config.path);
-                return this.play(soundName, options);
-            }
-            return Promise.resolve();
-        }
-
-        const source = this.audioContext.createBufferSource();
-        source.buffer = buffer;
-        source.connect(this.gainNode);
-
-        // Apply maxDuration if specified
-        if (options.maxDuration) {
-            source.start(0, 0, options.maxDuration);
-        } else {
-            source.start(0);
-        }
-
-        // Return promise that resolves when sound ends
         return new Promise((resolve) => {
-            source.onended = () => {
-                source.disconnect();
+            try {
+                const sound = this._getOrCreateSound(soundName);
+                if (!sound) {
+                    resolve();
+                    return;
+                }
+
+                // Clone the audio to allow overlapping sounds
+                const clone = sound.cloneNode();
+                clone.volume = this.defaultVolume;
+
+                // Track active sound for cleanup
+                this.activeSounds.push(clone);
+
+                // Handle duration limit (재생 시간 제한)
+                let timeoutId = null;
+                if (options.maxDuration) {
+                    timeoutId = setTimeout(() => {
+                        clone.pause();
+                        clone.currentTime = 0;
+                        this._removeActiveSound(clone);
+                        resolve();
+                    }, options.maxDuration * 1000);
+                }
+
+                // Cleanup when sound ends naturally
+                clone.addEventListener('ended', () => {
+                    if (timeoutId) clearTimeout(timeoutId);
+                    this._removeActiveSound(clone);
+                    resolve();
+                }, { once: true });
+
+                clone.play().catch(err => {
+                    console.warn('Audio play failed:', err.message);
+                    if (timeoutId) clearTimeout(timeoutId);
+                    this._removeActiveSound(clone);
+                    resolve();
+                });
+            } catch (error) {
+                console.warn('Error playing sound:', error);
                 resolve();
-            };
+            }
         });
     }
 
-    // Play sounds in sequence
+    // Remove sound from active sounds array
+    _removeActiveSound(sound) {
+        const index = this.activeSounds.indexOf(sound);
+        if (index > -1) {
+            this.activeSounds.splice(index, 1);
+        }
+    }
+
+    // Play sounds in sequence (순차 재생)
     async playSequence(soundNames) {
         for (const item of soundNames) {
             if (typeof item === 'string') {
@@ -207,13 +184,21 @@ class AudioManager {
         }
     }
 
+    // Stop all active sounds
+    stopAll() {
+        this.activeSounds.forEach(sound => {
+            sound.pause();
+            sound.currentTime = 0;
+        });
+        this.activeSounds = [];
+    }
+
     // Preload all sounds
     async preloadAll() {
         console.log('🎵 Preloading all sounds...');
-        const promises = Object.entries(this.soundFiles).map(([name, config]) =>
-            this._loadSound(name, config.path)
-        );
-        await Promise.all(promises);
+        Object.keys(this.soundFiles).forEach(name => {
+            this._getOrCreateSound(name);
+        });
     }
 
     // ===== 기존 호환성 메서드 (Fast Path로 최적화) =====
@@ -321,13 +306,15 @@ class AudioManager {
         return this.enabled;
     }
 
-    // Set volume (0.0 to 1.0)
+    // Set volume for all sounds (0.0 - 1.0)
     setVolume(volume) {
         const clampedVolume = Math.max(0, Math.min(1, volume));
         this.defaultVolume = clampedVolume;
-        if (this.gainNode) {
-            this.gainNode.gain.value = clampedVolume;
-        }
+
+        // Update volume for already created sounds
+        Object.values(this.sounds).forEach(sound => {
+            sound.volume = clampedVolume;
+        });
     }
 }
 
