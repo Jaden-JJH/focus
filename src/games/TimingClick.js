@@ -19,14 +19,17 @@ export class TimingClick {
         this.rotationStartTime = null
         this.hasFailed = false
         this.hasClicked = false
+
+        // Safe Zone 랜덤 위치 (0-360도)
+        this.safeZoneCenterAngle = Math.random() * 360
     }
 
     render() {
         const phase = this.phaseConfig[this.config.roundTier] || this.phaseConfig[1]
 
-        // Safe zone 각도 계산 (12시 방향 기준)
-        const safeZoneStart = -phase.safeZoneAngle / 2
-        const safeZoneEnd = phase.safeZoneAngle / 2
+        // Safe zone 각도 계산 (랜덤 중심 기준)
+        const safeZoneStart = this.safeZoneCenterAngle - phase.safeZoneAngle / 2
+        const safeZoneEnd = this.safeZoneCenterAngle + phase.safeZoneAngle / 2
 
         // SVG path 계산 (safe zone을 원호로 표시)
         const radius = 140  // 레이더 스크린 크기에 맞춤
@@ -46,7 +49,7 @@ export class TimingClick {
         const largeArcFlag = phase.safeZoneAngle > 180 ? 1 : 0
 
         this.container.innerHTML = `
-            <div class="game-instruction">노란색 영역에서 클릭하세요!</div>
+            <div class="game-instruction">타이밍 맞춰 클릭!</div>
 
             <div class="timing-gauge" style="
                 position: relative;
@@ -270,17 +273,15 @@ export class TimingClick {
     isInSafeZone(angle) {
         const phase = this.phaseConfig[this.config.roundTier] || this.phaseConfig[1]
 
-        // Safe zone: 12시 방향 기준 ±angle/2
-        const safeZoneStart = -phase.safeZoneAngle / 2
-        const safeZoneEnd = phase.safeZoneAngle / 2
+        // 현재 각도와 Safe Zone 중심 각도의 차이 계산
+        let diff = angle - this.safeZoneCenterAngle
 
-        // 각도를 -180 ~ 180 범위로 정규화
-        let normalizedAngle = angle
-        if (normalizedAngle > 180) {
-            normalizedAngle = normalizedAngle - 360
-        }
+        // 차이를 -180 ~ 180 범위로 정규화
+        while (diff > 180) diff -= 360
+        while (diff < -180) diff += 360
 
-        return normalizedAngle >= safeZoneStart && normalizedAngle <= safeZoneEnd
+        // Safe Zone 범위 안에 있는지 확인
+        return Math.abs(diff) <= phase.safeZoneAngle / 2
     }
 
     handleButtonClick() {
@@ -310,7 +311,7 @@ export class TimingClick {
         if (inSafeZone) {
             // 성공!
             const instruction = this.container.querySelector('.game-instruction')
-            if (instruction) instruction.innerText = '성공! 완벽한 타이밍!'
+            if (instruction) instruction.innerText = '성공!'
 
             // 바늘 색상 변경 (초록색 - 성공)
             if (scanBeam) {
@@ -345,7 +346,7 @@ export class TimingClick {
             this.hasFailed = true
 
             const instruction = this.container.querySelector('.game-instruction')
-            if (instruction) instruction.innerText = '실패! 노란색 영역이 아니었어요'
+            if (instruction) instruction.innerText = '실패!'
 
             // 바늘 색상 변경 (빨간색 - 실패)
             if (scanBeam) {

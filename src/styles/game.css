@@ -65,6 +65,18 @@
     background: #222;
     padding: 10px;
     border-radius: 8px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 모바일 환경에서 폰트 크기 조정 */
+@media (max-width: 480px) {
+    .game-instruction {
+        font-size: 1.5rem;
+        min-height: 50px;
+    }
 }
 
 .game-grid {
